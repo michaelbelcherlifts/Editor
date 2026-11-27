@@ -209,3 +209,18 @@ def from_subtitles(text: str) -> list[Word]:
             lines.append(raw)
     flush()
     return sorted(words, key=lambda w: w.start)
+
+
+_PHANTOMS = {"thanksforwatching", "thankyouforwatching", "thankyou", "thanks", "you", "pleasesubscribe",
+             "subscribe", "bye", "music", "thankyouverymuch", "seeyounexttime"}
+
+
+def drop_phantom_speech(words: list[Word]) -> list[Word]:
+    """Remove the stock phrases speech-to-text tools invent over music.
+
+    When the whole transcript is one of a few well-known phantom lines (such
+    as "Thanks for watching!"), the clip has no speech: return no words.
+    """
+    if len(words) <= 6 and _norm("".join(w.text for w in words)) in _PHANTOMS:
+        return []
+    return words

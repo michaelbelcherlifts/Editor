@@ -55,3 +55,15 @@ lead with that.
 - Do not rebuild after `find` or `show`; they change nothing.
 - Do not promise transitions, zooms or speed changes yet; this version cannot
   make them.
+
+## More than one clip
+
+- Another take or camera on the main track: `uv run stylebrain add-source FILE`
+  (at the end), `--at TIME` to insert, `--from` / `--to` to use part of it.
+  Everything after the insert moves later, with its graphics and sounds.
+- B-roll over the talking: `uv run stylebrain broll FILE --at TIME --duration 3`
+  (`--from` picks where in the b-roll to start). Picture only; his voice keeps
+  playing underneath. It follows cuts like any overlay.
+- `uv run stylebrain sources` lists what the edit uses. Commands that take a
+  transcript need `--source NAME` once there is more than one clip.
+- A clip at a different frame rate is refused: convert it first, and say why.

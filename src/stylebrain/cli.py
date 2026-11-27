@@ -152,8 +152,59 @@ def cmd_tighten(args) -> None:
 def cmd_overlay_add(args) -> None:
     store = _store(args); edit = store.load()
     o = Overlay(args.name, str(Path(args.source).resolve()), parse_time(args.at, edit.fps),
-                parse_time(args.duration, edit.fps), args.track)
+                parse_time(args.duration, edit.fps), args.track, parse_time(args.start, edit.fps))
     _save(store, edit, edit.add_overlay(o), f"add overlay {args.name!r} at {args.at}")
+
+
+def _source_range(args, edit: EditList) -> tuple[str, int, int]:
+    """The file and frame range asked for by --from/--to, checked against the file."""
+    path = str(Path(args.source).resolve())
+    fps, frames = args.fps, args.frames
+    if fps is None or frames is None:
+        from .media import probe
+        pfps, pframes = probe(path)
+        fps, frames = fps or pfps, frames or pframes
+    if abs(fps - edit.fps) > 0.01:
+        raise EditError(f"{Path(path).name} is {fps:g} fps but this edit is {edit.fps:g} fps; "
+                        "convert it to the edit's frame rate first so timings stay exact")
+    lo = parse_time(args.start, edit.fps) if args.start else 0
+    hi = parse_time(args.end, edit.fps) if args.end else frames
+    if not 0 <= lo < hi <= frames:
+        raise EditError(f"that range is outside {Path(path).name}, which is {format_time(frames, fps)} long")
+    return path, lo, hi
+
+
+def cmd_add_source(args) -> None:
+    store = _store(args); edit = store.load()
+    path, lo, hi = _source_range(args, edit)
+    at = parse_time(args.at, edit.fps) if args.at else None
+    from .edl import Segment
+    new = edit.insert_segment(Segment(path, lo, hi, args.note or ""), at)
+    where = f"at {args.at}" if args.at else "at the end"
+    _save(store, edit, new, f"add {Path(path).name} {where}")
+    print(f"  length {format_time(edit.duration, edit.fps)} -> {format_time(new.duration, new.fps)}")
+
+
+def cmd_broll(args) -> None:
+    store = _store(args); edit = store.load()
+    path, lo, hi = _source_range(args, edit)
+    at = parse_time(args.at, edit.fps)
+    length = min(hi - lo, edit.duration - at)
+    if args.duration:
+        length = min(length, parse_time(args.duration, edit.fps))
+    name = args.name or f"broll {Path(path).stem}@{args.at}"
+    _save(store, edit, edit.add_overlay(Overlay(name, path, at, length, args.track, lo)),
+          f"cover {format_time(length, edit.fps)} from {args.at} with {Path(path).name}")
+
+
+def cmd_sources(args) -> None:
+    edit = _store(args).load()
+    for n, src in enumerate(edit.sources(), 1):
+        used = sum(s.duration for s in edit.segments if s.source == src)
+        print(f"  {n}. {Path(src).name}: {format_time(used, edit.fps)} on the main track  ({src})")
+    extra = list(dict.fromkeys(o.source for o in edit.overlays))
+    for src in extra:
+        print(f"  above: {Path(src).name}  ({src})")
 
 
 def cmd_overlay_remove(args) -> None:
@@ -256,7 +307,8 @@ def cmd_ref_frames(args) -> None:
 
 def cmd_ref_motion(args) -> None:
     from . import reference
-    m = reference.motion(args.video, _secs(args.start), _secs(args.end), args.threshold)
+    m = reference.motion(args.video, _secs(args.start), _secs(args.end), args.threshold,
+                         box=json.loads(args.box) if args.box else None)
     data = m.to_dict()
     if not args.curve:
         data.pop("curve")
@@ -399,27 +451,39 @@ def cmd_srt(args) -> None:
 
 
 def cmd_review(args) -> None:
-    from . import review, style
-    target = style.load(args.style)
-    fps = 30.0
+    from . import review, story, style
+    target = style.load(args.style) if args.style else None
+    fps, cuts, words, mine = 30.0, None, None, None
     if args.video:
         words = tr.load_words(args.transcript) if args.transcript else None
         mine = style.measure(args.video, words)
         if words:
             mine["words"] = [[w.text, w.start, w.end] for w in words]
-        fps = mine["frame"]["fps"]
+        fps, cuts, duration = mine["frame"]["fps"], mine["cuts"], mine["frame"]["seconds"]
     else:
         from .autopilot import timeline_words
         store = _store(args); edit = store.load()
-        fps = edit.fps
-        words = None
+        fps, duration = edit.fps, edit.duration / edit.fps
         if args.transcript:
             words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
         mine = review.profile_of_edit(edit, words)
-    found = review.compare(mine, target, args.limit)
+        cuts = mine["cuts"] if len(edit.pieces()) > 1 else None
+    hook = [f for f in story.hook_check(words, duration, cuts) if f.serious] if words else []
+    found = review.compare(mine, target, args.limit) if target else []
     if args.json:
-        print(json.dumps(review.to_json(found), indent=2))
-    elif not found:
+        print(json.dumps({"hook": story.to_json(hook), "style": review.to_json(found)}, indent=2))
+        return
+    if hook:
+        print(f"Story and hook first, {len(hook)} to fix:")
+        for f in hook:
+            print(f.line())
+    elif words:
+        print("No hook problems measured.")
+    if not target:
+        if not words:
+            raise EditError("give --transcript for the hook check, or a style to compare against")
+        return
+    if not found:
         print(f"nothing stands out against {args.style!r}")
     else:
         print(f"{len(found)} things to look at, measured against {args.style!r}:")
@@ -437,12 +501,12 @@ def cmd_auto(args) -> None:
 def cmd_score(args) -> None:
     from . import score as sc
     if args.questions:
-        for key, text in {**sc.JUDGEMENTS, **sc.FLAGS}.items():
+        for key, text in {**sc.JUDGEMENTS, **sc.NUMBERS, **sc.FLAGS}.items():
             print(f"  {key}: {text}")
         return
-    if not args.transcript:
-        raise EditError("score needs --transcript")
-    words = tr.load_words(args.transcript)
+    if not args.transcript and not args.video:
+        raise EditError("score needs --video, --transcript, or both")
+    words = tr.drop_phantom_speech(tr.load_words(args.transcript)) if args.transcript else []
     judge = json.loads(Path(args.judge[1:]).read_text() if args.judge and args.judge.startswith("@") else args.judge or "{}")
     cuts = frame = audio = None
     duration = args.seconds
@@ -454,6 +518,80 @@ def cmd_score(args) -> None:
         duration = words[-1].end if words else 0.0
     result = sc.score(words, duration, cuts, frame, audio, judge)
     print(json.dumps(result.to_dict(), indent=2) if args.json else result.text())
+
+
+def _json_arg(text: str | None, default):
+    if not text:
+        return default
+    return json.loads(Path(text[1:]).read_text() if text.startswith("@") else text)
+
+
+def _clip_inputs(args) -> tuple[list, float, list | None]:
+    words = tr.drop_phantom_speech(tr.load_words(args.transcript))
+    cuts, duration = None, getattr(args, "seconds", None)
+    if getattr(args, "video", None):
+        from . import style
+        m = style.measure(args.video, None)
+        cuts, duration = m["cuts"], m["frame"]["seconds"]
+    if duration is None:
+        duration = words[-1].end if words else 0.0
+    return words, duration, cuts
+
+
+def cmd_hook_check(args) -> None:
+    from . import story
+    words, duration, cuts = _clip_inputs(args)
+    found = story.hook_check(words, duration, cuts, _json_arg(args.judge, {}))
+    if args.json:
+        print(json.dumps(story.to_json(found), indent=2))
+        return
+    serious = [f for f in found if f.serious]
+    print(f"{len(serious)} hook problems" + (f", {len(found) - len(serious)} things to check by eye" if len(found) > len(serious) else "") + ":")
+    for f in found:
+        print(f.line())
+
+
+def cmd_beats(args) -> None:
+    from . import story
+    words, duration, _ = _clip_inputs(args)
+    try:
+        bm = story.beat_map(words, duration, _json_arg(args.beats, None), _json_arg(args.questions, None), args.limit)
+    except ValueError as e:
+        raise EditError(str(e)) from e
+    print(json.dumps(bm.to_dict(), indent=2) if args.json else bm.text())
+
+
+def cmd_hooks(args) -> None:
+    from . import story
+    if args.spoken is None:
+        print("Hook types (write three options, each a different type):")
+        for key, (what, example) in story.HOOK_TYPES.items():
+            print(f"  {key:<11}{what}. e.g. \"{example}\"")
+        return
+    problems = story.check_hook_option(args.spoken, args.text or "")
+    print("hook ok" if not problems else "\n".join(f"  {p}" for p in problems))
+
+
+def cmd_script_check(args) -> None:
+    from . import story
+    if args.questions or not args.script:
+        for key, text in story.STORY_QUESTIONS.items():
+            print(f"  {key}: {text}")
+        return
+    text = Path(args.script).read_text()
+    out = story.check_script(text)
+    if args.story:
+        try:
+            out["story_points"] = story.story_points(_json_arg(args.story, {}))
+        except ValueError as e:
+            raise EditError(str(e)) from e
+    if args.json:
+        print(json.dumps(out, indent=2))
+        return
+    print(f"{out['lines']} lines, about {out['seconds']:.0f}s spoken, sentences average {out['average_sentence_words']} words")
+    if "story_points" in out:
+        print(f"story {out['story_points']:g} / 25" + ("" if out["story_points"] >= 20 else ": under 20, rework the story before the lines"))
+    print("\n".join(f"  {n}" for n in out["notes"]) if out["notes"] else "  no problems measured")
 
 
 def cmd_clip_add(args) -> None:
@@ -594,7 +732,15 @@ def main(argv: list[str] | None = None) -> None:
         A("--min-gap", type=float, default=0.6), A("--pad", type=float, default=0.12))
     add("overlay-add", cmd_overlay_add, "place a clip above the main track", A("name"),
         A("--source", required=True), A("--at", required=True), A("--duration", required=True),
-        A("--track", type=int, default=2))
+        A("--track", type=int, default=2), A("--start", default="0", help="where in the clip to start from"))
+    clip = [A("source"), A("--from", dest="start", help="where in the clip to start (default: its start)"),
+            A("--to", dest="end", help="where in the clip to stop (default: its end)"),
+            A("--fps", type=float), A("--frames", type=int)]
+    add("add-source", cmd_add_source, "add another clip, or part of one, to the main track", *clip,
+        A("--at", help="timeline position (default: the end)"), A("--note"))
+    add("broll", cmd_broll, "cover part of the timeline with another clip (picture only), main audio keeps playing",
+        *clip, A("--at", required=True), A("--duration"), A("--track", type=int, default=2), A("--name"))
+    add("sources", cmd_sources, "list the clips this edit uses")
     add("overlay-remove", cmd_overlay_remove, "remove an overlay", A("name"))
     size = [A("--width", type=int, default=1920), A("--height", type=int, default=1080)]
     sets = A("--set", action="append", metavar="KEY=VALUE", help="change one setting (repeatable)")
@@ -618,7 +764,8 @@ def main(argv: list[str] | None = None) -> None:
     add("ref-frames", cmd_ref_frames, "save larger single frames from a moment", *span,
         A("--out", required=True), A("--count", type=int, default=12))
     add("ref-motion", cmd_ref_motion, "when things move in a moment, and for how long", *span,
-        A("--threshold", type=float, default=0.6), A("--curve", action="store_true"))
+        A("--threshold", type=float, default=0.6), A("--curve", action="store_true"),
+        A("--box", help="[x, y, w, h] as fractions: watch only this part of the frame"))
     add("ref-palette", cmd_ref_palette, "main colours of a frame", A("video"), A("--at", required=True),
         A("--colours", type=int, default=5), A("--box", help="[x, y, w, h] as fractions"))
     add("ref-compare", cmd_ref_compare, "reference on top, your render below, at matching moments",
@@ -647,7 +794,7 @@ def main(argv: list[str] | None = None) -> None:
     add("retakes", cmd_retakes, "list likely false starts (a phrase said again straight after)", *tx,
         A("--min-words", type=int, default=4), A("--cut", action="store_true", help="cut them"))
     add("srt", cmd_srt, "write subtitles for the current cut", *tx, A("--out", required=True))
-    add("review", cmd_review, "compare the current cut (or a video file) with a saved style", A("style"),
+    add("review", cmd_review, "hook check, then compare the current cut (or a video file) with a saved style", A("style", nargs="?"),
         A("--video", help="a finished video file to review, not the current edit"),
         A("--transcript"), A("--source"), A("--limit", type=int, default=8), A("--json", action="store_true"))
     add("auto", cmd_auto, "first cut in one go: retakes, pauses, look, captions, build, review", A("name"),
@@ -655,10 +802,25 @@ def main(argv: list[str] | None = None) -> None:
         A("--captions", action="store_true"), A("--keep-retakes", action="store_true"),
         A("--no-build", action="store_true"), *size)
     add("score", cmd_score, "score a short clip on the virality rubric, part by part",
-        A("--transcript", help="word timings of the clip"), A("--video", help="the clip, to measure cuts, frame and sound"),
+        A("--transcript", help="word timings of the clip (leave out for a clip with no speech)"),
+        A("--video", help="the clip, to measure cuts, frame and sound"),
         A("--seconds", type=float, help="clip length when no video is given"),
         A("--judge", help="Claude's judgements as JSON or @file (see --questions)"),
         A("--questions", action="store_true", help="list the judgements and flags"), A("--json", action="store_true"))
+    clip = [A("--transcript", required=True, help="word timings of the clip"),
+            A("--video", help="the clip, to measure cuts"), A("--seconds", type=float, help="length when no video is given")]
+    add("hook-check", cmd_hook_check, "what holds the first seconds back, with the second it happens", *clip,
+        A("--judge", help="JSON or @file: text_on_frame_1, undelivered, first_point"), A("--json", action="store_true"))
+    add("beats", cmd_beats, "beat map of a long-form transcript: dead stretches and \"and then\" runs", *clip,
+        A("--beats", help='your labels as JSON or @file: [{"label": "hook", "start": 0}, ...]'),
+        A("--questions", help="extra re-hook times you marked, as a JSON list of seconds"),
+        A("--limit", type=float, default=60.0, help="longest stretch allowed with no new question"),
+        A("--json", action="store_true"))
+    add("hooks", cmd_hooks, "list hook types, or check one written hook", A("spoken", nargs="?"),
+        A("--text", help="the on-screen text that goes with it"))
+    add("script-check", cmd_script_check, "measured checks on a written script (one spoken line per line)", A("script", nargs="?"),
+        A("--questions", action="store_true", help="list the five story questions"),
+        A("--story", help="your answers to the five story questions, JSON or @file"), A("--json", action="store_true"))
     add("clip-add", cmd_clip_add, "add a clip's attributes and results to the learning set", A("id"),
         A("--transcript"), A("--video"), A("--seconds", type=float), A("--judge"), A("--about"),
         A("--views", type=float), A("--subscribers", type=float), A("--retention", type=float),
