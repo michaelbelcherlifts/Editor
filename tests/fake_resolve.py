@@ -2,12 +2,14 @@
 
 
 class Clip:
+    resolution = "1920x1080"
+
     def __init__(self, path):
         self.path = path
 
     def GetClipProperty(self, key):
-        assert key == "File Path"
-        return self.path
+        assert key in ("File Path", "Resolution")
+        return self.path if key == "File Path" else self.resolution
 
 
 class Folder:
@@ -25,7 +27,12 @@ class Item:
     lut_works = True
 
     def __init__(self, start, duration):
-        self.start, self.duration, self.lut = start, duration, None
+        self.start, self.duration, self.lut, self.props = start, duration, None, {}
+
+    def SetProperty(self, key, value):
+        assert key in ("ZoomX", "ZoomY", "Pan", "Tilt")
+        self.props[key] = value
+        return True
 
     def SetLUT(self, node, path):
         if not self.lut_works or node != 1:
@@ -112,8 +119,8 @@ class Project:
         return self.pool
 
     def GetSetting(self, key):
-        assert key == "timelineFrameRate"
-        return self.fps
+        return {"timelineFrameRate": self.fps, "timelineResolutionWidth": "1080",
+                "timelineResolutionHeight": "1920"}[key]
 
     def SetCurrentTimeline(self, t):
         self.current = t

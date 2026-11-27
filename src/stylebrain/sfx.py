@@ -210,14 +210,17 @@ def auto_place(edit: EditList, words: list[Word] | None = None, on: tuple[str, .
         edit = edit.remove_sounds("auto:")
     wanted: list[tuple[int, str, str]] = []
     pieces = edit.pieces()
+    # A zoom is a clip baked as one, or a clip punched in further than the clip before it.
+    zooms = {start for n, (start, seg) in enumerate(pieces)
+             if seg.note.startswith("zoom") or (n and seg.zoom > pieces[n - 1][1].zoom + 0.02)}
     if "zooms" in on:
-        wanted += [(start, "zoom", "whoosh") for start, seg in pieces if seg.note.startswith("zoom")]
+        wanted += [(start, "zoom", "whoosh") for start in sorted(zooms)]
     if "overlays" in on:
         wanted += [(o.at, "overlay", "pop") for o in edit.overlays if not o.name.startswith("captions ")]
     if "cuts" in on:
         last = -10 ** 9
         for start, seg in pieces[1:]:
-            if seg.note.startswith("zoom"):
+            if start in zooms:
                 continue
             if (start - last) / fps >= min_cut_gap:
                 wanted.append((start, "cut", "whoosh"))
