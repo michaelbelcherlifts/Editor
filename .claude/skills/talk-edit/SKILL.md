@@ -40,6 +40,7 @@ plausible, ask one short question before cutting.
 | Move a section | `stylebrain move START END TO` |
 | Swap two sections | `stylebrain swap A_START A_END B_START B_END` |
 | Slow motion, or slow into a pose | `stylebrain speed --from A --to B --speed 0.5 --ramp 0.3` (silent unless `--sound`; see `docs/aesthetic-shots.md`) |
+| Whip pan or zoom blur over a cut | `stylebrain transition --at CUT --kind whip` (or `--kind zoom`, `--frames 6`, `--left`); lengths do not change |
 | Place a clip above | `stylebrain overlay-add NAME --source PATH --at T --duration D` |
 | Undo | `stylebrain undo` |
 | Go back further | `stylebrain log`, then `stylebrain goto N` |

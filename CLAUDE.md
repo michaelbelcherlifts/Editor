@@ -9,6 +9,7 @@ screenshots, and `.claude/skills/script/SKILL.md` before writing a script or hoo
 `.claude/skills/long-form/SKILL.md` before planning, cutting or checking a long YouTube video. Other skills in `.claude/skills/` cover styles, colour, autopilot, reviews,
 sound, music, reframing, export, house rules, the content calendar, social posts and cross-posting.
 `docs/aesthetic-shots.md` covers flex, pose and physique moments (light, angle, grade, pacing).
+`docs/cinematic-editing.md` covers cinematic military and sports edits (Blaze Kennedy study: titles, captions, transitions, pacing).
 
 ## Rules
 
@@ -66,6 +67,7 @@ sound, music, reframing, export, house rules, the content calendar, social posts
 - `src/stylebrain/publish.py`: the one-button poster: a prepared reel to Instagram, TikTok, YouTube Shorts and Facebook Reels through their official APIs, only when Michael asks (`publish`, `connect`, `publish-shortcut`; sign-ins in `library/accounts/`, not committed; setup in `docs/publishing-setup.md`)
 - `src/stylebrain/bake.py`: ffmpeg zooms and speed changes
 - `src/stylebrain/speed.py`: slow motion and speed ramps on part of the timeline (`speed`), baked as new clips
+- `src/stylebrain/transitions.py`: whip and zoom blur transitions over a cut (`transition`), baked as new clips
 - `src/stylebrain/cli.py`: the `stylebrain` command
 
 ## Development

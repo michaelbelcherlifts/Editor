@@ -558,6 +558,16 @@ def cmd_speed(args) -> None:
     print("\n".join(lines))
 
 
+def cmd_transition(args) -> None:
+    from . import transitions
+    store = _store(args); edit = store.load()
+    at = parse_time(args.at, edit.fps)
+    new, lines = transitions.apply(edit, at, args.kind, store.dir / "transitions", frames=args.frames,
+                                   direction=-1 if args.left else 1)
+    _save(store, edit, new, f"{args.kind} transition at {format_time(at, edit.fps)}")
+    print("\n".join(lines))
+
+
 def cmd_export(args) -> None:
     from . import export
     store = _store(args); edit = store.load()
@@ -1919,6 +1929,11 @@ def main(argv: list[str] | None = None) -> None:
         A("--ramp", type=float, default=0.0, help="seconds of source to ease in and out of the speed"),
         A("--smooth", action="store_true", help="make in-between frames by motion interpolation (slower to render)"),
         A("--sound", action="store_true", help="keep the clip's own sound, pitch kept (no ramps)"))
+    add("transition", cmd_transition, "a whip pan or zoom blur over a cut, baked into the frames on each side",
+        A("--at", required=True, help="the cut (the nearest cut within half a second is used)"),
+        A("--kind", default="whip", choices=["whip", "zoom"]),
+        A("--frames", type=int, default=6, help="frames blurred on each side of the cut"),
+        A("--left", action="store_true", help="whip to the left instead of the right"))
     add("export", cmd_export, "render the edit to a file ready to post, then check it", A("out", nargs="?"), *out,
         A("--fit", default="fill", choices=["fill", "fit"], help="fill crops to cover the frame; fit keeps it all with bars"),
         A("--no-sounds", action="store_true"), A("--no-music", action="store_true"),
