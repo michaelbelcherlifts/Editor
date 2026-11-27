@@ -346,7 +346,9 @@ def keep_speech(words: list[Word], ranges: list[tuple[float, float]]) -> list[Wo
 def maybe_sung(words: list[Word]) -> bool:
     """A guess that the words are song lyrics, not speech: sung words are held far longer than spoken ones.
 
-    Only a hint. Read the transcript against the video before trusting it either way.
+    Only a weak hint. On Michael's own reels it missed both real cases: a slow
+    song by a hair and a rap entirely, since rap is as quick as speech. Always
+    read the transcript against the video.
     """
     lengths = sorted(w.end - w.start for w in words if w.end > w.start)
     if len(lengths) < 5:

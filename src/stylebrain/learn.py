@@ -21,6 +21,7 @@ from __future__ import annotations
 import csv
 import json
 import math
+from datetime import datetime
 import re
 from pathlib import Path
 
@@ -141,6 +142,8 @@ TARGETS = {
     "sends": "shares per 1,000 accounts reached (Instagram's strongest signal for reaching new people)",
     "saves": "saves per 1,000 accounts reached",
     "likes": "likes per 1,000 accounts reached",
+    "follows": "new followers per 1,000 accounts reached (what turns reach into an audience)",
+    "reached": "accounts reached on a log scale",
 }
 
 
@@ -156,7 +159,9 @@ def target_value(outcome: dict, target: str) -> float | None:
             return float(outcome["retention"])
         if target == "kept":
             return 100.0 - float(outcome["swiped_away"])
-        per = {"sends": "shares", "saves": "saves", "likes": "likes"}[target]
+        if target == "reached":
+            return math.log10(max(float(outcome["reach"]), 1))
+        per = {"sends": "shares", "saves": "saves", "likes": "likes", "follows": "follows"}[target]
         reached = outcome.get("reach") or outcome["views"]
         return 1000.0 * float(outcome[per]) / max(float(reached), 1.0)
     except (KeyError, TypeError, ValueError):
@@ -177,6 +182,7 @@ _COLUMNS = {
     "follows": ("follows", "subscribers"),
     "seconds": ("duration (sec)", "duration"),
     "type": ("post type",),
+    "posted": ("publish time", "video publish time", "date posted"),
 }
 _NUMBERS = ("views", "reach", "retention", "swiped_away", "shares", "saves", "likes", "comments", "follows", "seconds")
 
@@ -189,6 +195,17 @@ def _clip_id(raw: str) -> str | None:
         return m.group(1)
     if re.fullmatch(r"[A-Za-z0-9_-]{6,}", raw) and raw.lower() != "total":
         return raw
+    return None
+
+
+def _when(raw: str):
+    """A publish time from an export cell, or None."""
+    raw = (raw or "").strip()
+    for fmt in ("%m/%d/%Y %H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d", "%b %d, %Y"):
+        try:
+            return datetime.strptime(raw, fmt)
+        except ValueError:
+            pass
     return None
 
 
@@ -239,11 +256,21 @@ def import_analytics(csv_path: str | Path, subscribers: int | None = None, base:
             outcome["subscribers"] = subscribers
         if not any(f in outcome for f in _NUMBERS if f != "seconds"):
             continue
-        add(vid, {}, outcome, about=(row.get(pick.get("title", "")) or "")[:120], mine=True, base=base)
+        when = _when(row.get(pick.get("posted", ""), ""))
+        attrs = {}
+        if when:
+            outcome["posted"] = when.isoformat(timespec="minutes")
+            attrs["age_days"] = max((datetime.now() - when).days, 0)
+        add(vid, attrs, outcome, about=(row.get(pick.get("title", "")) or "")[:120], mine=True, base=base)
         done.append(vid)
     if not done:
         raise EditError("no reels or videos found in the file")
     return done
+
+
+def unmeasured(clip: dict) -> bool:
+    """True when a clip has results but nothing measured from the video or transcript yet."""
+    return not (set(clip.get("attributes", {})) - CONTROLS)
 
 
 # -------------------------------------------------------------------- model
@@ -288,7 +315,7 @@ def fit(clips: list[dict], target: str = "reach", alpha: float | None = None, on
     import numpy as np
 
     rows = [(c, target_value(c.get("outcome", {}), target)) for c in clips if not only_mine or c.get("mine")]
-    rows = [(c, t) for c, t in rows if t is not None and c.get("attributes")]
+    rows = [(c, t) for c, t in rows if t is not None and not unmeasured(c)]
     sizes: dict[str, int] = {}
     for c, _ in rows:
         sizes[group_of(c)] = sizes.get(group_of(c), 0) + 1
@@ -430,4 +457,75 @@ def report(result: dict, top: int = 10) -> str:
         lines.append("Suggested virality score weights (now -> suggested):")
         lines += [f"  {p:<14}{PARTS[p]:>4} -> {v:g}" for p, v in result["weights"].items()]
     lines.append("This shows what goes together in these clips, not what causes what.")
+    return "\n".join(lines)
+
+
+def backtest(clips: list[dict], target: str = "reached", first: int | None = None, step: int = 10,
+             top: float = 0.2, alpha: float = 30.0, only_mine: bool = True) -> dict:
+    """Would what the model learned have worked on the posts that came next?
+
+    Clips are put in the order they were posted. The model is fitted on the
+    first `first` of them and used to predict the next `step`; then those are
+    added and it predicts the next `step`, and so on. Every prediction is for
+    a clip the model had not seen and that was posted later, the way a rule
+    would have been used at the time. Returns how well the predictions ranked
+    the later clips, how the model's top picks did against posting everything,
+    and which single attributes kept their direction on later clips.
+    """
+    import numpy as np
+
+    rows = [(c, target_value(c.get("outcome", {}), target)) for c in clips if not only_mine or c.get("mine")]
+    rows = [(c, t) for c, t in rows if t is not None and not unmeasured(c) and c.get("outcome", {}).get("posted")]
+    rows.sort(key=lambda r: r[0]["outcome"]["posted"])
+    n = len(rows)
+    first = first or max(MIN_CLIPS, int(n * 0.4))
+    if n < first + step:
+        raise EditError(f"{n} clips have attributes, a {target!r} result and a posting date; a backtest needs "
+                        f"at least {first + step} (import an analytics export with a publish time column)")
+    names = sorted({k for c, _ in rows for k in c["attributes"]} - {"score_total"} - CONTROLS)
+    names = [k for k in names if sum(k in c["attributes"] for c, _ in rows) >= 0.8 * n]
+    raw = np.array([[c["attributes"].get(k, np.nan) for k in names] for c, _ in rows], float)
+    y = np.array([t for _, t in rows], float)
+    preds, single = np.full(n, np.nan), np.full((n, len(names)), np.nan)
+    for start in range(first, n, step):
+        tr, te = slice(0, start), slice(start, min(start + step, n))
+        med = np.nanmedian(raw[tr], axis=0)
+        med = np.where(np.isnan(med), 0.0, med)
+        A, B = np.where(np.isnan(raw[tr]), med, raw[tr]), np.where(np.isnan(raw[te]), med, raw[te])
+        mu, sd = A.mean(axis=0), A.std(axis=0)
+        sd = np.where(sd < 1e-9, 1.0, sd)
+        A, B = (A - mu) / sd, (B - mu) / sd
+        preds[te] = B @ _ridge(A, y[tr] - y[tr].mean(), alpha) + y[tr].mean()
+        for j in range(len(names)):               # one attribute at a time: the direction seen so far, applied forward
+            single[te, j] = np.sign(_corr(_rank(A[:, j]), _rank(y[tr]))) * B[:, j]
+    m = ~np.isnan(preds)
+    yt, pt = y[m], preds[m]
+    cut = np.quantile(yt, 1 - top)
+    k = max(1, int(round(top * len(yt))))
+    picks = np.argsort(-pt)[:k]
+    rules = sorted(({"attribute": name, "rank": round(_corr(_rank(single[m, j]), _rank(yt)), 2)}
+                    for j, name in enumerate(names) if np.std(single[m, j]) > 0), key=lambda r: -r["rank"])
+    return {"target": target, "clips": n, "trained_on_first": first, "predicted": int(m.sum()), "step": step,
+            "attributes": len(names), "rank": round(_corr(_rank(pt), _rank(yt)), 2),
+            "top_share": top, "picks": int(k), "pick_hit_rate": round(float((yt[picks] >= cut).mean()), 2),
+            "base_hit_rate": round(float((yt >= cut).mean()), 2),
+            "pick_median": round(float(np.median(yt[picks])), 3), "all_median": round(float(np.median(yt)), 3),
+            "noise_rank": round(2.0 / math.sqrt(max(int(m.sum()), 1)), 2), "rules": rules}
+
+
+def backtest_report(b: dict, top: int = 8) -> str:
+    logged = b["target"] in ("reached", "views", "reach")
+    show = (lambda v: f"{10 ** v:,.0f}") if logged else (lambda v: f"{v:.2f}")
+    lines = [f"Backtest on {b['clips']} clips in posting order, target: {TARGETS[b['target']]}.",
+             f"Fitted on the first {b['trained_on_first']}, then predicted each next {b['step']} before seeing them "
+             f"({b['predicted']} predictions, {b['attributes']} attributes).",
+             f"Predictions ranked the later clips with agreement {b['rank']:+.2f} "
+             f"(anything inside ±{b['noise_rank']:.2f} is noise at this size).",
+             f"The model's top {b['picks']} picks: {b['pick_hit_rate']:.0%} were hits, against {b['base_hit_rate']:.0%} "
+             f"for posting everything; their median was {show(b['pick_median'])} against {show(b['all_median'])}.",
+             "Single attributes, using only the direction seen up to each point:"]
+    for r in b["rules"][:top]:
+        lines.append(f"  {r['rank']:+.2f}  {r['attribute']}")
+    lines.append(f"With {b['attributes']} attributes tried, the best few will look good by luck. A rule counts once it "
+                 "holds on the next export too.")
     return "\n".join(lines)

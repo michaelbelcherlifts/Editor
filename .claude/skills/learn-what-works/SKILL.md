@@ -78,3 +78,19 @@ the list as hints to test, not rules. `--mixed` gives the pooled fit for compari
 
 `uv run stylebrain clip-pull FOLDER` copies records another thread prepared
 (for example `/mnt/project-files/style-brain/clips/`) into the learning set.
+
+## Backtest: would it have worked on the next posts?
+
+`uv run stylebrain backtest [--target reached|sends|follows|saves|views]` puts
+his clips in posting order, fits on the early ones and predicts each next ten
+before seeing them. It needs a posting date, which `clip-import` reads from the
+export's publish time. Report three things: the rank agreement against the
+noise band it prints, how the top picks did against posting everything, and
+which single attributes kept their direction. With many attributes tried, the
+best few look good by luck; call something a rule only after it holds on the
+next export too. Tag format or topic by rule or before looking at the numbers,
+never after, or the backtest is leaked.
+
+Targets `follows` (new followers per 1,000 reached) and `reached` (accounts
+reached) need no follower count. Reach and follows tend to come from different
+reels, so run both.
