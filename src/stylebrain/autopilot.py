@@ -105,6 +105,9 @@ def run(name: str, source: str, transcript: str | None = None, style_name: str |
             path, _ = transcribe(source)
             transcript = str(path)
             result.steps.append(f"transcribed to {path.name}")
+    if str(transcript).lower().endswith((".srt", ".vtt")):
+        raise EditError("subtitle files only have rough timings, too rough to cut on; "
+                        "use a word-timing transcript (`stylebrain transcribe`)")
     words = tr.load_words(transcript)
     if not words:
         raise EditError("the transcript has no word timings")

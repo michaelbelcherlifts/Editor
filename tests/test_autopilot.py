@@ -125,6 +125,9 @@ def test_autopilot_without_resolve_keeps_the_edit(project):
     assert Store("bench").head() == 3
     with pytest.raises(EditError):
         autopilot.run("bench", str(project / "raw.mov"), connect=no_resolve)
+    with pytest.raises(EditError, match="too rough"):
+        autopilot.run("other", str(project / "raw.mov"), transcript="subs.srt", connect=no_resolve)
+    assert not Store("other").exists()
 
 
 def test_commands_retakes_srt_and_review(project, capsys):
