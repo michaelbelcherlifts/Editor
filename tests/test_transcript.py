@@ -98,3 +98,16 @@ def test_takes_without_punctuation_only_trust_short_fragments():
     assert [(t.kind, t.sure) for t in tr.find_takes(words)] == [("restart", True)]
     long = _say("the reason most people stall is sleep", 0.0) + _say("the reason most lifters stall is food", 4.0)
     assert all(t.kind != "restart" for t in tr.find_takes(long))
+
+
+def test_takes_parallel_lines_are_not_cut_unasked():
+    from stylebrain import transcript as tr
+    # From a real published video: a deliberate pair, which the first version cut in half.
+    words = _say("A wider grip will target more chest.", 0.0, gap=0.02) + _say("A closer grip will target more triceps.", 2.4, gap=0.02)
+    takes = tr.find_takes(words)
+    assert tr.find_retakes(words) == []
+    assert [(t.kind, t.sure) for t in takes] == [("repeat", False)] and "on purpose" in takes[0].why
+    anaphora = _say("I trained hard every single day.", 0.0) + _say("I trained hard every single night.", 3.0)
+    assert tr.find_retakes(anaphora) == [(0.0, 3.0)]            # near enough the same line twice: a redo
+    device = _say("I trained hard every day for years.", 0.0) + _say("I trained hard every day because nobody believed in me then.", 3.5)
+    assert tr.find_retakes(device) == []

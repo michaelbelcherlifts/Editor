@@ -131,7 +131,28 @@ def phrases(words: list[Word], gap: float = 0.45) -> list[tuple[int, int]]:
     return out
 
 
-def _exact_repeats(words: list[Word], norm: list[str], min_words: int, window: float) -> list[Take]:
+def _exact_repeats(words: list[Word], norm: list[str], min_words: int, window: float,
+                   ph: list[tuple[int, int]], punctuated: bool) -> list[Take]:
+    """The same run of words twice. Sure only when it looks like starting the line again."""
+    where = {}
+    for i0, i1 in ph:
+        for k in range(i0, i1):
+            where[k] = (i0, i1)
+
+    def looks_like_a_redo(i: int, hit: int) -> bool:
+        a0, a1 = where[i]
+        b0, b1 = where[hit]
+        if (a0, a1) == (b0, b1):
+            return i == a0                    # no pause between: a redo only if the line itself starts twice
+        if hit - b0 > 1:
+            return False                      # a redo starts the line again; this repeat is mid-line
+        a = [x for x in norm[a0:a1] if x]
+        b = [x for x in norm[b0:b1] if x]
+        last = words[a1 - 1].text.rstrip("\"')")
+        finished = last.endswith((".", "!", "?")) if punctuated else len(a) > 5
+        same = len(set(a) & set(b)) / max(len(set(a)), 1) >= 0.75
+        return not finished or same           # a finished line said in other words is a device, not a slip
+
     out, i, n = [], 0, len(words)
     while i + min_words <= n:
         key = norm[i:i + min_words]
@@ -146,8 +167,10 @@ def _exact_repeats(words: list[Word], norm: list[str], min_words: int, window: f
         if hit is None:
             i += 1
         else:
-            out.append(Take(words[i].start, words[hit].start, "repeat", True,
-                            f"the same {min_words} words come again"))
+            sure = looks_like_a_redo(i, hit)
+            out.append(Take(words[i].start, words[hit].start, "repeat", sure,
+                            f"the same {min_words} words come again"
+                            + ("" if sure else ", but mid-line or in a finished sentence, so it may be on purpose")))
             i = hit
     return out
 
@@ -163,9 +186,9 @@ def find_takes(words: list[Word], min_words: int = 4, window: float = 30.0) -> l
     Deliberate repetition can look the same, so only `sure` ones are safe to cut unasked.
     """
     norm = [_norm(w.text) for w in words]
-    found = _exact_repeats(words, norm, min_words, window)
     ph = phrases(words)
     punctuated = any(w.text.rstrip("\"')").endswith((".", "!", "?", ",")) for w in words)
+    found = _exact_repeats(words, norm, min_words, window, ph, punctuated)
 
     for n, (i0, i1) in enumerate(ph):
         a = [x for x in norm[i0:i1] if x]

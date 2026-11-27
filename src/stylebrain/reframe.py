@@ -154,9 +154,12 @@ def shot_changes(video: str, samples: list[Sample], fps: float) -> list[int]:
     for before, after in zip(samples, samples[1:]):
         if after.moved < 0.3:
             continue
-        first = max(int(before.t * fps) - 1, 0)
+        # A sample's time is only good to about one sampling step either way (the frame handed
+        # back is the nearest one, not the exact one), so look a full step before and after.
+        step = max(after.t - before.t, 1 / fps)
+        first = max(int((before.t - step) * fps) - 1, 0)
         try:
-            frames = read_frames(video, max(first - 0.25, 0) / fps, (after.t * fps + 2) / fps, width=160)
+            frames = read_frames(video, max(first - 0.25, 0) / fps, ((after.t + step) * fps + 2) / fps, width=160)
         except EditError:
             continue
         grey = frames.astype(np.float32).mean(axis=3)
