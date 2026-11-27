@@ -32,7 +32,16 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from .edl import EditError, EditList, Overlay, Segment
-from .story import FILLERS, QUESTION_CUES, SLOW_OPENERS, Sentence, _overlap, sentences
+from .story import (
+    FILLERS,
+    QUESTION_CUES,
+    SLOW_OPENERS,
+    Sentence,
+    _overlap,
+    classify_hook,
+    proven_examples,
+    sentences,
+)
 from .transcript import Word, _norm, find_silences
 
 MIN_SECONDS = 15.0
@@ -130,6 +139,10 @@ def _hook_strength(s: Sentence) -> tuple[float, str]:
     if hits:
         pts += min(0.3, 0.1 * len(hits))
         why.append("hook words: " + ", ".join(sorted(hits)[:4]))
+    kinds = classify_hook(s.text)
+    if kinds:
+        pts += 0.15
+        why.append(f"a {kinds[0]} hook")
     if re.search(r"\d", s.text):
         pts += 0.15
         why.append("a number up front")
@@ -515,6 +528,11 @@ def _clock(t: float) -> str:
     return f"{int(t // 3600)}:{int(t // 60 % 60):02d}:{t % 60:04.1f}" if t >= 3600 else f"{int(t // 60)}:{t % 60:04.1f}"
 
 
+def _said_lines(c: Candidate, span) -> str:
+    a, b = float(span[0]), float(span[1])
+    return " ".join(ln["text"] for ln in c.lines if ln["end"] > a and ln["start"] < b) or ""
+
+
 def fix_for(made: Made) -> str:
     if not made.score:
         return ""
@@ -542,6 +560,10 @@ def sheet(made: list[Made], out: str | Path, source: str, title: str = "") -> Pa
                          f"<p class='src'>source {_clock(c.start)} to {_clock(c.end)}</p><p class='tx'>{html.escape(c.text)}</p></section>")
             continue
         s = m.score
+        opening = (_said_lines(c, m.judge.get("cold_open")) if m.judge.get("cold_open") else
+                   c.lines[0]["text"] if c.lines else "")
+        kind = hook_type(opening) if opening else None
+        kind_html = f" · opens as a {html.escape(kind['type'])} hook" if kind else " · opening fits no researched hook type"
         rows = "".join(f"<tr><td>{html.escape(p['name'])}</td><td class='n'>{p['points']:g} / {p['out_of']:g}</td>"
                        f"<td><div class='bar'><i style='width:{100 * p['points'] / p['out_of']:.0f}%'></i></div></td>"
                        f"<td class='why'>{html.escape(p['why'])}{'' if p['judged'] else ' (neutral, not judged)'}</td></tr>"
@@ -560,7 +582,7 @@ def sheet(made: list[Made], out: str | Path, source: str, title: str = "") -> Pa
             f"<h2><span class='rank'>#{n}</span> {head}</h2>"
             f"<p class='big'><b>{s['total']}</b> / 100 · {html.escape(s['verdict'])} · {m.seconds:.0f}s · {c.id}</p>{rep}"
             f"<p class='fix'><b>One fix:</b> {html.escape(fix_for(m))}</p>"
-            f"<p class='src'>source {_clock(c.start)} to {_clock(c.end)} · rough rank {c.rough:g}"
+            f"<p class='src'>source {_clock(c.start)} to {_clock(c.end)} · rough rank {c.rough:g}{kind_html}"
             f"{' · hook: “' + html.escape(m.judge['hook_text']) + '”' if m.judge.get('hook_text') else ''}</p>"
             f"<table>{rows}</table>"
             f"<details><summary>What was said</summary><p class='tx'>{html.escape(c.text)}</p></details>"
@@ -625,6 +647,23 @@ def extra_candidates(words: list[Word], cands: list[Candidate], judgements: dict
     return out
 
 
+def hook_type(text: str) -> dict | None:
+    """The hook type a line reads as, with the most viewed researched example of that type."""
+    kinds = classify_hook(text)
+    if not kinds:
+        return None
+    out = {"type": kinds[0]}
+    try:
+        ex = proven_examples(kinds[0], limit=1)
+    except ValueError:
+        ex = []
+    if ex:
+        line = ex[0].get("opening") or ex[0].get("title") or ""
+        if line:
+            out.update(example=line[:90], views=int(ex[0].get("views") or 0))
+    return out
+
+
 def judging_brief(cands: list[Candidate]) -> str:
     """What a judge (Claude, or one agent per clip) reads: each candidate's timed lines and the questions."""
     from .score import FLAGS, JUDGEMENTS
@@ -636,8 +675,14 @@ def judging_brief(cands: list[Candidate]) -> str:
               "or leave out); start / end (move the edges, source seconds); hook_text (on-screen hook, 8 words or less); "
               "title; skip (a reason, to leave the clip out). A moment the finder missed can be added under a new id "
               "with its start and end."), ""]
+    lines.insert(-1, "From his own 2026 Instagram results (hypotheses, not rules): shares mark the hits; useful "
+                     "\"here is how\" clips earn follows, sendable jokes earn reach; 11 to 15 s reels hit most often.")
     for c in cands:
         lines.append(f"== {c.id}  source {_clock(c.start)} to {_clock(c.end)} ({c.seconds:.0f}s), rough {c.rough:g}")
+        kind = hook_type(c.lines[0]["text"]) if c.lines else None
+        if kind:
+            lines.append(f"   opening line reads as a {kind['type']} hook" + (
+                f"; proven example: \"{kind['example']}\" ({kind['views']:,} views)" if kind.get("example") else ""))
         for ln in c.lines:
             lines.append(f"  [{ln['start']:.2f}-{ln['end']:.2f}] {ln['text']}")
         lines.append("")
