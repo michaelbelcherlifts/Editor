@@ -194,7 +194,7 @@ def check(file: str | Path, expect_seconds: float | None = None, width: int = 10
         if loud["peak"] is not None and loud["peak"] > PEAK + 0.5:
             c.problems.append(f"peaks reach {loud['peak']:g} dB and may distort after upload (keep under {PEAK:g})")
 
-    filters = "blackdetect=d=0.1:pix_th=0.1,freezedetect=n=0.003:d=2"
+    filters = "blackdetect=d=0.1:pix_th=0.04,freezedetect=n=0.003:d=2"
     cmd = ["ffmpeg", "-v", "info", "-nostats", "-i", file, "-vf", filters]
     if loud["lufs"] is not None:
         cmd += ["-af", "silencedetect=noise=-45dB:d=0.5"]
