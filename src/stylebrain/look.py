@@ -127,3 +127,98 @@ def preview(video: str, lut: str | Path, t: float, out: str | Path, reference: s
         graph += "[a][c]hstack[o]"
     run(cmd + ["-filter_complex", graph, "-map", "[o]", "-frames:v", "1", str(out)])
     return Path(out)
+
+
+# A typical phone clip shot in a gym, used when no footage of his is given to measure.
+PHONE_BASELINE = {"brightness": 0.40, "black_point": 0.03, "white_point": 0.92, "saturation": 0.28,
+                  "warmth": 0.03, "green_magenta": 0.0}
+
+
+def _profile_colour(profile: dict) -> dict:
+    """The colour block of a style profile, whichever way it was measured."""
+    c = profile.get("colour", profile)
+    need = ("brightness", "black_point", "white_point", "saturation", "warmth")
+    missing = [k for k in need if k not in c]
+    if missing:
+        raise EditError(f"the style has no colour measurements ({', '.join(missing)} missing)")
+    c = dict(c)
+    # Browser-sampled profiles give shadow/highlight colours as RGB; measured ones give tints.
+    for name in ("shadow", "highlight"):
+        if f"{name}_tint" not in c and f"{name}_rgb" in c:
+            rgb = [v / 255 for v in c[f"{name}_rgb"]]
+            m = sum(rgb) / 3
+            c[f"{name}_tint"] = [v - m for v in rgb]
+    c.setdefault("green_magenta", 0.0)
+    return c
+
+
+def lut_from_profile(target: dict, baseline: dict | None = None, strength: float = 0.8, size: int = 17):
+    """A 3D LUT (size^3 x 3, red fastest) that moves footage like `baseline` toward `target`.
+
+    Both are colour measurements from style.colour() or a creator profile. Done in steps:
+    levels (black and white points), a gamma for overall brightness, saturation around
+    luma, white balance (warmth, green-magenta), and a gentle split tone from the shadow
+    and highlight tints. strength blends with "no change".
+    """
+    import numpy as np
+
+    if not 0 <= strength <= 1:
+        raise EditError("strength is between 0 and 1")
+    t, b = _profile_colour(target), _profile_colour(baseline or PHONE_BASELINE)
+    g = np.linspace(0.0, 1.0, size)
+    bb, gg, rr = np.meshgrid(g, g, g, indexing="ij")
+    rgb = np.stack([rr, gg, bb], axis=-1).reshape(-1, 3)
+    w = np.array([0.2126, 0.7152, 0.0722])
+
+    # Levels: baseline black/white map to the target's.
+    bi, wi = b["black_point"], max(b["white_point"], b["black_point"] + 0.1)
+    bo, wo = t["black_point"], max(t["white_point"], t["black_point"] + 0.1)
+    x = np.clip((rgb - bi) / (wi - bi), 0, 1)
+    # Gamma that puts the baseline's average brightness where the target's sits.
+    mb = np.clip((b["brightness"] - bi) / (wi - bi), 0.05, 0.95)
+    mt = np.clip((t["brightness"] - bo) / (wo - bo), 0.05, 0.95)
+    gamma = float(np.clip(np.log(mt) / np.log(mb), 0.45, 2.2))
+    x = bo + (wo - bo) * x ** gamma
+    # Saturation around luma.
+    sat = float(np.clip(t["saturation"] / max(b["saturation"], 0.02), 0.2, 1.8))
+    luma = (x @ w)[:, None]
+    x = luma + (x - luma) * sat
+    # White balance, at half the measured difference (part of a scene's warmth is its
+    # content: skin, wood, lights) and mostly in the midtones so whites stay clean.
+    dw = 0.5 * (t["warmth"] - b["warmth"])
+    dgm = 0.5 * (t["green_magenta"] - b["green_magenta"])
+    luma = np.clip(x @ w, 0, 1)[:, None]
+    x = x + (0.3 + 0.7 * 4 * luma * (1 - luma)) * np.array([dw / 2, dgm, -dw / 2])
+    # Split tone: shadow tint in the darks, highlight tint in the brights, gently.
+    luma = np.clip(x @ w, 0, 1)[:, None]
+    for name, weight in (("shadow", (1 - luma) ** 2), ("highlight", luma ** 2)):
+        tint = t.get(f"{name}_tint")
+        if tint:
+            tint = np.array(tint, dtype=float)
+            x = x + 0.35 * weight * (tint - tint.mean())
+    x = np.clip(x, 0, 1)
+    return rgb + (x - rgb) * strength
+
+
+def write_cube3d(path: str | Path, table, title: str, size: int) -> Path:
+    lines = [f'TITLE "{title}"', f"LUT_3D_SIZE {size}", "DOMAIN_MIN 0.0 0.0 0.0", "DOMAIN_MAX 1.0 1.0 1.0", ""]
+    lines += [f"{r:.5f} {g:.5f} {b:.5f}" for r, g, b in table]
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n")
+    return path
+
+
+def from_profile(name: str, profile: dict, footage: str | None = None, strength: float = 0.8,
+                 size: int = 17, base: str | Path = ".") -> Path:
+    """Save a look made from a measured style (no reference video needed).
+
+    Without footage it assumes a typical phone clip; with footage it measures his clip first,
+    which is more accurate.
+    """
+    baseline = None
+    if footage:
+        from .style import colour
+        baseline = colour(footage)
+    out = path_for(name, base)
+    return write_cube3d(out, lut_from_profile(profile, baseline, strength, size), name, size)

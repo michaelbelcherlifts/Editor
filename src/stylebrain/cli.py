@@ -393,6 +393,15 @@ def cmd_look_preview(args) -> None:
     print(f"{out}: before, after" + (", reference" if args.reference else ""))
 
 
+def cmd_look_from_style(args) -> None:
+    from . import look, style
+    src = Path(args.style)
+    profile = json.loads(src.read_text()) if src.suffix == ".json" and src.exists() else style.load(args.style)
+    path = look.from_profile(args.name, profile, args.footage, args.strength)
+    basis = f"measured from {args.footage}" if args.footage else "assuming a typical phone clip"
+    print(f"saved look {args.name!r} to {path} ({basis})")
+
+
 def cmd_look_list(args) -> None:
     from . import look
     for name in look.list_looks():
@@ -942,6 +951,10 @@ def main(argv: list[str] | None = None) -> None:
     add("look-make", cmd_look_make, "make a colour look (LUT) that moves your footage toward a reference",
         A("name"), A("--reference", required=True), A("--footage", required=True, help="your own clip"),
         A("--strength", type=float, default=1.0, help="0 to 1"))
+    add("look-from-style", cmd_look_from_style, "make a colour look from a measured style (no reference video)",
+        A("name"), A("--style", required=True, help="saved style name, or a profile .json file"),
+        A("--footage", help="your own clip, measured so the look starts from it"),
+        A("--strength", type=float, default=0.8, help="0 to 1"))
     add("look-preview", cmd_look_preview, "before / after / reference image for a look", A("name"),
         A("--video", required=True), A("--at", default="0"), A("--out", required=True),
         A("--reference"), A("--ref-at", default="0"))

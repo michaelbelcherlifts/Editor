@@ -19,7 +19,24 @@ Run `uv run stylebrain templates` for the list. Today:
 | `callout` | A box drawn round part of the frame, with a label | `text`, `box` = [x, y, w, h] as fractions |
 | `captions` | Running captions with the spoken word highlighted | `words` = [{word, start, end}] |
 | `muscle_diagram` | Body figure with muscles lighting up | `title`, `highlights`, `side` |
+| `kinetic_type` | Huge tilted word-by-word titles, one key word in colour (TOGI style) | `words` or `text`, `accent_words`, `per_group`, `y` |
+| `mid_captions` | One to three words at a time, mid-frame | `words` or `text`, `max_words`, `accent_words` |
+| `title_bar` | A title held for the whole video | `text`, `duration` (the video's length), `sub`, `light` |
+| `end_card` | Numbers or macros counting up on a card | `items` = [{label, value, unit}], `title` |
+| `counter` | Rep counter ticking on each rep, or a day counter | `ticks` (rep times) or `value`, `label`, `total` |
+| `clipper` | Vertical frame: bands round a fitted landscape clip, headline on top | `headline`, `sub`, `duration`, `accent_words` |
+| `lift_diagram` | Muscle diagram preset for a lift | `lift` (bench, squat, deadlift, sumo_deadlift, rdl, overhead_press, row, pull_up, dip, hip_thrust, lunge, close_grip_bench, low_bar_squat), `only` |
+| `form_cue` | Arrows, lines and measured joint angles over a freeze frame | `arrows`, `lines`, `angles` (points as [x, y] fractions) |
+| `tempo_counter` | Rep tempo counted down phase by phase | `tempo` such as "3-1-1-0", `reps` |
+| `compare_chart` | Bars that grow and count, for comparisons | `bars` = [{label, value}], `highlight`, `unit` |
 | `html` | Any hand-written animation file | `path`, `duration`, plus `{{placeholders}}` |
+
+Cards (`muscle_diagram`, `lift_diagram`, `end_card`, `compare_chart`) stay out of the
+running-caption band (70% to 92% down the frame) so they never cover captions. Pass
+`keep_clear` as another [top, bottom] band if captions sit elsewhere, or `null` to turn it off.
+
+Every graphic should serve a story beat (stakes, turn or payoff). Say which one when
+offering it.
 
 `muscle_diagram` highlights are muscle names, or `{"muscle", "label", "at", "role"}`
 with role `primary` or `secondary`. Known muscles: traps, shoulders, rear delts,
@@ -51,6 +68,10 @@ Write a new HTML file in `library/effects/`. Rules for the page:
 Save it with `--template html --params '{"path": "library/effects/NAME.html", "duration": 3}'`.
 
 ## Facts on screen
+
+The `lift_diagram` presets are a coaching summary chosen by Claude. Show Michael the
+preset (muscles and which are primary) before it goes in a final cut. `form_cue`
+measures angles from the points you place, so place them on the joints in the frame.
 
 For teaching graphics (muscles worked, form cues, numbers), state what you chose
 and why, and ask Michael to confirm before it goes in a final cut. He is the expert.

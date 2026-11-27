@@ -24,6 +24,14 @@ clip. So the look is made here as a `.cube` file and applied on build.
 6. `uv run stylebrain look-use NAME`, then `build`. The report says if any clip
    refused the LUT. `look-use none` removes it; `undo` works as usual.
 
+## A creator's look, with no reference video
+
+Saved looks `creator-adam`, `creator-alex`, `creator-cbum`, `creator-luka`, `creator-mek`,
+`creator-sam`, `creator-togi`, `creator-tren` and `creator-vince` come from the measured
+creator profiles. They assume a typical phone clip. For a better fit, remake one from his
+own footage: `uv run stylebrain look-from-style creator-sam --style PROFILE.json --footage MINE`
+(a saved style name works in place of the file). Then preview and use it as above.
+
 ## What this does and does not match
 
 It matches overall brightness, contrast and colour balance. It does not copy

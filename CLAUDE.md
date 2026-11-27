@@ -31,10 +31,11 @@ the content calendar.
 - `src/stylebrain/resolve_builder.py`: builds and verifies a Resolve timeline
 - `src/stylebrain/render.py`: HTML animation to transparent video
 - `src/stylebrain/templates.py`, `anatomy.py`: animation templates and the body figure
+- `src/stylebrain/kinetic.py`, `explainers.py`, `pagekit.py`: type templates (kinetic type, mid captions, counters, end cards, clipper), lift explainers (lift presets, form cues, tempo, charts), and the shared stage and caption safe zone
 - `src/stylebrain/effects.py`: the saved effect library (`library/effects/`)
 - `src/stylebrain/reference.py`: studying a reference video (frame sheets, motion timing, colours, side-by-side check)
 - `src/stylebrain/style.py`: measuring a video's style (cuts, opening, speech pace, picture, sound) into `library/styles/`
-- `src/stylebrain/look.py`: colour looks: a LUT made from a reference, saved in `library/looks/`
+- `src/stylebrain/look.py`: colour looks: a LUT made from a reference or a measured style, saved in `library/looks/`
 - `src/stylebrain/transcribe.py`: word-timing transcripts from a local speech-to-text tool
 - `src/stylebrain/autopilot.py`: first cut in one command (retakes, pauses, look, captions, build, review)
 - `src/stylebrain/review.py`: timestamped suggestions from comparing a cut with a style

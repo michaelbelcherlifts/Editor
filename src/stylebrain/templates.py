@@ -13,23 +13,7 @@ from pathlib import Path
 from .edl import EditError
 from .anatomy import figure_svg, resolve_muscles
 
-FONT = "'Inter','SF Pro Display','Helvetica Neue','Segoe UI',Arial,sans-serif"
-
-
-def _stage(width: int, height: int) -> tuple[float, float, float]:
-    """Templates are designed for a frame whose short side is 1080. Returns the
-    design-space width and height, and the scale that maps it onto the real frame."""
-    scale = min(width, height) / 1080
-    return width / scale, height / scale, scale
-
-
-def _page(body: str, css: str, width: int = 1920, height: int = 1080) -> str:
-    sw, sh, scale = _stage(width, height)
-    return (f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>"
-            f"html,body{{margin:0;background:transparent;overflow:hidden}}"
-            f"#stage{{width:{sw:.2f}px;height:{sh:.2f}px;zoom:{scale:.5f};position:relative;"
-            f"overflow:hidden;font-family:{FONT}}}"
-            f"{css}</style></head><body><div id='stage'>{body}</div></body></html>")
+from .pagekit import CAPTION_BAND, FONT, _page, _stage, keep_clear_box  # noqa: F401  (re-exported)
 
 
 def caption_pop(text: str, duration: float = 2.0, stagger: float = 0.09, size: int = 96,
@@ -138,12 +122,15 @@ def captions(words: list[dict], max_chars: int = 26, size: int = 78, color: str 
 
 def muscle_diagram(highlights: list, title: str = "", duration: float | None = None, side: str = "right",
                    primary: str = "#ff4d2e", secondary: str = "#ffb020", first_at: float = 0.8,
-                   every: float = 0.7, width: int = 1920, height: int = 1080):
+                   every: float = 0.7, keep_clear: list[float] | None = CAPTION_BAND,
+                   width: int = 1920, height: int = 1080):
     """A body figure where named muscles light up one after another, with labels.
 
     highlights is a list of muscle names, or of {"muscle", "label"?, "at"?, "role"?}
     where role is "primary" or "secondary" and at is seconds from the start.
     Front and back views are chosen automatically from the muscles named.
+    The card stays out of the caption band (keep_clear) so it never covers captions;
+    pass keep_clear=None for a full-height card.
     """
     items = []
     for n, h in enumerate(highlights):
@@ -167,13 +154,16 @@ def muscle_diagram(highlights: list, title: str = "", duration: float | None = N
         rows.append(f"<div class='row' style='animation-delay:{at:.3f}s'>"
                     f"<i style='background:{colour}'></i>{escape(h.get('label') or default_label)}</div>")
     card_w = 560 if len(views) == 1 else 860
+    _, sh, _ = _stage(width, height)
+    card_top, card_h = keep_clear_box(sh, 940, keep_clear)
     pos = "right:4%" if side == "right" else "left:4%"
     slide = 80 if side == "right" else -80
     css = (":root{--base:#8b8f98;--body:#c9ccd3}"
-           f".card{{position:absolute;{pos};top:50%;width:{card_w}px;margin-top:-470px;height:940px;"
+           f".card{{position:absolute;{pos};top:{card_top:.0f}px;width:{card_w}px;height:{card_h:.0f}px;"
            "box-sizing:border-box;padding:34px 36px;border-radius:34px;background:rgba(14,15,18,.9);"
            "box-shadow:0 30px 80px rgba(0,0,0,.45);color:#fff;display:flex;flex-direction:column;"
            f"animation:in .5s cubic-bezier(.2,.9,.2,1) both,out .45s ease-in {hold:.3f}s forwards}}"
+           f"{'.card{padding:22px 28px}.row{font-size:28px!important;margin-top:6px!important}' if card_h < 700 else ''}"
            ".ttl{font-size:44px;font-weight:800;letter-spacing:-0.01em;margin-bottom:10px}"
            ".figs{flex:1;display:flex;justify-content:center;gap:10px;min-height:0}"
            ".figs svg{height:100%;width:auto}"
@@ -210,6 +200,16 @@ TEMPLATES = {
     "muscle_diagram": muscle_diagram,
     "html": html_file,
 }
+
+from .kinetic import clipper, counter, end_card, kinetic_type, mid_captions, title_bar  # noqa: E402
+from .explainers import compare_chart, form_cue, lift_diagram, tempo_counter  # noqa: E402
+
+TEMPLATES.update({
+    "kinetic_type": kinetic_type, "mid_captions": mid_captions, "title_bar": title_bar,
+    "end_card": end_card, "counter": counter, "clipper": clipper,
+    "lift_diagram": lift_diagram, "form_cue": form_cue, "tempo_counter": tempo_counter,
+    "compare_chart": compare_chart,
+})
 
 
 def build(name: str, params: dict) -> tuple[str, float]:
