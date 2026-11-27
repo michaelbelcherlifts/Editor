@@ -440,6 +440,50 @@ def cmd_score(args) -> None:
     print(json.dumps(result.to_dict(), indent=2) if args.json else result.text())
 
 
+def cmd_clip_add(args) -> None:
+    from . import learn
+    words = tr.load_words(args.transcript) if args.transcript else []
+    judge = json.loads(Path(args.judge[1:]).read_text() if args.judge and args.judge.startswith("@") else args.judge or "{}")
+    cuts = frame = audio = colour = None
+    duration = args.seconds
+    if args.video:
+        from . import style
+        m = style.measure(args.video, None)
+        cuts, frame, audio, colour, duration = m["cuts"], m["frame"], m["audio"], m["colour"], m["frame"]["seconds"]
+    if duration is None:
+        if not words:
+            raise EditError("give --video, or --transcript (with --seconds if the clip runs past the last word)")
+        duration = words[-1].end
+    outcome = {k: v for k, v in (("views", args.views), ("subscribers", args.subscribers),
+                                 ("retention", args.retention), ("swiped_away", args.swiped_away)) if v is not None}
+    path = learn.add(args.id, learn.attributes(words, duration, cuts, frame, audio, colour, judge), outcome,
+                     args.about or "", args.mine)
+    print(f"saved {path}")
+
+
+def cmd_clip_import(args) -> None:
+    from . import learn
+    ids = learn.import_analytics(args.csv, args.subscribers)
+    need = [c["id"] for c in learn.load_all() if c["id"] in ids and not c["attributes"]]
+    print(f"{len(ids)} clips read from the analytics file; {len(need)} still need attributes (clip-add ID --video ...)")
+
+
+def cmd_clip_list(args) -> None:
+    from . import learn
+    clips = learn.load_all()
+    for c in clips:
+        o = c["outcome"]
+        print(f"{c['id']:<16}{'mine ' if c.get('mine') else '     '}{len(c['attributes']):>3} attributes  "
+              f"views {o.get('views', '-')}  {c.get('about', '')[:50]}")
+    print(f"{len(clips)} clips")
+
+
+def cmd_learn(args) -> None:
+    from . import learn
+    result = learn.fit(learn.load_all(), args.target, only_mine=args.mine)
+    print(json.dumps(result, indent=2) if args.json else learn.report(result))
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -531,6 +575,15 @@ def main(argv: list[str] | None = None) -> None:
         A("--seconds", type=float, help="clip length when no video is given"),
         A("--judge", help="Claude's judgements as JSON or @file (see --questions)"),
         A("--questions", action="store_true", help="list the judgements and flags"), A("--json", action="store_true"))
+    add("clip-add", cmd_clip_add, "add a clip's attributes and results to the learning set", A("id"),
+        A("--transcript"), A("--video"), A("--seconds", type=float), A("--judge"), A("--about"),
+        A("--views", type=float), A("--subscribers", type=float), A("--retention", type=float),
+        A("--swiped-away", type=float), A("--mine", action="store_true", help="it is one of your own clips"))
+    add("clip-import", cmd_clip_import, "read results from a YouTube Studio export (CSV)", A("csv"),
+        A("--subscribers", type=int, help="your subscriber count, for the reach target"))
+    add("clip-list", cmd_clip_list, "list clips in the learning set")
+    add("learn", cmd_learn, "learn which attributes go with clips doing well", A("--target", default="reach"),
+        A("--mine", action="store_true", help="use only your own clips"), A("--json", action="store_true"))
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")
