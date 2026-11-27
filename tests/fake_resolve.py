@@ -34,6 +34,9 @@ class Item:
         self.props[key] = value
         return True
 
+    def GetProperty(self, key):
+        return self.props.get(key)
+
     def SetLUT(self, node, path):
         if not self.lut_works or node != 1:
             return False
@@ -50,6 +53,22 @@ class Item:
 class Timeline:
     def __init__(self, name, start=86400):
         self.name, self.start, self.tracks, self.audio = name, start, {1: []}, {1: []}
+        self.markers, self.timecode = {}, "01:00:00:00"
+
+    def GetMarkers(self):
+        return dict(self.markers)
+
+    def AddMarker(self, frame, color, name, note, duration, custom=""):
+        if frame in self.markers or frame < 0:
+            return False
+        self.markers[frame] = {"color": color, "name": name, "note": note, "duration": duration, "customData": custom}
+        return True
+
+    def DeleteMarkerAtFrame(self, frame):
+        return self.markers.pop(frame, None) is not None
+
+    def GetCurrentTimecode(self):
+        return self.timecode
 
     def GetName(self):
         return self.name
@@ -125,6 +144,9 @@ class Project:
     def SetCurrentTimeline(self, t):
         self.current = t
         return True
+
+    def GetCurrentTimeline(self):
+        return self.current
 
     def GetTimelineCount(self):
         return len(self.timelines)
