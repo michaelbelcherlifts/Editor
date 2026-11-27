@@ -268,6 +268,49 @@ def import_analytics(csv_path: str | Path, subscribers: int | None = None, base:
     return done
 
 
+# What a reel is, as opposed to how it is cut. Fixed lists, so tags can be compared and backtested.
+TAGS: dict[str, tuple[str, ...]] = {
+    "format": ("skit", "how_to", "lift_clip", "talking", "borrowed_sound", "challenge", "vlog", "other"),
+    "topic": ("bench", "squat", "deadlift", "meet", "nutrition", "running", "army", "looks_humour", "gym_culture",
+              "motivation", "other"),
+    "hook": ("question", "claim", "joke_premise", "mystery", "challenge", "none"),
+}
+TAG_FLAGS = ("series", "teaches", "about_him", "punchline_end", "face_to_camera", "text_on_frame_1", "other_people")
+TAG_HELP = {
+    "format": "skit (acted joke), how_to (shows a cue, tip or method), lift_clip (a lift with a title or counter), "
+              "talking (him to camera: opinion or story), borrowed_sound (someone else's audio with his picture or text), "
+              "challenge (a counted or dared attempt), vlog (a day, a prep, a recap)",
+    "topic": "what it is about; looks_humour covers looksmaxxing, aura and similar jokes",
+    "hook": "how the first two seconds pull: a question, a claim, the premise of a joke, a mystery held back, a challenge, or none",
+    "series": "it is marked as part of a run (pt. 4, day 3, a recurring title)",
+    "teaches": "a viewer could do something differently after watching",
+    "about_him": "it is about who he is (Army, West Point, his numbers) more than about a lift or a joke",
+    "punchline_end": "the last line or shot is the laugh or the reveal",
+    "face_to_camera": "he talks to the camera",
+    "text_on_frame_1": "there is readable text on the first frame",
+    "other_people": "someone else is on screen as part of the bit",
+}
+
+
+def tag_attributes(tags: dict) -> dict:
+    """Tags as attributes the model can use: one 0/1 column per choice and per flag.
+
+    Tag from the video and the words only. Whoever tags must not have seen the
+    clip's results, or anything learned from the tags is leaked.
+    """
+    unknown = set(tags) - set(TAGS) - set(TAG_FLAGS)
+    if unknown:
+        raise EditError(f"unknown tag {sorted(unknown)[0]!r}; use {', '.join([*TAGS, *TAG_FLAGS])}")
+    out = {}
+    for field, choices in TAGS.items():
+        if field in tags:
+            if tags[field] not in choices:
+                raise EditError(f"{field} is one of {', '.join(choices)}")
+            out.update({f"tag_{field}_{c}": int(c == tags[field]) for c in choices})
+    out.update({f"tag_{flag}": int(bool(tags[flag])) for flag in TAG_FLAGS if flag in tags})
+    return out
+
+
 def unmeasured(clip: dict) -> bool:
     """True when a clip has results but nothing measured from the video or transcript yet."""
     return not (set(clip.get("attributes", {})) - CONTROLS)

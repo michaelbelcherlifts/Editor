@@ -1036,6 +1036,22 @@ def cmd_learn(args) -> None:
     print(json.dumps(result, indent=2) if args.json else learn.report(result))
 
 
+def cmd_clip_tag(args) -> None:
+    from . import learn
+    if args.questions:
+        for key, text in learn.TAG_HELP.items():
+            print(f"  {key}: {text}")
+        print("  Tag from the video and words only, before seeing any results.")
+        return
+    if not args.id or not args.tags:
+        raise EditError("give a clip id and --tags as JSON, or --questions")
+    attrs = learn.tag_attributes(_json_arg(args.tags, {}))
+    if not any(c["id"] == args.id for c in learn.load_all()):
+        raise EditError(f"no clip {args.id!r} in the learning set")
+    learn.add(args.id, attrs)
+    print(f"tagged {args.id}: " + ", ".join(k[4:] for k, v in attrs.items() if v))
+
+
 def cmd_backtest(args) -> None:
     from . import learn
     b = learn.backtest(learn.load_all(), args.target, args.first, args.step, args.top, only_mine=not args.everyone)
@@ -1757,6 +1773,9 @@ def main(argv: list[str] | None = None) -> None:
         A("--subscribers", "--followers", type=int, help="your follower or subscriber count, for the reach target"),
         A("--all-posts", action="store_true", help="include photos and carousels, not only reels"))
     add("clip-list", cmd_clip_list, "list clips in the learning set")
+    add("clip-tag", cmd_clip_tag, "say what a clip is (format, topic, hook, flags) so formats can be backtested",
+        A("id", nargs="?"), A("--tags", help="JSON or @file, such as {\"format\": \"how_to\", \"topic\": \"bench\", \"series\": true}"),
+        A("--questions", action="store_true", help="list the tags and what each means"))
     add("backtest", cmd_backtest, "test what the model learned on the posts that came next, in posting order",
         A("--target", default="reached"), A("--first", type=int, help="clips to fit on before the first prediction"),
         A("--step", type=int, default=10), A("--top", type=float, default=0.2, help="share counted as a hit"),
