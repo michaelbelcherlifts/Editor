@@ -20,6 +20,7 @@ Run `uv run stylebrain templates` for the list. Today:
 | `captions` | Running captions with the spoken word highlighted | `words` = [{word, start, end}] |
 | `muscle_diagram` | Body figure with muscles lighting up | `title`, `highlights`, `side` |
 | `kinetic_type` | Huge tilted word-by-word titles, one key word in colour (TOGI style) | `words` or `text`, `accent_words`, `per_group`, `y` |
+| `kinetic_scatter` | TOGI's measured look: words snap on around the frame, white behind him, blue in front, set swaps at once (saved as effect `togi-kinetic`) | `words`, `accent_words`, `tilt_words`, `breaks`, `positions`, `layer` (back / front / all) |
 | `mid_captions` | One to three words at a time, mid-frame | `words` or `text`, `max_words`, `accent_words` |
 | `title_bar` | A title held for the whole video | `text`, `duration` (the video's length), `sub`, `light` |
 | `end_card` | Numbers or macros counting up on a card | `items` = [{label, value, unit}], `title` |
@@ -66,6 +67,13 @@ Write a new HTML file in `library/effects/`. Rules for the page:
 - Use `{{name}}` where text should be replaceable.
 
 Save it with `--template html --params '{"path": "library/effects/NAME.html", "duration": 3}'`.
+
+## Words behind the person
+
+An overlay always sits on top of the footage. For text that goes behind Michael
+(`kinetic_scatter` white words), render `layer=back` and `layer=front` as two clips, and
+stack them in Resolve: footage, back layer, a Magic Mask cut-out of Michael (Studio),
+front layer. Say that the cut-out is a manual Resolve step.
 
 ## Facts on screen
 
