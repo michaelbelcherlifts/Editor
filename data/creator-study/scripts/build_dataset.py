@@ -35,8 +35,12 @@ for r in recs:
     if 'text_on_frame_1' in attrs: attrs['judge_text_on_frame_1'] = attrs['text_on_frame_1']
     if A.get('text_changes_per_10s') is not None:
         attrs['judge_captions'] = 1 if A['text_changes_per_10s'] >= 8 and A.get('text_share', 0) >= 0.4 else 0
+    if m.get('published'):
+        from datetime import datetime, timezone
+        pub = datetime.fromisoformat(m['published'])
+        attrs['age_days'] = round((datetime(2026, 11, 27, tzinfo=timezone.utc) - pub).total_seconds() / 86400, 1)
     url = f"https://www.youtube.com/{'watch?v=' if long_form else 'shorts/'}{m['id']}"
-    clip = {'id': m['id'], 'about': f"{m.get('channel')}, {m.get('title')}, {url}", 'mine': False,
+    clip = {'id': m['id'], 'group': slug, 'about': f"{m.get('channel')}, {m.get('title')}, {url}", 'mine': False,
             'attributes': attrs, 'outcome': {k: v for k, v in {'views': m.get('views'), 'subscribers': subs}.items() if v}}
     # long-form openings are measured on the first 60 s only; keep them out of the shorts model set
     if not long_form:
