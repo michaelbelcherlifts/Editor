@@ -152,8 +152,59 @@ def cmd_tighten(args) -> None:
 def cmd_overlay_add(args) -> None:
     store = _store(args); edit = store.load()
     o = Overlay(args.name, str(Path(args.source).resolve()), parse_time(args.at, edit.fps),
-                parse_time(args.duration, edit.fps), args.track)
+                parse_time(args.duration, edit.fps), args.track, parse_time(args.start, edit.fps))
     _save(store, edit, edit.add_overlay(o), f"add overlay {args.name!r} at {args.at}")
+
+
+def _source_range(args, edit: EditList) -> tuple[str, int, int]:
+    """The file and frame range asked for by --from/--to, checked against the file."""
+    path = str(Path(args.source).resolve())
+    fps, frames = args.fps, args.frames
+    if fps is None or frames is None:
+        from .media import probe
+        pfps, pframes = probe(path)
+        fps, frames = fps or pfps, frames or pframes
+    if abs(fps - edit.fps) > 0.01:
+        raise EditError(f"{Path(path).name} is {fps:g} fps but this edit is {edit.fps:g} fps; "
+                        "convert it to the edit's frame rate first so timings stay exact")
+    lo = parse_time(args.start, edit.fps) if args.start else 0
+    hi = parse_time(args.end, edit.fps) if args.end else frames
+    if not 0 <= lo < hi <= frames:
+        raise EditError(f"that range is outside {Path(path).name}, which is {format_time(frames, fps)} long")
+    return path, lo, hi
+
+
+def cmd_add_source(args) -> None:
+    store = _store(args); edit = store.load()
+    path, lo, hi = _source_range(args, edit)
+    at = parse_time(args.at, edit.fps) if args.at else None
+    from .edl import Segment
+    new = edit.insert_segment(Segment(path, lo, hi, args.note or ""), at)
+    where = f"at {args.at}" if args.at else "at the end"
+    _save(store, edit, new, f"add {Path(path).name} {where}")
+    print(f"  length {format_time(edit.duration, edit.fps)} -> {format_time(new.duration, new.fps)}")
+
+
+def cmd_broll(args) -> None:
+    store = _store(args); edit = store.load()
+    path, lo, hi = _source_range(args, edit)
+    at = parse_time(args.at, edit.fps)
+    length = min(hi - lo, edit.duration - at)
+    if args.duration:
+        length = min(length, parse_time(args.duration, edit.fps))
+    name = args.name or f"broll {Path(path).stem}@{args.at}"
+    _save(store, edit, edit.add_overlay(Overlay(name, path, at, length, args.track, lo)),
+          f"cover {format_time(length, edit.fps)} from {args.at} with {Path(path).name}")
+
+
+def cmd_sources(args) -> None:
+    edit = _store(args).load()
+    for n, src in enumerate(edit.sources(), 1):
+        used = sum(s.duration for s in edit.segments if s.source == src)
+        print(f"  {n}. {Path(src).name}: {format_time(used, edit.fps)} on the main track  ({src})")
+    extra = list(dict.fromkeys(o.source for o in edit.overlays))
+    for src in extra:
+        print(f"  above: {Path(src).name}  ({src})")
 
 
 def cmd_overlay_remove(args) -> None:
@@ -586,7 +637,15 @@ def main(argv: list[str] | None = None) -> None:
         A("--min-gap", type=float, default=0.6), A("--pad", type=float, default=0.12))
     add("overlay-add", cmd_overlay_add, "place a clip above the main track", A("name"),
         A("--source", required=True), A("--at", required=True), A("--duration", required=True),
-        A("--track", type=int, default=2))
+        A("--track", type=int, default=2), A("--start", default="0", help="where in the clip to start from"))
+    clip = [A("source"), A("--from", dest="start", help="where in the clip to start (default: its start)"),
+            A("--to", dest="end", help="where in the clip to stop (default: its end)"),
+            A("--fps", type=float), A("--frames", type=int)]
+    add("add-source", cmd_add_source, "add another clip, or part of one, to the main track", *clip,
+        A("--at", help="timeline position (default: the end)"), A("--note"))
+    add("broll", cmd_broll, "cover part of the timeline with another clip (picture only), main audio keeps playing",
+        *clip, A("--at", required=True), A("--duration"), A("--track", type=int, default=2), A("--name"))
+    add("sources", cmd_sources, "list the clips this edit uses")
     add("overlay-remove", cmd_overlay_remove, "remove an overlay", A("name"))
     size = [A("--width", type=int, default=1920), A("--height", type=int, default=1080)]
     sets = A("--set", action="append", metavar="KEY=VALUE", help="change one setting (repeatable)")

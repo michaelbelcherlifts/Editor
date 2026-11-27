@@ -187,6 +187,24 @@ class EditList:
         order = pick(0, a0) + pick(b0, b1) + pick(a1, b0) + pick(a0, a1) + pick(b1, cut.duration)
         return cut._reassemble(order)
 
+    def insert_segment(self, segment: Segment, at: int | None = None) -> "EditList":
+        """Put another stretch of footage on the main track at timeline frame `at` (default: the end).
+
+        Everything after it moves later, along with its overlays and sounds.
+        """
+        at = self.duration if at is None else at
+        if not 0 <= at <= self.duration:
+            raise EditError("that position is outside the edit")
+        cut = self.split_at(at)
+        ps = cut.pieces()
+        new_piece = (-10 ** 12, segment)  # a start no overlay can sit on
+        order = [p for p in ps if p[0] < at] + [new_piece] + [p for p in ps if p[0] >= at]
+        return cut._reassemble(order)
+
+    def sources(self) -> list[str]:
+        """Every source file on the main track, in order of first use."""
+        return list(dict.fromkeys(s.source for s in self.segments))
+
     def add_overlay(self, overlay: Overlay) -> "EditList":
         if any(o.name == overlay.name for o in self.overlays):
             raise EditError(f"an overlay named {overlay.name!r} already exists")
