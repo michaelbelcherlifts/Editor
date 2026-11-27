@@ -16,7 +16,7 @@ posts anything: Michael presses post himself, then tells you, and you record it.
   approved, posted, measured. An idea with `hold` set (a reason, such as "needs a
   runner friend") stays out of weekly plans.
 - **Post**: an idea on a date and platforms with a call to action. A reel goes to
-  Instagram, TikTok and YouTube Shorts by default; long-form to YouTube.
+  Instagram, TikTok, YouTube Shorts and Facebook by default; long-form to YouTube.
 - **Pillars** (weights in `plan-settings`): strength 0.5, run 0.2, humour 0.2,
   life 0.1. Life is the cool guy side (Army, range days, lock picking, FPV
   drones, food), always with a lifting angle in the hook.

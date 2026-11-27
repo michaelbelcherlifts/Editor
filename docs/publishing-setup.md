@@ -1,7 +1,7 @@
 # Connecting the one-button poster
 
-`stylebrain publish` posts a prepared reel to Instagram, TikTok and YouTube
-Shorts through each app's official API. Every app is free to use this way, but
+`stylebrain publish` posts a prepared reel to Instagram, TikTok, YouTube
+Shorts and Facebook Reels through each app's official API. Every app is free to use this way, but
 each one needs a one-time "developer app" that belongs to you. Do this once per
 account on the computer that will post. The sign-in files land in
 `library/accounts/`, which is never committed.
@@ -26,7 +26,7 @@ differ a little.
 
 Videos post as public. Vertical and 3 minutes or less makes them Shorts.
 
-## Instagram Reels (about 15 minutes)
+## Instagram and Facebook Reels (about 15 minutes, one sign-in for both)
 
 You need an Instagram **professional** account (creator or business), linked to
 a **Facebook Page**. In the Instagram app: Settings, Account type and tools,
@@ -37,13 +37,17 @@ Switch to professional account; then link a Page under Accounts Center.
    Business).
 3. In Graph API Explorer, pick your app, and request a User token with
    `instagram_basic`, `instagram_content_publish`, `pages_show_list`,
-   `pages_read_engagement` and `business_management`. Sign in and allow them
+   `pages_read_engagement`, `pages_manage_posts` and `business_management`. Sign in and allow them
    for your Page and your Instagram account.
 4. From App settings, Basic, copy the App ID and App Secret.
 5. Run `uv run stylebrain connect instagram --token USER_TOKEN --app-id ID --app-secret SECRET`.
 
 The app can stay in development mode: you are its admin, so it can post to
 your own account. Instagram allows about 50 API posts a day.
+
+Facebook Reels go to the Page linked to Instagram, with the same sign-in.
+Facebook's API only takes reels of 3 to 90 seconds; a longer reel is skipped
+for Facebook and still posts everywhere else.
 
 ## TikTok (about 15 minutes, then a review)
 
@@ -65,7 +69,7 @@ does, TikTok stays a one-tap step in the app. Once it passes, run
 ```
 uv run stylebrain crosspost POST                 # prepare, then read and edit the .txt files
 uv run stylebrain publish POST --dry-run         # check everything, send nothing
-uv run stylebrain publish POST                   # post to all three
+uv run stylebrain publish POST                   # post to all four
 uv run stylebrain publish today                  # today's approved reel
 uv run stylebrain publish-shortcut "%USERPROFILE%\Desktop"   # the double-click button
 ```

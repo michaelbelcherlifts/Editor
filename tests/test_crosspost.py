@@ -130,7 +130,7 @@ def test_make_writes_files_and_ties_into_the_calendar(tmp_path, monkeypatch):
     assert rows[0]["state"] == "ready" and rows[0]["made"]
     folder = plan.post(p1["id"])["crosspost"]
     data = json.loads(Path(folder, "crosspost.json").read_text())
-    assert {v["platform"] for v in data["versions"]} == {"instagram", "tiktok", "youtube-shorts"}
+    assert {v["platform"] for v in data["versions"]} == {"instagram", "tiktok", "youtube-shorts", "facebook"}
     assert data["transcript"].endswith("cut.json")
     txt = Path(folder, "instagram.txt").read_text()
     assert "CAPTION" in txt and "One bench cue" in txt
@@ -154,8 +154,21 @@ def test_cli(tmp_path, monkeypatch, capsys):
     _video(vid, 1080, 1920)
     main(["crosspost", p["id"], "--video", str(vid)])
     out = capsys.readouterr().out
-    assert "3 versions" in out and "nothing was posted" in out
+    assert "4 versions" in out and "nothing was posted" in out
     main(["crosspost-week", MON])
     assert "1 of 1 ready to post" in capsys.readouterr().out
     main(["post-result", p["id"], "--platform", "tiktok", "--url", "https://tiktok.com/y", "--views", "10"])
     assert Plan().post(p["id"])["urls"] == {"tiktok": "https://tiktok.com/y"}
+
+
+def test_facebook_added_to_older_reels_unless_turned_off(tmp_path):
+    plan = Plan(tmp_path)
+    a = plan.add_idea("Old reel", "strength", hook="Clean hook")
+    p = plan.schedule(a["id"], MON, platforms=["instagram", "tiktok", "youtube-shorts"])
+    r = crosspost.make(plan, p["id"], base=tmp_path)
+    assert "facebook" in plan.post(p["id"])["platforms"] and len(r["versions"]) == 4
+    main_settings = plan.settings
+    main_settings["facebook_reels"] = False
+    p2 = plan.schedule(a["id"], MON, platforms=["instagram"])
+    crosspost.make(plan, p2["id"], base=tmp_path)
+    assert plan.post(p2["id"])["platforms"] == ["instagram"]

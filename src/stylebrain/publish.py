@@ -1,4 +1,4 @@
-"""The one-button poster: a prepared reel goes to Instagram, TikTok and YouTube Shorts.
+"""The one-button poster: a prepared reel goes to Instagram, TikTok, YouTube Shorts and Facebook.
 
 Posting happens only when Michael asks for it: he runs `stylebrain publish`
 (or double-clicks the shortcut `publish-shortcut` makes). Nothing here runs on a
@@ -11,6 +11,8 @@ each app's official API from his own computer:
 - Instagram Reels: the Instagram Graph API (Facebook Login for Business), with
   the video sent straight from the computer by resumable upload. Needs a
   professional (creator or business) account linked to a Facebook Page.
+- Facebook Reels: the Reels Publishing API, to the Page linked to Instagram, with the
+  same Meta sign-in. Facebook's API takes reels of 3 to 90 seconds only.
 - TikTok: the Content Posting API (Direct Post, file upload). Until TikTok
   audits the app, every post is private ("only me"): he makes it public in the
   app. Set `"audited": true` in `library/accounts/tiktok.json` once it passes.
@@ -41,9 +43,10 @@ from pathlib import Path
 
 from .edl import EditError
 
-SHORT_FORM = ["instagram", "tiktok", "youtube-shorts"]
+SHORT_FORM = ["instagram", "tiktok", "youtube-shorts", "facebook"]
 GRAPH = "https://graph.facebook.com/v23.0"
 RUPLOAD = "https://rupload.facebook.com/ig-api-upload/v23.0"
+FB_RUPLOAD = "https://rupload.facebook.com/video-upload/v23.0"
 TIKTOK = "https://open.tiktokapis.com/v2"
 GOOGLE_TOKEN = "https://oauth2.googleapis.com/token"
 GOOGLE_AUTH = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -105,7 +108,7 @@ def accounts_dir(base: str | Path = ".") -> Path:
 
 
 def load_account(platform: str, base: str | Path = ".") -> dict:
-    name = "youtube" if platform.startswith("youtube") else platform
+    name = "youtube" if platform.startswith("youtube") else "instagram" if platform == "facebook" else platform
     path = accounts_dir(base) / f"{name}.json"
     if not path.exists():
         raise PublishError(f"{platform} is not connected: run `stylebrain connect {name}` first")
@@ -201,14 +204,14 @@ def connect_instagram(token: str, app_id: str | None = None, app_secret: str | N
             "grant_type": "fb_exchange_token", "client_id": app_id, "client_secret": app_secret,
             "fb_exchange_token": token})[::2], "Instagram token swap")["access_token"]
     pages = _json(*http("GET", f"{GRAPH}/me/accounts", params={
-        "fields": "name,access_token,instagram_business_account{id,username}", "access_token": token})[::2],
+        "fields": "id,name,access_token,instagram_business_account{id,username}", "access_token": token})[::2],
         "finding the Facebook Page").get("data", [])
     linked = [p for p in pages if p.get("instagram_business_account")]
     if not linked:
         raise PublishError("no Facebook Page with a linked Instagram professional account was found for this sign-in")
     page = linked[0]
     ig = page["instagram_business_account"]
-    acct = {"ig_user_id": ig["id"], "username": ig.get("username"), "page": page.get("name"),
+    acct = {"ig_user_id": ig["id"], "username": ig.get("username"), "page": page.get("name"), "page_id": page.get("id"),
             "access_token": page["access_token"]}
     save_account("instagram", acct, base)
     return acct
@@ -330,6 +333,41 @@ def post_instagram(video: str, text: dict, acct: dict) -> dict:
             "privacy": "public"}
 
 
+def post_facebook(video: str, text: dict, acct: dict) -> dict:
+    """A Reel on the Facebook Page linked to Instagram (Reels Publishing API, same Meta sign-in)."""
+    tok, page = acct["access_token"], acct.get("page_id")
+    if not page:
+        raise PublishError("the Meta sign-in has no Page id: run `stylebrain connect instagram` again")
+    start = _json(*http("POST", f"{GRAPH}/{page}/video_reels", json_body={"upload_phase": "start",
+                                                                          "access_token": tok})[::2],
+                  "starting the Facebook upload")
+    vid = start["video_id"]
+    size = Path(video).stat().st_size
+    _json(*http("POST", f"{FB_RUPLOAD}/{vid}", headers={"Authorization": f"OAuth {tok}", "offset": "0",
+                                                        "file_size": str(size),
+                                                        "Content-Type": "application/octet-stream"},
+                data=Path(video).read_bytes())[::2], "uploading to Facebook")
+    _json(*http("POST", f"{GRAPH}/{page}/video_reels", params={
+        "video_id": vid, "upload_phase": "finish", "video_state": "PUBLISHED", "description": text["caption"],
+        "access_token": tok})[::2], "publishing on Facebook")
+    waited = 0.0
+    while True:
+        st = _json(*http("GET", f"{GRAPH}/{vid}", params={"fields": "status", "access_token": tok})[::2],
+                   "Facebook processing").get("status", {})
+        video_status = st.get("video_status")
+        published = (st.get("publishing_phase") or {}).get("status") == "complete" or \
+            (st.get("publishing_phase") or {}).get("publish_status") == "published"
+        if video_status in ("upload_failed", "error", "expired"):
+            raise PublishError(f"Facebook could not process the video ({video_status})")
+        if published or video_status == "ready":
+            break
+        if waited > WAIT_LIMIT:
+            break  # the finish call was accepted; it publishes when processing ends
+        sleep(WAIT)
+        waited += WAIT
+    return {"id": vid, "url": f"https://www.facebook.com/reel/{vid}", "privacy": "public"}
+
+
 def _tiktok_token(acct: dict, base: str | Path) -> str:
     if acct.get("access_token") and time.time() < float(acct.get("expires", 0)):
         return acct["access_token"]
@@ -438,6 +476,8 @@ def publish(plan, post_id: str, *, only: list[str] | None = None, dry_run: bool 
             acct = load_account(p, base)
             if p == "youtube-shorts":
                 got = post_youtube(video, text, acct)
+            elif p == "facebook":
+                got = post_facebook(video, text, acct)
             elif p == "instagram":
                 got = post_instagram(video, text, acct)
             else:
