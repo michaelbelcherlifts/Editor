@@ -9,7 +9,8 @@ description: Use when Michael wants a first cut made for him from a raw recordin
 undoable version:
 
 1. Transcribes the clip (or uses `FILE.words.json` / `--transcript`).
-2. Cuts likely retakes: a phrase said again straight after (`--keep-retakes` to skip).
+2. Cuts failed attempts it is sure of: a phrase said again, a line that breaks off and restarts,
+   and anything before "let me start over" (`--keep-retakes` to skip).
 3. Tightens pauses. With `--style NAME` the pause length comes from that style.
 4. Puts on a saved look (`--look NAME`).
 5. Places running captions (`--captions`).
@@ -25,6 +26,8 @@ undoable version:
 3. Run it and relay the report. Always pass on:
    - every "retake cut" line, since those are guesses. Offer `undo` or
      `goto` if any was a deliberate repeat.
+   - every "possible ... not cut" line. These are his call: read them back
+     and cut the ones he picks (`retakes --cut --maybe` cuts them all).
    - the new length.
    - whether it was built. If Resolve was closed, the edit is saved and
      `uv run stylebrain build` finishes the job later.
@@ -44,5 +47,8 @@ short note: what was cut, the new length, the timeline name, and the list.
   `.stylebrain/renders/NAME.srt`), which Resolve imports as a subtitle track.
 - No speech-to-text tool installed: say so and give the install line from
   the error, or use Resolve's own transcription and export it.
-- Retake detection only sees repeated wording. A fluffed line said differently
-  the second time is not caught; Michael can cut those by voice afterwards.
+- Retake detection reads the words, not the delivery. It cuts repeats, restarts and
+  "start over" moments it is sure of, and lists the rest as "possible ... not cut"
+  (a line said again in other words, a doubled small word, "one more time"). Read
+  those back and let him choose. A take that is worded the same but simply flat
+  is invisible to it.
