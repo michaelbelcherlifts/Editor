@@ -41,10 +41,11 @@ def wide_filter(x: float = 0.5, share: float = 0.62, fill: str = "blur", width: 
                 f"[b]crop=iw*{share}:ih:{crop_x}:0,scale={width}:-2[fg];"
                 "[bg][fg]overlay=0:(H-h)/2-60,setsar=1[v]")
     if fill == "film":
-        strip = round(width / 2.0)
-        return (f"[0:v]{rate}crop=iw*{share}:iw*{share}/2.0:{crop_x}:(ih-iw*{share}/2.0)/2,scale={width}:{strip},"
+        # The full height of the shot is always kept: a lift's plates sit at the bottom of the frame, and a
+        # 2:1 strip that cropped top and bottom cut them off (Michael, round 4: "weights were cut out").
+        return (f"[0:v]{rate}crop=iw*{share}:ih:{crop_x}:0,scale={width}:-2,"
                 "eq=contrast=1.18:saturation=0.78:brightness=-0.035:gamma=0.95,"
-                f"pad={width}:{height}:0:({height}-{strip})/2-80:black,setsar=1[v]")
+                f"pad={width}:{height}:0:(oh-ih)/2-80:black,setsar=1[v]")
     raise EditError("fill is 'blur' (the shot blurred above and below) or 'film' (black bars, a graded strip)")
 
 
