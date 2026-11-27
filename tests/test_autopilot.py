@@ -140,7 +140,7 @@ def test_commands_retakes_srt_and_review(project, capsys):
     main(["retakes", "--transcript", t, "--cut"])
     assert "0:10.00 -> 0:08.13" in capsys.readouterr().out
     main(["srt", "--transcript", t, "--out", "cut.srt"])
-    assert "00:00:01,000" in (project / "cut.srt").read_text()
+    assert "00:00:01,133 --> " in (project / "cut.srt").read_text()
     style.save("ref", {"source": "x", "pacing": style.pacing([1, 2, 3, 4, 5, 6, 7], 8.0)})
     main(["review", "ref", "--transcript", t])
     assert "[long_shot]" in capsys.readouterr().out
