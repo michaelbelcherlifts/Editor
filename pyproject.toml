@@ -9,6 +9,14 @@ dependencies = []
 [project.scripts]
 stylebrain = "stylebrain.cli:main"
 
+[project.optional-dependencies]
+render = [
+    "playwright>=1.65.2",
+]
+analysis = [
+    "numpy>=2.2.6",
+]
+
 [dependency-groups]
 dev = ["pytest>=8"]
 

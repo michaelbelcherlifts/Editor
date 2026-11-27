@@ -12,6 +12,10 @@ explainer animations, color looks, overnight autopilot). What exists today:
 | Edit list engine | Keeps the edit as data: cut, move, swap, overlays, with every version saved | Tested |
 | Transcript tools | Find where a phrase is said; find and shorten pauses | Tested |
 | Command line | The commands Claude runs while you talk | Tested |
+| Animation renderer | Renders HTML animations to transparent clips for the timeline | Tested |
+| Animation templates | Caption pop, lower third, callout, running captions, muscle diagram | Tested |
+| Effect library | Named, reusable effect recipes you can place by name | Tested |
+| Baked effects | Punch-in zooms and speed changes made with ffmpeg | Tested |
 | Resolve builder | Builds the edit in Resolve as a new timeline and checks it | Tested against a stand-in only. **Not yet run against real Resolve** |
 
 ## Why an edit list
@@ -25,7 +29,8 @@ is what makes undo work.
 
 See [docs/SETUP.md](docs/SETUP.md). Short version: Resolve Studio 21.1 or later,
 External scripting set to Local, [uv](https://docs.astral.sh/uv/) and ffmpeg
-installed, then `uv sync` in this folder and open the folder in Claude Code.
+installed, then `uv sync --all-extras` and `uv run playwright install chromium` in
+this folder, and open the folder in Claude Code.
 
 ## Using it
 
@@ -46,19 +51,33 @@ uv run stylebrain undo
 uv run stylebrain build                    # new timeline in Resolve
 ```
 
+Animations:
+
+```
+uv run stylebrain templates
+uv run stylebrain render muscle_diagram --out bench.mov \
+  --params '{"title": "Bench press", "highlights": ["chest", "front delts", "triceps"]}'
+uv run stylebrain effect-save pop --template caption_pop --params '{"text": "x"}'
+uv run stylebrain effect-place pop --at 0:42 --set text="This changes everything"
+```
+
 Times are timeline times: seconds (`83.5`), `1:23.5`, timecode `00:01:23:12`, or
 frames `120f`.
 
 ## Development
 
 ```
-uv sync
+uv sync --all-extras
+uv run playwright install chromium
 uv run pytest
 ```
 
 ## Known limits of this version
 
-- One layer of footage on the main track, plus overlays above it. No transitions,
-  speed changes, zooms or audio-only edits yet.
+- One layer of footage on the main track, plus overlays above it. No transitions or
+  audio-only edits yet. Zooms and speed changes are baked into a new file, not live
+  in Resolve.
+- Transparent clips are ProRes 4444 and large, roughly 10 to 20 MB per second at 1080p.
+- The muscle figure is a simple stylized diagram, not a medical illustration.
 - Rebuilding does not carry over work done by hand on the previous timeline.
 - Transcripts are read from a word-timing JSON file; making one is not built in yet.

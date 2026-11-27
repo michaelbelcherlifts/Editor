@@ -7,6 +7,7 @@ Times are timeline times: seconds ("83.5"), "1:23.5", timecode "00:01:23:12", or
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -157,6 +158,77 @@ def cmd_overlay_remove(args) -> None:
     _save(store, edit, edit.remove_overlay(args.name), f"remove overlay {args.name!r}")
 
 
+def _values(pairs: list[str] | None) -> dict:
+    """Read --set key=value pairs; values are JSON when they parse as JSON, else text."""
+    out = {}
+    for pair in pairs or []:
+        if "=" not in pair:
+            raise EditError(f"--set takes key=value, got {pair!r}")
+        key, value = pair.split("=", 1)
+        try:
+            out[key] = json.loads(value)
+        except json.JSONDecodeError:
+            out[key] = value
+    return out
+
+
+def _params(text: str | None) -> dict:
+    if not text:
+        return {}
+    try:
+        data = json.loads(Path(text[1:]).read_text() if text.startswith("@") else text)
+    except (json.JSONDecodeError, OSError) as e:
+        raise EditError(f"--params must be JSON, or @file.json: {e}") from None
+    if not isinstance(data, dict):
+        raise EditError("--params must be a JSON object")
+    return data
+
+
+def cmd_templates(args) -> None:
+    from .templates import TEMPLATES
+    for name, fn in sorted(TEMPLATES.items()):
+        print(f"{name}: {(fn.__doc__ or '').strip().splitlines()[0]}")
+
+
+def cmd_render(args) -> None:
+    from .effects import render_template
+    r = render_template(args.template, {**_params(args.params), **_values(args.set)}, args.out,
+                        args.fps, args.width, args.height)
+    print(f"rendered {r.path}: {r.frames} frames at {r.fps:g} fps")
+
+
+def cmd_effect_save(args) -> None:
+    from .effects import save
+    path = save(args.name, args.template, _params(args.params), args.about or "", args.reference or "")
+    print(f"saved effect {args.name!r} to {path}")
+
+
+def cmd_effect_list(args) -> None:
+    from .effects import list_effects
+    effects = list_effects()
+    if not effects:
+        print("no saved effects yet")
+    for e in effects:
+        print(f"{e['name']} ({e['template']})" + (f": {e['about']}" if e.get("about") else ""))
+
+
+def cmd_effect_render(args) -> None:
+    from .effects import render_effect
+    r = render_effect(args.name, _values(args.set), args.out, args.fps, args.width, args.height)
+    print(f"rendered {r.path}: {r.frames} frames at {r.fps:g} fps")
+
+
+def cmd_effect_place(args) -> None:
+    from .effects import render_effect
+    store = _store(args); edit = store.load()
+    at = parse_time(args.at, edit.fps)
+    r = render_effect(args.name, _values(args.set), None, edit.fps, args.width, args.height)
+    label = args.label or f"{args.name}@{args.at}"
+    o = Overlay(label, str(Path(r.path).resolve()), at, r.frames, args.track)
+    _save(store, edit, edit.add_overlay(o), f"place effect {args.name!r} at {args.at}")
+    print(f"  rendered {r.path}")
+
+
 def cmd_undo(args) -> None:
     store = _store(args)
     print(f"back to v{store.undo()}\n" + _summary(store.load()))
@@ -214,6 +286,20 @@ def main(argv: list[str] | None = None) -> None:
         A("--source", required=True), A("--at", required=True), A("--duration", required=True),
         A("--track", type=int, default=2))
     add("overlay-remove", cmd_overlay_remove, "remove an overlay", A("name"))
+    size = [A("--width", type=int, default=1920), A("--height", type=int, default=1080)]
+    sets = A("--set", action="append", metavar="KEY=VALUE", help="change one setting (repeatable)")
+    add("templates", cmd_templates, "list animation templates")
+    add("render", cmd_render, "render a template to a transparent .mov", A("template"),
+        A("--params", help="JSON object, or @file.json"), sets, A("--out"),
+        A("--fps", type=float, default=30.0), *size)
+    add("effect-save", cmd_effect_save, "save a named effect recipe", A("name"),
+        A("--template", required=True), A("--params", help="JSON object, or @file.json"),
+        A("--about"), A("--reference", help="where the effect was copied from"))
+    add("effect-list", cmd_effect_list, "list saved effects")
+    add("effect-render", cmd_effect_render, "render a saved effect to a file", A("name"), sets, A("--out"),
+        A("--fps", type=float, default=30.0), *size)
+    add("effect-place", cmd_effect_place, "render a saved effect and place it on the timeline", A("name"),
+        A("--at", required=True), sets, A("--track", type=int, default=2), A("--label"), *size)
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")

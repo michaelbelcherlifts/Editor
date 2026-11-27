@@ -2,7 +2,8 @@
 
 This folder lets Michael talk through a video edit in DaVinci Resolve Studio.
 The edit is kept as an edit list in `.stylebrain/`; Resolve timelines are built
-from it. Read `.claude/skills/talk-edit/SKILL.md` before editing.
+from it. Read `.claude/skills/talk-edit/SKILL.md` before editing, and
+`.claude/skills/animate/SKILL.md` before making any animation.
 
 ## Rules
 
@@ -24,6 +25,10 @@ from it. Read `.claude/skills/talk-edit/SKILL.md` before editing.
 - `src/stylebrain/transcript.py`: phrase search and pause finding
 - `src/stylebrain/store.py`: saved versions and undo
 - `src/stylebrain/resolve_builder.py`: builds and verifies a Resolve timeline
+- `src/stylebrain/render.py`: HTML animation to transparent video
+- `src/stylebrain/templates.py`, `anatomy.py`: animation templates and the body figure
+- `src/stylebrain/effects.py`: the saved effect library (`library/effects/`)
+- `src/stylebrain/bake.py`: ffmpeg zooms and speed changes
 - `src/stylebrain/cli.py`: the `stylebrain` command
 
 ## Development
