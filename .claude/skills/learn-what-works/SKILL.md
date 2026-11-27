@@ -94,3 +94,16 @@ never after, or the backtest is leaked.
 Targets `follows` (new followers per 1,000 reached) and `reached` (accounts
 reached) need no follower count. Reach and follows tend to come from different
 reels, so run both.
+
+## Tags: what a reel is
+
+Measured attributes say how a reel is cut. Tags say what it is: `uv run
+stylebrain clip-tag --questions` lists them (format, topic, hook type, and
+flags such as series, teaches, about_him, punchline_end). Set them with
+`uv run stylebrain clip-tag ID --tags '{"format": "how_to", "topic": "bench", "teaches": true}'`.
+They become 0/1 attributes that `learn` and `backtest` use like any other.
+
+Whoever tags must work from the video and the words only and must not have
+seen that reel's views, reach, likes or rank. If you have seen them, do not
+tag: ask Michael whether a fresh helper or he himself should. Tag new reels
+before they are posted, when nobody can know the result.

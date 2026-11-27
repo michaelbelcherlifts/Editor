@@ -223,3 +223,20 @@ def test_import_reads_publish_time_and_follows(tmp_path, monkeypatch):
     assert clip["outcome"]["posted"] == "2026-11-23T07:12" and "age_days" in clip["attributes"] and learn.unmeasured(clip)
     assert learn.target_value(clip["outcome"], "follows") == pytest.approx(0.28, abs=0.001)
     assert learn.target_value(clip["outcome"], "reached") == pytest.approx(4.9146, abs=0.001)
+
+
+def test_tags_become_attributes(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    learn.add("DdWXRrwxzhC", {"cuts_per_minute": 12.0}, {"reach": 99840}, mine=True)
+    main(["clip-tag", "DdWXRrwxzhC", "--tags", '{"format": "how_to", "topic": "nutrition", "series": true, "teaches": true, "other_people": false}'])
+    a = learn.load_all()[0]["attributes"]
+    assert a["tag_format_how_to"] == 1 and a["tag_format_skit"] == 0 and a["tag_topic_nutrition"] == 1
+    assert a["tag_series"] == 1 and a["tag_other_people"] == 0 and "tag_hook_claim" not in a and a["cuts_per_minute"] == 12.0
+    assert "format_how_to" in capsys.readouterr().out
+    for bad in ('{"format": "banger"}', '{"mood": "fun"}'):
+        with pytest.raises(SystemExit):
+            main(["clip-tag", "DdWXRrwxzhC", "--tags", bad])
+    with pytest.raises(SystemExit):
+        main(["clip-tag", "nope", "--tags", '{"series": true}'])
+    main(["clip-tag", "--questions"])
+    assert "before seeing any results" in capsys.readouterr().out
