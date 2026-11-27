@@ -57,6 +57,7 @@ sound, music, reframing, export, house rules, the content calendar and social po
 - `src/stylebrain/social.py`: stills for Instagram and YouTube: photo edits, carousels, covers, story suggestions, and the package a reel becomes
 - `src/stylebrain/content.py`: the content plan: idea backlog, series, calendar, weekly plans, shoot lists, calls to action (`library/content/`, not committed; never posts)
 - `src/stylebrain/bake.py`: ffmpeg zooms and speed changes
+- `src/stylebrain/speed.py`: slow motion and speed ramps on part of the timeline (`speed`), baked as new clips
 - `src/stylebrain/cli.py`: the `stylebrain` command
 
 ## Development

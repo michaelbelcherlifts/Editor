@@ -79,16 +79,28 @@ When a planned reel has a physique moment, give him this list beside `shoot-list
 | Dark, low-colour look | `ref-fetch` a reference edit, then `look-make NAME --reference <that file> --footage <his clip>`, then `look-preview` to check and `look-use NAME` |
 | Cut the build on the beat, hold at the drop | `music-add`, then `music-snap` to move cuts onto beats; leave the hero pose as one long clip |
 | Before and after in one clip | `add-source` the old clip, then the new one with the same pose; match the framing with `reframe` so only the body changes |
+| Slow into a pose and back out | `speed --from A --to B --speed 0.5 --ramp 0.3` |
+| Cinematic bars over the hero pose | render the `letterbox` template and place it as an overlay |
 | Check the result against a reference | `ref-compare` |
+
+## Slow motion and letterbox bars
+
+- **Slow motion:** `speed --from A --to B --speed 0.5` plays that stretch at
+  half speed. Add `--ramp 0.3` to ease into the slow speed and back out over
+  0.3 s of footage, which is how the flex edits slow into a pose. The slowed
+  part is silent unless `--sound` is given (constant speed only), because the
+  music carries these moments. Footage filmed at 60 fps gives clean half speed;
+  for 30 fps footage the command says so, and `--smooth` makes the in-between
+  frames by motion interpolation (slower to render, can smear fast movement).
+  Speeds above 1 speed a stretch up the same way.
+- **Letterbox bars:** the `letterbox` template draws black bars that slide in
+  from the top and bottom, hold, and slide out (`ratio` 2.39 is cinema
+  widescreen; `slide 0` cuts them in). Render it and place it as an overlay
+  over the pose, like any other template.
 
 ## Not built yet (say so if asked)
 
-- **Slow motion and speed ramps on a clip.** `bake.py` can change a whole
-  file's speed, but there is no edit command to slow one part of the timeline.
-  For now, slow it in Resolve by hand after `build`, or bake a slowed copy and
-  `add-source` it.
-- **Letterbox bars** (the cinematic black bars on the 2.9M flex Short) and film
-  grain or glow. These can be done in Resolve, or added later as an effect.
+- **Film grain and glow.** These can be done in Resolve, or added later as an effect.
 - **Judging the light.** Nothing checks whether a shot has top light. Look at
   a `ref-sheet` frame and say so if the shot is flat and evenly lit, since
   that is the one thing the edit cannot fix.

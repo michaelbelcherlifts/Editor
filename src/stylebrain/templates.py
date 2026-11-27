@@ -181,6 +181,34 @@ def muscle_diagram(highlights: list, title: str = "", duration: float | None = N
     return _page(body, css, width, height), duration
 
 
+def letterbox(duration: float = 4.0, ratio: float = 2.39, slide: float = 0.4, color: str = "#000000",
+              width: int = 1080, height: int = 1920):
+    """Black bars that slide in from the top and bottom, hold, and slide out: the cinematic crop.
+
+    `ratio` is the shape of the picture left between the bars (2.39 is cinema widescreen;
+    on a vertical frame it leaves a wide band across the middle, 1.0 a square). `slide` 0 cuts
+    the bars in and out with no movement.
+    """
+    if ratio <= 0 or duration <= 0 or slide < 0 or 2 * slide > duration:
+        raise EditError("letterbox needs a ratio above 0 and a slide that fits twice in the duration")
+    sw, sh, _ = _stage(width, height)
+    band = min(sh, sw / ratio)
+    bar = max(0.0, (sh - band) / 2)
+    if bar < 1:
+        raise EditError(f"a {ratio:g} ratio leaves no room for bars on a {width}x{height} frame")
+    out_at = duration - slide
+    anim = (f"animation:in{{side}} {slide:.3f}s cubic-bezier(.3,.0,.2,1) both,out{{side}} {slide:.3f}s ease-in {out_at:.3f}s forwards"
+            if slide else f"animation:hide 0s linear {duration:.3f}s forwards")
+    css = (f".b{{position:absolute;left:0;right:0;height:{bar:.1f}px;background:{color}}}"
+           f".t{{top:0;{anim.replace('{side}', 'T')}}}.u{{bottom:0;{anim.replace('{side}', 'U')}}}"
+           "@keyframes inT{from{transform:translateY(-100%)}to{transform:none}}"
+           "@keyframes outT{to{transform:translateY(-100%)}}"
+           "@keyframes inU{from{transform:translateY(100%)}to{transform:none}}"
+           "@keyframes outU{to{transform:translateY(100%)}}"
+           "@keyframes hide{to{opacity:0}}")
+    return _page("<div class='b t'></div><div class='b u'></div>", css, width, height), duration
+
+
 def html_file(path: str, duration: float, **values):
     """A hand-written animation saved as an HTML file, with {{name}} placeholders filled in.
 
@@ -198,6 +226,7 @@ TEMPLATES = {
     "callout": callout,
     "captions": captions,
     "muscle_diagram": muscle_diagram,
+    "letterbox": letterbox,
     "html": html_file,
 }
 
