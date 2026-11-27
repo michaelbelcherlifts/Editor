@@ -778,6 +778,176 @@ def cmd_social_package(args) -> None:
         print(f"  problem: {problem}")
     print(f"  look at {out}/carousel_overview.jpg, covers_overview.jpg and stories_overview.jpg")
 
+# ----- content plan: ideas, series, calendar, weekly plans, shoot lists (nothing ever posts)
+
+def _plan():
+    from .content import Plan
+    return Plan()
+
+
+def _kv(pairs) -> dict:
+    out = {}
+    for item in pairs or []:
+        if "=" not in item:
+            raise EditError(f"expected KEY=VALUE, got {item!r}")
+        k, v = item.split("=", 1)
+        out[k.strip()] = None if v.strip().lower() in ("", "none", "null") else v.strip()
+    return out
+
+
+def cmd_idea_add(args) -> None:
+    plan = _plan()
+    i = plan.add_idea(args.title, args.pillar, format=args.format, hook=args.hook, series=args.series,
+                      cta=args.cta, source=args.source, location=args.location,
+                      shots=[s.strip() for s in (args.shots or "").split(";") if s.strip()],
+                      note=args.note, score=args.score, draft=args.draft, hold=args.hold)
+    plan.save()
+    ep = f", episode {i['episode']} of {i['series']}" if i["series"] else ""
+    print(f"{i['id']}: {i['title']} ({i['format']}, {i['pillar']}{ep})")
+
+
+def cmd_idea_import(args) -> None:
+    plan = _plan()
+    items = json.loads(Path(args.file).read_text())
+    made = plan.import_ideas(items if isinstance(items, list) else items.get("ideas", []), source=args.source)
+    plan.save()
+    print(f"added {len(made)} ideas ({made[0]['id']} to {made[-1]['id']})" if made else "no ideas in the file")
+
+
+def cmd_idea_list(args) -> None:
+    plan = _plan()
+    ideas = [i for i in plan.ideas if (not args.status or i["status"] == args.status)
+             and (not args.pillar or i["pillar"] == args.pillar) and (not args.format or i["format"] == args.format)]
+    if args.json:
+        print(json.dumps(ideas, indent=2)); return
+    for i in ideas:
+        when = plan._first_date(i["id"]) or "-"
+        print(f"{i['id']:<5}{i['status']:<10}{i['format']:<10}{i['pillar']:<9}{when:<11}{i['title']}"
+              + (f"  [{i['series']} #{i['episode']}]" if i["series"] else "")
+              + (f"  score {i['score']:g}" if i["score"] is not None else "")
+              + (f"  on hold: {i['hold']}" if i.get("hold") else ""))
+    print(f"{len(ideas)} ideas")
+
+
+def cmd_idea_set(args) -> None:
+    plan = _plan()
+    fields = _kv(args.set)
+    if args.status:
+        fields["status"] = args.status
+    i = plan.set_idea(args.id, **fields)
+    plan.save()
+    print(f"{i['id']}: " + ", ".join(f"{k} = {i[k]}" for k in fields))
+
+
+def cmd_series_add(args) -> None:
+    plan = _plan()
+    plan.add_series(args.key, args.name, args.premise)
+    plan.save()
+    print(f"series {args.key!r}: {args.name}")
+
+
+def cmd_series_list(args) -> None:
+    for s in _plan().series_view():
+        print(f"{s['key']}: {s['name']} ({len(s['episodes'])} episodes)\n  {s['premise']}")
+        for e in s["episodes"]:
+            print(f"  #{e['episode']} {e['id']} {e['status']:<9}{e['date'] or '-':<11}{e['title']}")
+
+
+def cmd_plan_settings(args) -> None:
+    plan = _plan()
+    st = plan.settings
+    for k, v in _kv(args.set).items():
+        group, _, key = k.partition(".")
+        if group in ("volume", "pillars") and key:
+            if v is None:
+                st[group].pop(key, None)
+            else:
+                st[group][key] = float(v)
+        elif group in st and not key:
+            st[group] = float(v) if isinstance(st[group], float) else int(v)
+        else:
+            raise EditError(f"unknown setting {k!r} (try volume.reel=7, pillars.run=0.2, coaching_per_week=2)")
+    plan.save()
+    print(json.dumps(st, indent=2))
+
+
+def cmd_plan_week(args) -> None:
+    from .content import format_rows
+    plan = _plan()
+    result = plan.propose_week(args.week)
+    plan.save()
+    print(f"Proposed {len(result['posts'])} posts for the week of {result['week']}. Nothing is final until "
+          f"`plan-approve {result['week']}`, and nothing posts by itself.")
+    print(format_rows(plan.rows(result["week"], 7)))
+    for s in result["shortfalls"]:
+        print(f"backlog short: {s}")
+
+
+def cmd_plan_approve(args) -> None:
+    plan = _plan()
+    done = plan.approve_week(args.week)
+    plan.save()
+    print(f"approved {len(done)} posts")
+
+
+def cmd_calendar(args) -> None:
+    from .content import format_rows, to_html
+    plan = _plan()
+    if args.html:
+        Path(args.html).write_text(to_html(plan, args.start, args.days))
+        print(f"wrote {args.html}")
+    elif args.json:
+        print(json.dumps(plan.rows(args.start, args.days), indent=2))
+    else:
+        print(format_rows(plan.rows(args.start, args.days)))
+
+
+def cmd_post_add(args) -> None:
+    plan = _plan()
+    p = plan.schedule(args.idea, args.date, cta=args.cta,
+                      platforms=args.platforms.split(",") if args.platforms else None)
+    plan.save()
+    print(f"{p['id']}: {args.idea} on {p['date']} to {', '.join(p['platforms'])}, cta {p['cta']}")
+
+
+def cmd_post_set(args) -> None:
+    plan = _plan()
+    p = plan.set_post(args.id, date=args.date, cta=args.cta, status=args.status,
+                      platforms=args.platforms.split(",") if args.platforms else None)
+    plan.save()
+    print(f"{p['id']}: {p['date']}, {', '.join(p['platforms'])}, cta {p['cta']}, {p['status']}")
+
+
+def cmd_post_result(args) -> None:
+    plan = _plan()
+    p = plan.record_result(args.id, url=args.url, views=args.views, reach=args.reach, likes=args.likes,
+                           comments=args.comments, saves=args.saves, sends=args.sends, follows=args.follows,
+                           enquiries=args.enquiries)
+    plan.save()
+    print(f"{p['id']}: {p['status']}" + (f", {p['url']}" if p["url"] else "")
+          + "".join(f", {k} {v:g}" for k, v in p["results"].items()))
+
+
+def cmd_social_import(args) -> None:
+    plan = _plan()
+    made = plan.import_social(json.loads(Path(args.package).read_text()), args.reel)
+    plan.save()
+    for p in made:
+        print(f"{p['id']}: {p['format']} on {p['date']} ({plan.idea(p['idea'])['title']}), cta {p['cta']}")
+    print(f"placed {len(made)} posts around {args.reel}")
+
+
+def cmd_shoot_list(args) -> None:
+    from .content import format_shoot_list
+    sl = _plan().shoot_list(args.week)
+    print(json.dumps(sl, indent=2) if args.json else format_shoot_list(sl))
+
+
+def cmd_week_report(args) -> None:
+    from .content import format_week_report
+    rep = _plan().week_report(args.week)
+    print(json.dumps(rep, indent=2) if args.json else format_week_report(rep))
+
 
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
@@ -951,6 +1121,41 @@ def main(argv: list[str] | None = None) -> None:
     sadd("package", cmd_social_package, "one reel in: carousel, covers and three stories out, with package.json",
          A("video"), A("--transcript", required=True), A("--title", required=True), A("--name", required=True),
          A("--hook"), A("--topic"), ctas, lk, A("--caption"), A("--thumbnail", action="store_true"), A("--out"))
+
+    from .content import CTAS, FORMATS
+    pillar = A("--pillar", required=True, help="strength, run, humour or life")
+    add("idea-add", cmd_idea_add, "add an idea to the backlog", A("title"), pillar,
+        A("--format", default="reel", choices=list(FORMATS)), A("--hook"), A("--series"),
+        A("--cta", choices=list(CTAS)), A("--source", default="own", help="own, trend, clip, analytics ..."),
+        A("--location", help="where it is filmed: gym, track, range, kitchen ..."),
+        A("--shots", help="shots to film, separated by ;"), A("--note"), A("--score", type=float), A("--draft"),
+        A("--hold", help="keep it out of weekly plans until ready, with the reason"))
+    add("idea-import", cmd_idea_import, "add ideas from a JSON list (trend report, clip candidates, notes)",
+        A("file"), A("--source"))
+    add("idea-list", cmd_idea_list, "list the idea backlog", A("--status"), A("--pillar"), A("--format"),
+        A("--json", action="store_true"))
+    add("idea-set", cmd_idea_set, "change an idea (status, hook, score, draft ...)", A("id"), A("--status"), sets)
+    add("series-add", cmd_series_add, "start a series", A("key"), A("--name", required=True),
+        A("--premise", required=True))
+    add("series-list", cmd_series_list, "list series and their episodes")
+    add("plan-settings", cmd_plan_settings, "show or change weekly volume, pillar mix and call-to-action rules", sets)
+    week = A("week", nargs="?", default="next-week", help="any date in the week, this-week or next-week")
+    add("plan-week", cmd_plan_week, "propose a week's posts from the backlog (for approval)", week)
+    add("plan-approve", cmd_plan_approve, "approve a proposed week onto the calendar", week)
+    add("calendar", cmd_calendar, "show the calendar (two weeks by default)", A("--start", default="today"),
+        A("--days", type=int, default=14), A("--html", help="write a page instead"), A("--json", action="store_true"))
+    add("post-add", cmd_post_add, "put an idea on a date", A("idea"), A("date"), A("--cta", choices=list(CTAS)),
+        A("--platforms", help="comma-separated, default by format"))
+    add("post-set", cmd_post_set, "move, re-target or drop a post", A("id"), A("--date"),
+        A("--cta", choices=list(CTAS)), A("--platforms"), A("--status"))
+    add("post-result", cmd_post_result, "record that he posted it, and its numbers", A("id"), A("--url"),
+        *[A(f"--{k}", type=float) for k in ("views", "reach", "likes", "comments", "saves", "sends", "follows",
+                                            "enquiries")])
+    add("social-import", cmd_social_import, "place a carousel/story package around a reel's post", A("package"),
+        A("--reel", required=True, help="the reel's post id"))
+    add("shoot-list", cmd_shoot_list, "what to film for a week, by location", week, A("--json", action="store_true"))
+    add("week-report", cmd_week_report, "planned versus posted for a week, with results", week,
+        A("--json", action="store_true"))
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")

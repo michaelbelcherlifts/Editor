@@ -603,7 +603,7 @@ def package(video: str, words: list[Word], title: str, out_dir: str | Path, hook
               "caption": caption or plain(slides[0].text), "cta": cta,
               "notes": "Carousel from the same shoot; post a few days after the reel so they do not compete.",
               "status": "draft"}]
-    posts += [{"format": "story", "suggested_day": s.day, "files": [st.path], "caption": plain(s.text),
+    posts += [{"format": "story", "suggested_day": s.day, "files": [st.path], "caption": plain(s.text).replace("\n", " "),
                "cta": "coaching" if s.kind == "coaching" else "none", "sticker": s.sticker, "notes": s.why,
                "status": "draft"} for s, st in zip(stories, sto)]
     result = {"name": out_dir.name, "reel_title": title, "video": str(video), "title": title, "look": look or "", "posts": posts, "problems": problems}
