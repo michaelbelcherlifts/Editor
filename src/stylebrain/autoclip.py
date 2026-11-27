@@ -213,6 +213,35 @@ def _rough(group: list[Sentence], after_gap: float) -> tuple[float, list[str]]:
     return round(total, 1), reasons
 
 
+LONGEST_LINE = 22  # words; a line longer than this in an unpunctuated transcript is split at its longest pause
+
+
+def _punctuated(words: list[Word]) -> bool:
+    ends = sum(1 for w in words if w.text.rstrip("\"')").endswith((".", "?", "!")))
+    return bool(words) and ends / len(words) >= 0.02
+
+
+def _split_long(ws: list[Word]) -> list[list[Word]]:
+    if len(ws) <= LONGEST_LINE:
+        return [ws]
+    lo, hi = len(ws) // 4, len(ws) - len(ws) // 4      # never leave a stub of a few words
+    k = max(range(lo, hi), key=lambda i: ws[i].start - ws[i - 1].end)
+    return _split_long(ws[:k]) + _split_long(ws[k:])
+
+
+def spoken_lines(words: list[Word]) -> list[Sentence]:
+    """Sentences, or for a transcript with no punctuation (some YouTube captions), lines split at
+    short pauses and kept under LONGEST_LINE words, so moments can still start and end cleanly."""
+    if _punctuated(words):
+        return sentences(words)
+    out = []
+    for s in sentences(words, gap=0.4):
+        ws = [w for w in words if s.start <= w.start <= s.end][: s.words]
+        for part in _split_long(ws):
+            out.append(Sentence(" ".join(w.text for w in part), part[0].start, part[-1].end, len(part)))
+    return out
+
+
 def find(words: list[Word], count: int = 8, min_seconds: float = MIN_SECONDS, max_seconds: float = MAX_SECONDS,
          skip_before: float = 0.0, same_topic: float = 0.55) -> list[Candidate]:
     """Propose up to `count` moments, best rough rank first, none overlapping.
@@ -222,7 +251,7 @@ def find(words: list[Word], count: int = 8, min_seconds: float = MIN_SECONDS, ma
     """
     if min_seconds <= 0 or max_seconds <= min_seconds:
         raise EditError("the shortest clip must be above 0 and below the longest")
-    ss = [s for s in sentences(words) if s.start >= skip_before]
+    ss = [s for s in spoken_lines(words) if s.start >= skip_before]
     if not ss:
         raise EditError("no speech found to cut clips from")
     options: list[tuple[float, int, int, list[str]]] = []
@@ -465,7 +494,8 @@ def make(cand: Candidate, source: str, words: list[Word], out_dir: str | Path, j
         frame = {"width": width, "height": height} if reframe else None
     rubric = {k: v for k, v in judge.items() if k in SCORE_KEYS}
     if "mid_sentence" not in rubric:
-        ends = cand.lines[-1]["text"].rstrip().endswith((".", "!", "?")) if cand.lines else True
+        punctuated = any(ln["text"].rstrip().endswith((".", "!", "?")) for ln in cand.lines)
+        ends = not punctuated or cand.lines[-1]["text"].rstrip().endswith((".", "!", "?"))
         rubric["mid_sentence"] = not ends
     rubric["captions"] = bool(captions and heard)
     rubric["text_on_frame_1"] = bool(hook)
@@ -640,7 +670,7 @@ def extra_candidates(words: list[Word], cands: list[Candidate], judgements: dict
             raise EditError(f"{cid} is not a candidate; to add a moment give its start and end")
         a, b = float(j["start"]), float(j["end"])
         lines = [{"start": round(s.start, 3), "end": round(s.end, 3), "text": s.text}
-                 for s in sentences([w for w in words if a <= w.start < b])]
+                 for s in spoken_lines([w for w in words if a <= w.start < b])]
         if not lines:
             raise EditError(f"{cid}: nothing is said between {a:g}s and {b:g}s")
         out.append(Candidate(cid, a, b, 0.0, ["added by the judge"], lines))

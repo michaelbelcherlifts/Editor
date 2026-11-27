@@ -240,3 +240,14 @@ def test_punch_ins_alternate_at_sentence_starts():
     assert lines and new.duration == edit.duration
     zooms = [seg.zoom for _, seg in new.pieces()]
     assert 1.0 in zooms and 1.15 in zooms
+
+
+def test_unpunctuated_transcripts_are_split_into_short_lines():
+    text = " ".join(x.rstrip(".?!").lower() for x in STRONG).replace(":", "")
+    words = _talk([text], pace=0.3)
+    # a slightly longer breath every 9 words
+    words = [Word(w.text, w.start + 0.25 * (i // 9), w.end + 0.25 * (i // 9)) for i, w in enumerate(words)]
+    lines = ac.spoken_lines(words)
+    assert len(lines) > 3 and max(x.words for x in lines) <= ac.LONGEST_LINE
+    cands = ac.find(words, count=2, min_seconds=8, max_seconds=20)
+    assert cands and all(len(c.lines) > 1 for c in cands)
