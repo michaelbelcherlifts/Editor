@@ -6,7 +6,7 @@ from it. Read `.claude/skills/talk-edit/SKILL.md` before editing, and
 `.claude/skills/animate/SKILL.md` before making any animation, and
 `.claude/skills/copy-effect/SKILL.md` before recreating an effect from a link or
 screenshots, and `.claude/skills/script/SKILL.md` before writing a script or hooks. Other skills in `.claude/skills/` cover styles, colour, autopilot, reviews,
-sound, reframing, export, the content calendar and social posts.
+sound, music, reframing, export, house rules, the content calendar and social posts.
 
 ## Rules
 
@@ -45,6 +45,7 @@ sound, reframing, export, the content calendar and social posts.
 - `src/stylebrain/score.py`: the virality rubric: a 0 to 100 score for a short clip, part by part
 - `src/stylebrain/learn.py`: clip attributes, the private clip dataset (`library/clips/`, not committed) and the model that finds what goes with performance
 - `src/stylebrain/sfx.py`: the sound library (`library/sfx/`, not committed), automatic placement with a cap per minute, and the mixes that go on audio tracks from A2 up
+- `src/stylebrain/music.py`: a music track under the edit: tempo and beats, cuts moved onto the beat, the bed lowered under speech
 - `src/stylebrain/rules.py`: house rules: his standing corrections as settings and notes (`library/house-rules.json`, not committed)
 - `src/stylebrain/reframe.py`: finds the subject and sets each clip's framing (`x`, `y`, `zoom`) for vertical crops and punch-ins
 - `src/stylebrain/export.py`: renders the edit list to a postable file with ffmpeg, and checks any finished file (frame, length, loudness, black frames)

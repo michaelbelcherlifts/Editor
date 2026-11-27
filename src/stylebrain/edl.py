@@ -80,6 +80,20 @@ class Sound:
 
 
 @dataclass(frozen=True)
+class Music:
+    """One music track under the whole edit. It plays through cuts; it does not move with them."""
+
+    source: str
+    start: float = 0.0      # seconds into the song where the edit begins
+    gain_db: float = -18.0
+    duck: bool = True       # lower it while someone is speaking
+
+    def __post_init__(self) -> None:
+        if self.start < 0 or not -60 <= self.gain_db <= 6:
+            raise EditError("music: start is 0 or more seconds, gain runs from -60 to 6 dB")
+
+
+@dataclass(frozen=True)
 class EditList:
     fps: float
     segments: tuple[Segment, ...] = ()
@@ -87,6 +101,7 @@ class EditList:
     look: str = ""  # path of a .cube LUT applied to every main-track clip
     sounds: tuple[Sound, ...] = field(default=())
     fill: bool = False  # main-track clips are scaled to cover the frame, placed by each clip's framing
+    music: Music | None = None
 
     # ---- construction -------------------------------------------------
 
@@ -104,6 +119,7 @@ class EditList:
             look=data.get("look", ""),
             sounds=tuple(Sound(**x) for x in data.get("sounds", [])),
             fill=bool(data.get("fill", False)),
+            music=Music(**data["music"]) if data.get("music") else None,
         )
 
     def to_dict(self) -> dict:
@@ -114,6 +130,7 @@ class EditList:
             "look": self.look,
             "sounds": [asdict(x) for x in self.sounds],
             "fill": self.fill,
+            "music": asdict(self.music) if self.music else None,
         }
 
     # ---- reading ------------------------------------------------------
@@ -252,6 +269,10 @@ class EditList:
                               zoom=seg.zoom if zoom is None else round(zoom, 4))
             new.append(seg)
         return replace(cut, segments=_join(new), fill=True)
+
+    def set_music(self, music: Music | None) -> "EditList":
+        """Put a music track under the edit, or None to take it off."""
+        return replace(self, music=music)
 
     def set_look(self, path: str) -> "EditList":
         """Use a LUT file on the main track, or "" for none."""

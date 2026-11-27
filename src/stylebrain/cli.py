@@ -26,7 +26,9 @@ def _store(args) -> Store:
 def _summary(edit: EditList) -> str:
     lines = [f"{len(edit.segments)} clips, {format_time(edit.duration, edit.fps)} long, "
              f"{len(edit.overlays)} overlays, {edit.fps:g} fps" + (f", look {Path(edit.look).stem}" if edit.look else "")
-             + (f", {len(edit.sounds)} sounds" if edit.sounds else "")]
+             + (f", {len(edit.sounds)} sounds" if edit.sounds else "")
+             + (f", music {Path(edit.music.source).name} from {edit.music.start:g}s at {edit.music.gain_db:g} dB"
+                if edit.music else "")]
     for start, seg in edit.pieces():
         lines.append(f"  {format_time(start, edit.fps):>10}  {Path(seg.source).name}  "
                      f"[{seg.src_in}-{seg.src_out})" + (f"  {seg.note}" if seg.note else "")
@@ -356,6 +358,16 @@ def cmd_build(args) -> None:
         from . import sfx
         mixed = [(kind, str(path.resolve()), count) for kind, path, count in
                  sfx.stems(edit, Path(".stylebrain") / "renders", f"{store.project}-v{store.head()}-sfx")]
+    if edit.music:
+        from . import export, music
+        renders = Path(".stylebrain") / "renders"
+        try:
+            key = export.voice(edit, renders / f"{store.project}-v{store.head()}-voice.wav")
+        except EditError as e:
+            key = None
+            print(f"note: the music is not lowered under the voice ({e})")
+        bed = music.bed(edit, renders / f"{store.project}-v{store.head()}-music.wav", voice=key)
+        mixed = (mixed or []) + [("music", str(bed.resolve()), 1)]
     report = build_timeline(connect(), edit, name, sound_mix=mixed)
     print(report.text())
     if not report.ok:
@@ -371,6 +383,53 @@ def _wh(size: str | None) -> tuple[int, int]:
     except ValueError:
         raise EditError("size looks like 1080x1920") from None
     return w, h
+
+
+def cmd_music_add(args) -> None:
+    from . import music
+    from .edl import Music
+    store = _store(args); edit = store.load()
+    path = Path(args.file).resolve()
+    info = music.analyse(path)
+    new = edit.set_music(Music(str(path), args.start, args.gain, not args.no_duck))
+    _save(store, edit, new, f"music: {path.name} from {args.start:g}s at {args.gain:g} dB")
+    pulse = "a clear pulse" if info["clear"] >= 0.5 else "no clear pulse, so beat times are a rough guide"
+    print(f"  {info['bpm']:g} beats a minute, {pulse}; {len(music.timeline_beats(new, info['beats']))} beats fall in the edit")
+
+
+def cmd_music_remove(args) -> None:
+    store = _store(args); edit = store.load()
+    if edit.music is None:
+        raise EditError("there is no music on this edit")
+    _save(store, edit, edit.set_music(None), "remove the music")
+
+
+def cmd_music_beats(args) -> None:
+    from . import music
+    store = _store(args); edit = store.load()
+    beats = music.timeline_beats(edit)
+    info = music.analyse(edit.music.source)
+    cuts = [start / edit.fps for start, _ in edit.pieces()][1:]
+    print(f"{info['bpm']:g} beats a minute (pulse clarity {info['clear']:g}), {len(beats)} beats in the edit")
+    print("beats: " + " ".join(f"{b:.2f}" for b in beats[:64]) + (" ..." if len(beats) > 64 else ""))
+    for c in cuts:
+        near = min(beats, key=lambda b: abs(b - c)) if beats else None
+        off = "" if near is None else f"  {'on the beat' if abs(near - c) <= 1 / edit.fps else f'{c - near:+.2f}s from the beat at {near:.2f}s'}"
+        print(f"  cut at {c:7.2f}s{off}")
+
+
+def cmd_music_snap(args) -> None:
+    from . import music
+    store = _store(args); edit = store.load()
+    words = None
+    if args.transcript:
+        from .autopilot import timeline_words
+        words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
+    new, lines = music.snap_cuts(edit, music.timeline_beats(edit), args.max_trim, words, args.every)
+    for line in lines:
+        print("  " + line)
+    if new != edit:
+        _save(store, edit, new, lines[-1])
 
 
 def cmd_rules(args) -> None:
@@ -431,7 +490,7 @@ def cmd_export(args) -> None:
     store = _store(args); edit = store.load()
     w, h = _wh(args.size)
     out = Path(args.out or Path("exports") / f"{store.project}-v{store.head()}.mp4")
-    export.render(edit, out, w, h, args.fit, args.lufs, sounds=not args.no_sounds)
+    export.render(edit, out, w, h, args.fit, args.lufs, sounds=not args.no_sounds, music=not args.no_music)
     print(f"exported {out} ({format_time(edit.duration, edit.fps)})")
     if args.no_check:
         return
@@ -1284,6 +1343,16 @@ def main(argv: list[str] | None = None) -> None:
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")
     out = [A("--size", help="default: the house rule for frame, else 1080x1920"), A("--lufs", type=float, default=-14.0, help="target loudness")]
+    add("music-add", cmd_music_add, "put a music track under the edit", A("file"),
+        A("--start", type=float, default=0.0, help="seconds into the song where the edit begins"),
+        A("--gain", type=float, default=-18.0, help="level in dB"),
+        A("--no-duck", action="store_true", help="do not lower it under speech"))
+    add("music-remove", cmd_music_remove, "take the music off")
+    add("music-beats", cmd_music_beats, "show the tempo, the beats and how far each cut is from one")
+    add("music-snap", cmd_music_snap, "move cuts back onto the beat by trimming the clip before each",
+        A("--max-trim", type=float, default=0.3, help="most seconds a cut may move"),
+        A("--every", type=int, default=1, help="use every Nth beat"),
+        A("--transcript", help="word timings, so no word is clipped"), A("--source"))
     add("rules", cmd_rules, "show the house rules: his standing corrections")
     add("rule", cmd_rule, "set a house rule, such as: rule pause_min_gap 0.45", A("name"), A("value", nargs="?"),
         A("--clear", action="store_true", help="go back to the default"))
@@ -1297,7 +1366,8 @@ def main(argv: list[str] | None = None) -> None:
         A("--no-preview", action="store_true"))
     add("export", cmd_export, "render the edit to a file ready to post, then check it", A("out", nargs="?"), *out,
         A("--fit", default="fill", choices=["fill", "fit"], help="fill crops to cover the frame; fit keeps it all with bars"),
-        A("--no-sounds", action="store_true"), A("--no-check", action="store_true"))
+        A("--no-sounds", action="store_true"), A("--no-music", action="store_true"),
+        A("--no-check", action="store_true"))
     add("export-check", cmd_export_check, "check a finished file (from here or from Resolve) before posting", A("file"), *out,
         A("--seconds", type=float, help="how long it should be"), A("--no-sheet", action="store_true"),
         A("--json", action="store_true"))

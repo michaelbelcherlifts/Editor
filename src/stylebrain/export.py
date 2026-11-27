@@ -81,7 +81,7 @@ def _loudness(path: str | Path) -> dict:
 
 
 def render(edit: EditList, out: str | Path, width: int = 1080, height: int = 1920, fit: str = "fill",
-           lufs: float = LUFS, sounds: bool = True) -> Path:
+           lufs: float = LUFS, sounds: bool = True, music: bool = True) -> Path:
     """Render the whole edit to one mp4."""
     from . import sfx
 
@@ -112,12 +112,20 @@ def render(edit: EditList, out: str | Path, width: int = 1080, height: int = 192
         chains.append(f"{last}format=yuv420p[v]")
 
         # First the sound alone, to learn how loud the mix is; then one gain to reach the target.
-        mixed = sfx.mix(edit, work / "sfx.wav") if sounds else None
-        mix_cmd = ["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(listing)]
-        graph = "[0:a]anull[m]"
-        if mixed:
-            mix_cmd += ["-i", str(mixed)]
-            graph = "[0:a][1:a]amix=inputs=2:normalize=0:duration=first[m]"
+        voice_wav = work / "voice.wav"
+        run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(listing), "-vn",
+             "-t", f"{total:.4f}", "-ar", "48000", str(voice_wav)])
+        layers = [voice_wav]
+        if sounds and edit.sounds:
+            layers.append(sfx.mix(edit, work / "sfx.wav"))
+        if music and edit.music:
+            from .music import bed
+            layers.append(bed(edit, work / "music.wav", voice=voice_wav))
+        mix_cmd = ["ffmpeg", "-v", "error", "-y"]
+        for layer in layers:
+            mix_cmd += ["-i", str(layer)]
+        graph = ("".join(f"[{k}:a]" for k in range(len(layers)))
+                 + f"amix=inputs={len(layers)}:normalize=0:duration=first[m]") if len(layers) > 1 else "[0:a]anull[m]"
         full = work / "sound.wav"
         run(mix_cmd + ["-filter_complex", graph, "-map", "[m]", "-t", f"{total:.4f}", "-ar", "48000", str(full)])
         measured = _loudness(full)["lufs"]
@@ -130,6 +138,42 @@ def render(edit: EditList, out: str | Path, width: int = 1080, height: int = 192
                    "-r", f"{edit.fps:g}", "-c:v", "libx264", "-preset", "medium", "-crf", "18",
                    "-pix_fmt", "yuv420p", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
                    "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(out)])
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+    return out
+
+
+def voice(edit: EditList, out: str | Path) -> Path:
+    """Only the sound of the main track, as one wav the length of the edit."""
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    for src in edit.sources():
+        if not Path(src).exists():
+            raise EditError(f"cannot find {src}")
+    audio = {s: has_audio(s) for s in edit.sources()}
+    work = Path(tempfile.mkdtemp(prefix="stylebrain-voice-"))
+    try:
+        parts = []
+        for b in range(0, len(edit.segments), 40):
+            group = edit.segments[b:b + 40]
+            cmd, chains = ["ffmpeg", "-v", "error", "-y"], []
+            for n, seg in enumerate(group):
+                secs = seg.duration / edit.fps
+                if audio[seg.source]:
+                    cmd += ["-ss", f"{seg.src_in / edit.fps:.6f}", "-t", f"{secs + 1:.4f}", "-vn", "-i", seg.source]
+                    head = f"[{n}:a]aresample=48000,"
+                else:
+                    cmd += ["-f", "lavfi", "-t", "1", "-i", "anullsrc=r=48000:cl=stereo"]
+                    head = f"[{n}:a]"
+                chains.append(f"{head}aformat=sample_fmts=fltp:channel_layouts=stereo,apad,"
+                              f"atrim=duration={secs:.6f},asetpts=PTS-STARTPTS[a{n}]")
+            chains.append("".join(f"[a{n}]" for n in range(len(group))) + f"concat=n={len(group)}:v=0:a=1[a]")
+            part = work / f"voice{b // 40:03d}.wav"
+            run(cmd + ["-filter_complex", ";".join(chains), "-map", "[a]", str(part)])
+            parts.append(part)
+        listing = work / "parts.txt"
+        listing.write_text("".join(f"file '{p.as_posix()}'\n" for p in parts))
+        run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(listing), "-ar", "48000", str(out)])
     finally:
         shutil.rmtree(work, ignore_errors=True)
     return out
