@@ -260,12 +260,16 @@ def _stamp(t: float, sep: str = ",") -> str:
     return f"{ms // 3600000:02d}:{ms // 60000 % 60:02d}:{ms // 1000 % 60:02d}{sep}{ms % 1000:03d}"
 
 
-def caption_lines(words: list[Word], max_chars: int = 32, max_gap: float = 0.7) -> list[list[Word]]:
-    """Group words into caption lines by length and pauses."""
+def caption_lines(words: list[Word], max_chars: int = 32, max_gap: float = 0.7,
+                  breaks: list[float] = ()) -> list[list[Word]]:
+    """Group words into caption lines by length and pauses. A line never runs across a time in
+    `breaks` (a cut to another part of the recording, such as a cold open)."""
     lines: list[list[Word]] = []
     for w in words:
         cur = lines[-1] if lines else None
-        if cur and len(" ".join(x.text for x in cur)) + 1 + len(w.text) <= max_chars and w.start - cur[-1].end <= max_gap:
+        crosses = cur and any(cur[-1].start < b <= w.start + 0.001 for b in breaks)
+        if (cur and not crosses and len(" ".join(x.text for x in cur)) + 1 + len(w.text) <= max_chars
+                and w.start - cur[-1].end <= max_gap):
             cur.append(w)
         else:
             lines.append([w])

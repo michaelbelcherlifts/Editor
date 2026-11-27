@@ -1246,6 +1246,7 @@ def cmd_clip_cut(args) -> None:
     only = set(args.only.split(",")) if args.only else None
     words = tr.drop_phantom_speech(tr.load_words(data["transcript"]))
     source = data["source"]
+    cands += ac.extra_candidates(words, cands, judgements)
     fps, frames = probe(source)
     w, h = _wh(args.size)
     made = []
@@ -1256,7 +1257,8 @@ def cmd_clip_cut(args) -> None:
         try:
             made.append(ac.make(c, source, words, out, judgements.get(c.id), w, h, render=not args.no_render,
                                 captions=not args.no_captions, reframe=not args.no_reframe,
-                                hook_seconds=args.hook_seconds, fps=fps, total_frames=frames))
+                                hook_seconds=args.hook_seconds, fps=fps, total_frames=frames,
+                                punch=args.punch_ins))
         except EditError as e:
             m = ac.Made(c, judgements.get(c.id) or {})
             m.skipped = f"could not cut: {e}"
@@ -1553,7 +1555,8 @@ def main(argv: list[str] | None = None) -> None:
         A("--only", help="candidate ids, comma separated"), A("--size", help="default: 1080x1920"),
         A("--hook-seconds", type=float, help="how long the text hook stays (default: the whole clip)"),
         A("--title"), A("--no-render", action="store_true", help="plan and score only, no video"),
-        A("--no-captions", action="store_true"), A("--no-reframe", action="store_true"))
+        A("--no-captions", action="store_true"), A("--no-reframe", action="store_true"),
+        A("--punch-ins", action="store_true", help="alternate a 1.15x punch-in at sentence starts (off unless asked)"))
     add("build", cmd_build, "build the current edit in Resolve as a new timeline", A("--name"))
 
     args = p.parse_args(argv)

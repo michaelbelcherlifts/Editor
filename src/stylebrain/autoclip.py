@@ -370,7 +370,7 @@ class Made:
 def make(cand: Candidate, source: str, words: list[Word], out_dir: str | Path, judge: dict | None = None,
          width: int = 1080, height: int = 1920, render: bool = True, captions: bool = True,
          reframe: bool = True, hook_seconds: float | None = None, fps: float | None = None,
-         total_frames: int | None = None, steps=None) -> Made:
+         total_frames: int | None = None, steps=None, punch: bool = False) -> Made:
     """Cut, frame, caption, render and score one candidate.
 
     `steps` replaces the heavy parts in tests: a dict with any of "reframe", "captions",
@@ -402,12 +402,15 @@ def make(cand: Candidate, source: str, words: list[Word], out_dir: str | Path, j
             from .reframe import plan
             edit, lines = plan(edit, width, height)
         made.notes += [f"framing {line.strip()}" for line in lines]
+    if punch:
+        edit, lines = punch_ins(edit, heard)
+        made.cuts += lines
     if captions and heard:
         if "captions" in steps:
             edit = steps["captions"](edit, heard, width, height)
         else:
             from .autopilot import place_captions
-            edit = place_captions(edit, heard, width, height)
+            edit = place_captions(edit, heard, width, height, breaks=_joins(edit, jumps_only=True))
     hook = (judge.get("hook_text") or "").strip()
     if hook:
         secs = min(hook_seconds or made.seconds, made.seconds)
@@ -455,16 +458,38 @@ def make(cand: Candidate, source: str, words: list[Word], out_dir: str | Path, j
     rubric["text_on_frame_1"] = bool(hook)
     result = sc.score(heard, made.seconds, cuts, frame, audio, rubric)
     made.score = result.to_dict()
-    made.score["text"] = result.text()
+    made.score["text"] = "\n".join(line for line in result.text().splitlines() if "Give --video" not in line)
     return made
 
 
-def _joins(edit: EditList) -> list[float]:
-    """Timeline seconds where one piece ends and a piece from elsewhere in the source begins."""
+def punch_ins(edit: EditList, heard: list[Word], zoom: float = 1.15, every: float = 2.5) -> tuple[EditList, list[str]]:
+    """Alternate a punch-in on and off at sentence starts at least `every` seconds apart, so a
+    talking shot changes every few seconds. Keeps each shot's framing; only the zoom changes."""
+    starts = [0.0]
+    for a, b in itertools.pairwise(heard):
+        if a.text.rstrip("\"')").endswith((".", "?", "!")) and b.start - starts[-1] >= every:
+            starts.append(b.start)
+    end = edit.duration / edit.fps
+    lines = []
+    for k, (a, b) in enumerate(itertools.pairwise([*starts, end])):
+        if k % 2 and b - a > 0.5:
+            f0, f1 = round(a * edit.fps), min(round(b * edit.fps), edit.duration)
+            if f1 > f0:
+                cur = max((seg.zoom for t, seg in edit.pieces() if t <= f0 < t + seg.duration), default=1.0)
+                edit = edit.reframe(f0, f1, zoom=min(4.0, cur * zoom))
+                lines.append(f"punch-in: {a:.1f}s to {b:.1f}s at {zoom:g}x")
+    return edit, lines
+
+
+def _joins(edit: EditList, jumps_only: bool = False) -> list[float]:
+    """Timeline seconds where one piece ends and a piece from elsewhere in the source begins.
+    `jumps_only` keeps only jumps of more than a few seconds (a cold open, not a tightened pause)."""
     out = []
     prev = None
     for start, seg in edit.pieces():
-        if prev is not None and (seg.source != prev.source or seg.src_in != prev.src_out):
+        jump = prev is not None and (seg.source != prev.source or seg.src_in != prev.src_out)
+        far = prev is not None and (seg.source != prev.source or abs(seg.src_in - prev.src_out) > 3 * edit.fps)
+        if jump and (far or not jumps_only):
             out.append(round(start / edit.fps, 3))
         prev = seg
     return out
@@ -581,6 +606,25 @@ def load_candidates(out_dir: str | Path) -> tuple[dict, list[Candidate]]:
     return data, [Candidate.from_dict(c) for c in data["candidates"]]
 
 
+def extra_candidates(words: list[Word], cands: list[Candidate], judgements: dict) -> list[Candidate]:
+    """Moments the judge added that the finder missed: any id in the judgements that is not a
+    candidate and gives `start` and `end` (source seconds)."""
+    known = {c.id for c in cands}
+    out = []
+    for cid, j in judgements.items():
+        if cid in known or not isinstance(j, dict):
+            continue
+        if "start" not in j or "end" not in j:
+            raise EditError(f"{cid} is not a candidate; to add a moment give its start and end")
+        a, b = float(j["start"]), float(j["end"])
+        lines = [{"start": round(s.start, 3), "end": round(s.end, 3), "text": s.text}
+                 for s in sentences([w for w in words if a <= w.start < b])]
+        if not lines:
+            raise EditError(f"{cid}: nothing is said between {a:g}s and {b:g}s")
+        out.append(Candidate(cid, a, b, 0.0, ["added by the judge"], lines))
+    return out
+
+
 def judging_brief(cands: list[Candidate]) -> str:
     """What a judge (Claude, or one agent per clip) reads: each candidate's timed lines and the questions."""
     from .score import FLAGS, JUDGEMENTS
@@ -590,7 +634,8 @@ def judging_brief(cands: list[Candidate]) -> str:
                                                 if k in ("needs_context", "undelivered", "mid_sentence")),
              ("Cut choices: cold_open [start, end] (source seconds of the strongest line to open on, 12 s or less, "
               "or leave out); start / end (move the edges, source seconds); hook_text (on-screen hook, 8 words or less); "
-              "title; skip (a reason, to leave the clip out)."), ""]
+              "title; skip (a reason, to leave the clip out). A moment the finder missed can be added under a new id "
+              "with its start and end."), ""]
     for c in cands:
         lines.append(f"== {c.id}  source {_clock(c.start)} to {_clock(c.end)} ({c.seconds:.0f}s), rough {c.rough:g}")
         for ln in c.lines:

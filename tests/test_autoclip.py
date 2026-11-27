@@ -212,3 +212,31 @@ def test_clip_commands_end_to_end_without_rendering(tmp_path, monkeypatch, capsy
     review = json.loads((tmp_path / "clips" / "review.json").read_text())
     assert review[0]["id"] == "c01" and review[0]["cuts"]
     assert (tmp_path / "clips" / "review.html").exists()
+
+
+def test_the_judge_can_add_a_moment_the_finder_missed():
+    words = _talk(STRONG)
+    c = ac.find(words, count=1, min_seconds=5, max_seconds=12)
+    extra = ac.extra_candidates(words, c, {"c01": {"story": 3}, "n01": {"start": 0, "end": 8, "story": 4}})
+    assert [e.id for e in extra] == ["n01"] and extra[0].lines[0]["text"].startswith("Why")
+    with pytest.raises(EditError):
+        ac.extra_candidates(words, c, {"n02": {"story": 4}})
+
+
+def test_caption_lines_break_at_a_cold_open():
+    from stylebrain.transcript import caption_lines
+    words = [Word("So", 0.0, 0.2), Word("lesson", 0.2, 0.5), Word("Why", 0.5, 0.7), Word("do", 0.7, 0.9)]
+    assert [len(x) for x in caption_lines(words)] == [4]
+    assert [[w.text for w in x] for x in caption_lines(words, breaks=[0.5])] == [["So", "lesson"], ["Why", "do"]]
+
+
+def test_punch_ins_alternate_at_sentence_starts():
+    words = _talk(STRONG)
+    c = ac.Candidate("c01", words[0].start, words[-1].end, 50, [], [])
+    spans, _ = ac.plan_cut(c, words)
+    edit = ac.build_edit("src.mp4", 30.0, spans)
+    heard = ac.timeline_words(edit, words)
+    new, lines = ac.punch_ins(edit, heard)
+    assert lines and new.duration == edit.duration
+    zooms = [seg.zoom for _, seg in new.pieces()]
+    assert 1.0 in zooms and 1.15 in zooms
