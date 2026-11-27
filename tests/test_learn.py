@@ -176,3 +176,16 @@ def test_pull_takes_records_from_a_shared_folder(tmp_path, monkeypatch, capsys):
     main(["clip-pull", str(shared)])
     assert "took 5 clip records" in capsys.readouterr().out
     assert learn.load_all()[0]["group"] == "creator 0"
+
+
+def test_a_clip_with_likes_but_no_views(tmp_path, monkeypatch, capsys):
+    """Signed out, Instagram gives likes and comments but no views: the clip is still kept, views left empty."""
+    monkeypatch.chdir(tmp_path)
+    main(["clip-add", "DgFq8WOxspq", "--likes", "4246", "--comments", "43", "--age-days", "4", "--mine"])
+    clip = learn.load_all()[0]
+    assert clip["outcome"] == {"likes": 4246, "comments": 43} and clip["attributes"]["age_days"] == 4
+    assert learn.target_value(clip["outcome"], "likes") is None
+    (tmp_path / "liked.csv").write_text("Permalink,Likes\nhttps://www.instagram.com/reel/DgBktJqRStj/,244\nhttps://www.instagram.com/reel/Dd5ZHd4x7hr/,\n")
+    main(["clip-import", "liked.csv"])
+    assert "1 clips read" in capsys.readouterr().out
+    assert {c["id"]: c["outcome"] for c in learn.load_all()}["DgBktJqRStj"] == {"likes": 244}

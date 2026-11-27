@@ -840,16 +840,18 @@ def cmd_clip_add(args) -> None:
         from . import style
         m = style.measure(args.video, None)
         cuts, frame, audio, colour, duration = m["cuts"], m["frame"], m["audio"], m["colour"], m["frame"]["seconds"]
-    outcome = {k: v for k, v in (("views", args.views), ("subscribers", args.subscribers),
-                                 ("retention", args.retention), ("swiped_away", args.swiped_away)) if v is not None}
+    outcome = {k: getattr(args, k) for k in ("views", "subscribers", "retention", "swiped_away", "reach", "likes",
+                                             "comments", "shares", "saves") if getattr(args, k) is not None}
     if duration is None and words:
         duration = words[-1].end
     if duration is None:
-        if not outcome:
-            raise EditError("give --video or --transcript to measure the clip, or results such as --views")
+        if not outcome and args.age_days is None:
+            raise EditError("give --video or --transcript to measure the clip, or results such as --views or --likes")
         attrs = {}  # results only: update what happened to a clip already in the set
     else:
         attrs = learn.attributes(words, duration, cuts, frame, audio, colour, judge)
+    if args.age_days is not None:
+        attrs["age_days"] = args.age_days
     path = learn.add(args.id, attrs, outcome, args.about or "", args.mine)
     print(f"saved {path}")
 
@@ -1358,7 +1360,10 @@ def main(argv: list[str] | None = None) -> None:
     add("clip-add", cmd_clip_add, "add a clip's attributes and results to the learning set", A("id"),
         A("--transcript"), A("--video"), A("--seconds", type=float), A("--judge"), A("--about"),
         A("--views", type=float), A("--subscribers", type=float), A("--retention", type=float),
-        A("--swiped-away", type=float), A("--mine", action="store_true", help="it is one of your own clips"))
+        A("--swiped-away", type=float), A("--reach", type=float), A("--likes", type=float),
+        A("--comments", type=float), A("--shares", type=float), A("--saves", type=float),
+        A("--age-days", type=float, help="days since it was posted, so older clips are compared fairly"),
+        A("--mine", action="store_true", help="it is one of your own clips"))
     add("clip-import", cmd_clip_import, "read results from an Instagram (Meta Business Suite) or YouTube Studio export (CSV)", A("csv"),
         A("--subscribers", "--followers", type=int, help="your follower or subscriber count, for the reach target"),
         A("--all-posts", action="store_true", help="include photos and carousels, not only reels"))
