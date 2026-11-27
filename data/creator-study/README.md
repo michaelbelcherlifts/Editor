@@ -110,3 +110,8 @@ First look, within creators (11 creators with 8 or more Shorts): share goes
 with more views for 5 of 11 (median rho +0.18), and with fewer views for none.
 Promise goes with more views for 4 of 11 (median +0.08) and payoff for 3 of 11
 (+0.13). Value shows nothing (median 0.00).
+
+Leakage check: with each creator's 3 best and 3 worst clips dropped (the
+titles the judge had seen), share still leans positive (median rho +0.16 over
+10 creators, none negative). Payoff falls to +0.06 and promise to -0.03, so
+only share holds up without those clips.
