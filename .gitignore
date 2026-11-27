@@ -11,4 +11,5 @@ library/sfx/
 exports/
 library/social/*/
 library/content/
+library/crosspost/
 library/house-rules.json

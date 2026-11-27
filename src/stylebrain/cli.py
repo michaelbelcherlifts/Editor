@@ -1177,7 +1177,7 @@ def cmd_post_set(args) -> None:
 
 def cmd_post_result(args) -> None:
     plan = _plan()
-    p = plan.record_result(args.id, url=args.url, views=args.views, reach=args.reach, likes=args.likes,
+    p = plan.record_result(args.id, url=args.url, platform=args.platform, views=args.views, reach=args.reach, likes=args.likes,
                            comments=args.comments, saves=args.saves, sends=args.sends, follows=args.follows,
                            enquiries=args.enquiries)
     plan.save()
@@ -1192,6 +1192,30 @@ def cmd_social_import(args) -> None:
     for p in made:
         print(f"{p['id']}: {p['format']} on {p['date']} ({plan.idea(p['idea'])['title']}), cta {p['cta']}")
     print(f"placed {len(made)} posts around {args.reel}")
+
+
+def cmd_crosspost(args) -> None:
+    from . import crosspost
+    plan = _plan()
+    r = crosspost.make(plan, args.post, video=args.video, long_video=args.long_video, transcript=args.transcript,
+                       out_dir=args.out)
+    plan.save()
+    print(f"{r['post']} ({r['title']}, {r['date']}): {len(r['versions'])} versions in {r['dir']}")
+    for v in r["versions"]:
+        state = "ready" if not v["problems"] else f"{len(v['problems'])} to fix"
+        print(f"  {v['platform']:<15}{state:<10}{r['dir']}/{v['platform']}.txt")
+        for p in v["problems"]:
+            print(f"      fix: {p}")
+    print("drafts only: rewrite them in his voice before he sees them; nothing was posted")
+
+
+def cmd_crosspost_week(args) -> None:
+    from . import crosspost
+    plan = _plan()
+    rows = crosspost.week(plan, args.week, make_missing=args.make)
+    if args.make:
+        plan.save()
+    print(json.dumps(rows, indent=2) if args.json else crosspost.format_week(rows))
 
 
 def cmd_shoot_list(args) -> None:
@@ -1422,10 +1446,18 @@ def main(argv: list[str] | None = None) -> None:
     add("post-set", cmd_post_set, "move, re-target or drop a post", A("id"), A("--date"),
         A("--cta", choices=list(CTAS)), A("--platforms"), A("--status"))
     add("post-result", cmd_post_result, "record that he posted it, and its numbers", A("id"), A("--url"),
+        A("--platform", help="instagram, tiktok, youtube-shorts or youtube: keep a link and numbers per app"),
         *[A(f"--{k}", type=float) for k in ("views", "reach", "likes", "comments", "saves", "sends", "follows",
                                             "enquiries")])
     add("social-import", cmd_social_import, "place a carousel/story package around a reel's post", A("package"),
         A("--reel", required=True, help="the reel's post id"))
+    add("crosspost", cmd_crosspost, "prepare a post's versions for each platform (captions, titles, hashtags, checks)",
+        A("post", help="the calendar post id"), A("--video", help="the exported cut; default the idea's draft"),
+        A("--long-video", help="a 16:9 export for YouTube long-form"),
+        A("--transcript", help="word timings; default a .json/.srt next to the video"), A("--out"))
+    add("crosspost-week", cmd_crosspost_week, "which of a week's reels are ready for every platform", week,
+        A("--make", action="store_true", help="prepare every approved post that has a cut and no package yet"),
+        A("--json", action="store_true"))
     add("shoot-list", cmd_shoot_list, "what to film for a week, by location", week, A("--json", action="store_true"))
     add("week-report", cmd_week_report, "planned versus posted for a week, with results", week,
         A("--json", action="store_true"))

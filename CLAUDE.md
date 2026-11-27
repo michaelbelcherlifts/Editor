@@ -6,7 +6,7 @@ from it. Read `.claude/skills/talk-edit/SKILL.md` before editing, and
 `.claude/skills/animate/SKILL.md` before making any animation, and
 `.claude/skills/copy-effect/SKILL.md` before recreating an effect from a link or
 screenshots, and `.claude/skills/script/SKILL.md` before writing a script or hooks. Other skills in `.claude/skills/` cover styles, colour, autopilot, reviews,
-sound, music, reframing, export, house rules, the content calendar and social posts.
+sound, music, reframing, export, house rules, the content calendar, social posts and cross-posting.
 `docs/aesthetic-shots.md` covers flex, pose and physique moments (light, angle, grade, pacing).
 
 ## Rules
@@ -56,6 +56,7 @@ sound, music, reframing, export, house rules, the content calendar and social po
 - `src/stylebrain/export.py`: renders the edit list to a postable file with ffmpeg, and checks any finished file (frame, length, loudness, black frames)
 - `src/stylebrain/social.py`: stills for Instagram and YouTube: photo edits, carousels, covers, story suggestions, and the package a reel becomes
 - `src/stylebrain/content.py`: the content plan: idea backlog, series, calendar, weekly plans, shoot lists, calls to action (`library/content/`, not committed; never posts)
+- `src/stylebrain/crosspost.py`: one reel made ready for each platform (Instagram, TikTok, Shorts, YouTube): captions, titles, hashtags, calls to action, chapters and checks, tied to calendar posts (`library/crosspost/`, not committed; never posts)
 - `src/stylebrain/bake.py`: ffmpeg zooms and speed changes
 - `src/stylebrain/speed.py`: slow motion and speed ramps on part of the timeline (`speed`), baked as new clips
 - `src/stylebrain/cli.py`: the `stylebrain` command
