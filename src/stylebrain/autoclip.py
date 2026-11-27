@@ -32,7 +32,16 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from .edl import EditError, EditList, Overlay, Segment
-from .story import FILLERS, QUESTION_CUES, SLOW_OPENERS, Sentence, _overlap, sentences
+from .story import (
+    FILLERS,
+    QUESTION_CUES,
+    SLOW_OPENERS,
+    Sentence,
+    _overlap,
+    classify_hook,
+    proven_examples,
+    sentences,
+)
 from .transcript import Word, _norm, find_silences
 
 MIN_SECONDS = 15.0
@@ -130,6 +139,10 @@ def _hook_strength(s: Sentence) -> tuple[float, str]:
     if hits:
         pts += min(0.3, 0.1 * len(hits))
         why.append("hook words: " + ", ".join(sorted(hits)[:4]))
+    kinds = classify_hook(s.text)
+    if kinds:
+        pts += 0.15
+        why.append(f"a {kinds[0]} hook")
     if re.search(r"\d", s.text):
         pts += 0.15
         why.append("a number up front")
@@ -200,6 +213,35 @@ def _rough(group: list[Sentence], after_gap: float) -> tuple[float, list[str]]:
     return round(total, 1), reasons
 
 
+LONGEST_LINE = 22  # words; a line longer than this in an unpunctuated transcript is split at its longest pause
+
+
+def _punctuated(words: list[Word]) -> bool:
+    ends = sum(1 for w in words if w.text.rstrip("\"')").endswith((".", "?", "!")))
+    return bool(words) and ends / len(words) >= 0.02
+
+
+def _split_long(ws: list[Word]) -> list[list[Word]]:
+    if len(ws) <= LONGEST_LINE:
+        return [ws]
+    lo, hi = len(ws) // 4, len(ws) - len(ws) // 4      # never leave a stub of a few words
+    k = max(range(lo, hi), key=lambda i: ws[i].start - ws[i - 1].end)
+    return _split_long(ws[:k]) + _split_long(ws[k:])
+
+
+def spoken_lines(words: list[Word]) -> list[Sentence]:
+    """Sentences, or for a transcript with no punctuation (some YouTube captions), lines split at
+    short pauses and kept under LONGEST_LINE words, so moments can still start and end cleanly."""
+    if _punctuated(words):
+        return sentences(words)
+    out = []
+    for s in sentences(words, gap=0.4):
+        ws = [w for w in words if s.start <= w.start <= s.end][: s.words]
+        for part in _split_long(ws):
+            out.append(Sentence(" ".join(w.text for w in part), part[0].start, part[-1].end, len(part)))
+    return out
+
+
 def find(words: list[Word], count: int = 8, min_seconds: float = MIN_SECONDS, max_seconds: float = MAX_SECONDS,
          skip_before: float = 0.0, same_topic: float = 0.55) -> list[Candidate]:
     """Propose up to `count` moments, best rough rank first, none overlapping.
@@ -209,7 +251,7 @@ def find(words: list[Word], count: int = 8, min_seconds: float = MIN_SECONDS, ma
     """
     if min_seconds <= 0 or max_seconds <= min_seconds:
         raise EditError("the shortest clip must be above 0 and below the longest")
-    ss = [s for s in sentences(words) if s.start >= skip_before]
+    ss = [s for s in spoken_lines(words) if s.start >= skip_before]
     if not ss:
         raise EditError("no speech found to cut clips from")
     options: list[tuple[float, int, int, list[str]]] = []
@@ -452,7 +494,8 @@ def make(cand: Candidate, source: str, words: list[Word], out_dir: str | Path, j
         frame = {"width": width, "height": height} if reframe else None
     rubric = {k: v for k, v in judge.items() if k in SCORE_KEYS}
     if "mid_sentence" not in rubric:
-        ends = cand.lines[-1]["text"].rstrip().endswith((".", "!", "?")) if cand.lines else True
+        punctuated = any(ln["text"].rstrip().endswith((".", "!", "?")) for ln in cand.lines)
+        ends = not punctuated or cand.lines[-1]["text"].rstrip().endswith((".", "!", "?"))
         rubric["mid_sentence"] = not ends
     rubric["captions"] = bool(captions and heard)
     rubric["text_on_frame_1"] = bool(hook)
@@ -515,6 +558,11 @@ def _clock(t: float) -> str:
     return f"{int(t // 3600)}:{int(t // 60 % 60):02d}:{t % 60:04.1f}" if t >= 3600 else f"{int(t // 60)}:{t % 60:04.1f}"
 
 
+def _said_lines(c: Candidate, span) -> str:
+    a, b = float(span[0]), float(span[1])
+    return " ".join(ln["text"] for ln in c.lines if ln["end"] > a and ln["start"] < b) or ""
+
+
 def fix_for(made: Made) -> str:
     if not made.score:
         return ""
@@ -542,6 +590,10 @@ def sheet(made: list[Made], out: str | Path, source: str, title: str = "") -> Pa
                          f"<p class='src'>source {_clock(c.start)} to {_clock(c.end)}</p><p class='tx'>{html.escape(c.text)}</p></section>")
             continue
         s = m.score
+        opening = (_said_lines(c, m.judge.get("cold_open")) if m.judge.get("cold_open") else
+                   c.lines[0]["text"] if c.lines else "")
+        kind = hook_type(opening) if opening else None
+        kind_html = f" · opens as a {html.escape(kind['type'])} hook" if kind else " · opening fits no researched hook type"
         rows = "".join(f"<tr><td>{html.escape(p['name'])}</td><td class='n'>{p['points']:g} / {p['out_of']:g}</td>"
                        f"<td><div class='bar'><i style='width:{100 * p['points'] / p['out_of']:.0f}%'></i></div></td>"
                        f"<td class='why'>{html.escape(p['why'])}{'' if p['judged'] else ' (neutral, not judged)'}</td></tr>"
@@ -560,7 +612,7 @@ def sheet(made: list[Made], out: str | Path, source: str, title: str = "") -> Pa
             f"<h2><span class='rank'>#{n}</span> {head}</h2>"
             f"<p class='big'><b>{s['total']}</b> / 100 · {html.escape(s['verdict'])} · {m.seconds:.0f}s · {c.id}</p>{rep}"
             f"<p class='fix'><b>One fix:</b> {html.escape(fix_for(m))}</p>"
-            f"<p class='src'>source {_clock(c.start)} to {_clock(c.end)} · rough rank {c.rough:g}"
+            f"<p class='src'>source {_clock(c.start)} to {_clock(c.end)} · rough rank {c.rough:g}{kind_html}"
             f"{' · hook: “' + html.escape(m.judge['hook_text']) + '”' if m.judge.get('hook_text') else ''}</p>"
             f"<table>{rows}</table>"
             f"<details><summary>What was said</summary><p class='tx'>{html.escape(c.text)}</p></details>"
@@ -618,10 +670,27 @@ def extra_candidates(words: list[Word], cands: list[Candidate], judgements: dict
             raise EditError(f"{cid} is not a candidate; to add a moment give its start and end")
         a, b = float(j["start"]), float(j["end"])
         lines = [{"start": round(s.start, 3), "end": round(s.end, 3), "text": s.text}
-                 for s in sentences([w for w in words if a <= w.start < b])]
+                 for s in spoken_lines([w for w in words if a <= w.start < b])]
         if not lines:
             raise EditError(f"{cid}: nothing is said between {a:g}s and {b:g}s")
         out.append(Candidate(cid, a, b, 0.0, ["added by the judge"], lines))
+    return out
+
+
+def hook_type(text: str) -> dict | None:
+    """The hook type a line reads as, with the most viewed researched example of that type."""
+    kinds = classify_hook(text)
+    if not kinds:
+        return None
+    out = {"type": kinds[0]}
+    try:
+        ex = proven_examples(kinds[0], limit=1)
+    except ValueError:
+        ex = []
+    if ex:
+        line = ex[0].get("opening") or ex[0].get("title") or ""
+        if line:
+            out.update(example=line[:90], views=int(ex[0].get("views") or 0))
     return out
 
 
@@ -636,8 +705,14 @@ def judging_brief(cands: list[Candidate]) -> str:
               "or leave out); start / end (move the edges, source seconds); hook_text (on-screen hook, 8 words or less); "
               "title; skip (a reason, to leave the clip out). A moment the finder missed can be added under a new id "
               "with its start and end."), ""]
+    lines.insert(-1, "From his own 2026 Instagram results (hypotheses, not rules): shares mark the hits; useful "
+                     "\"here is how\" clips earn follows, sendable jokes earn reach; 11 to 15 s reels hit most often.")
     for c in cands:
         lines.append(f"== {c.id}  source {_clock(c.start)} to {_clock(c.end)} ({c.seconds:.0f}s), rough {c.rough:g}")
+        kind = hook_type(c.lines[0]["text"]) if c.lines else None
+        if kind:
+            lines.append(f"   opening line reads as a {kind['type']} hook" + (
+                f"; proven example: \"{kind['example']}\" ({kind['views']:,} views)" if kind.get("example") else ""))
         for ln in c.lines:
             lines.append(f"  [{ln['start']:.2f}-{ln['end']:.2f}] {ln['text']}")
         lines.append("")
