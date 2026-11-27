@@ -7,6 +7,7 @@ dist/
 .DS_Store
 references/
 library/clips/
+library/models/
 library/sfx/
 exports/
 library/social/*/

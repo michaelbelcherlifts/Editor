@@ -28,6 +28,14 @@ PRESETS: dict[str, dict] = {
         "about": "running captions low in the frame, the spoken word highlighted; explainers",
         "template": "captions", "params": {},
         "pause_min_gap": 0.6},
+    "house": {
+        "about": "Michael's house look: heavy italic white, one red word per group, 2-3 words; story reels",
+        "template": "house_captions", "params": {"max_words": 3, "size": 100, "y": 0.62},
+        "pause_min_gap": 0.4},
+    "cinematic": {
+        "about": "plain bold white, 1-2 words, no outline or colour (Blaze Kennedy study); music-led and cinematic reels",
+        "template": "plain_captions", "params": {"max_words": 2, "size": 76, "y": 0.60, "font": "montserrat"},
+        "pause_min_gap": 0.5},
     "clean": {
         "about": "no captions on screen (a subtitle file is still written); lifts and music-led reels",
         "template": None, "params": {},
