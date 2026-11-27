@@ -91,3 +91,29 @@ def test_analytics_import_and_commands(tmp_path, monkeypatch, capsys):
     assert "2 clips" in capsys.readouterr().out
     with pytest.raises(SystemExit):
         main(["learn"])
+
+
+def test_instagram_export_is_read_by_permalink_and_reels_only(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "ig.csv").write_text(
+        "sep=,\n"
+        "Post ID,Account username,Description,Duration (sec),Publish time,Permalink,Post type,Views,Reach,Likes,Shares,Follows,Comments,Saves\n"
+        '178,michael,"Bench cue, try it",31,11/01/2026 09:00,https://www.instagram.com/reel/DAbc_12-xyz/,IG reel,12000,9000,800,90,12,40,150\n'
+        "179,michael,Gym selfie,0,11/02/2026 09:00,https://www.instagram.com/p/DPhoto00001/,IG image,900,700,80,1,0,2,3\n")
+    main(["clip-import", "ig.csv", "--followers", "3000"])
+    assert "1 clips read" in capsys.readouterr().out
+    clip = learn.load_all()[0]
+    assert clip["id"] == "DAbc_12-xyz" and clip["mine"] and clip["about"] == "Bench cue, try it"
+    o = clip["outcome"]
+    assert (o["views"], o["reach"], o["shares"], o["saves"], o["seconds"], o["subscribers"]) == (12000, 9000, 90, 150, 31, 3000)
+    assert learn.target_value(o, "sends") == pytest.approx(10.0)
+    assert learn.target_value(o, "saves") == pytest.approx(16.67, abs=0.01)
+    assert learn.target_value(o, "reach") == pytest.approx(0.602, abs=0.001)
+    main(["clip-add", "DAbc_12-xyz", "--retention", "64"])
+    assert learn.load_all()[0]["outcome"]["retention"] == 64 and learn.load_all()[0]["outcome"]["views"] == 12000
+    main(["clip-import", "ig.csv", "--all-posts"])
+    assert "2 clips read" in capsys.readouterr().out
+    (tmp_path / "bad.csv").write_text("Date,Followers\n1,2\n")
+    with pytest.raises(SystemExit):
+        main(["clip-import", "bad.csv"])
+    assert "Columns in the file: Date, Followers" in capsys.readouterr().err

@@ -13,12 +13,19 @@ analytics stay on his computer.
 
 For each clip, two things are needed: attributes and a result.
 
-1. **His own clips.** In YouTube Studio: Analytics, Advanced mode, Content tab,
-   filter to Shorts, add the metrics Views, Average percentage viewed, Shares
-   (and "Stayed to watch / Swiped away" if offered), then Export as CSV.
-   `uv run stylebrain clip-import FILE.csv --subscribers N`.
-   Then for each id it lists: get the video file and a transcript, and
+1. **His own clips.** Michael posts Reels on Instagram (@michaelxbelcher),
+   not YouTube Shorts. Export: business.facebook.com (Meta Business Suite),
+   Insights, Content, Export data, pick Instagram, the date range and posts,
+   Generate, then download the CSV. This needs a professional (creator or
+   business) Instagram account.
+   `uv run stylebrain clip-import FILE.csv --followers N`.
+   If it says it cannot find the columns, it prints the file's column names:
+   read them and tell Michael which are missing, or fix `_COLUMNS` in
+   `learn.py`. A YouTube Studio content export works the same way.
+   Then for each id it lists: get the video file (his original export is
+   best) and a transcript, and
    `uv run stylebrain clip-add ID --video CLIP.mp4 --transcript CLIP.words.json --judge '{...}'`.
+   The id is the code in the reel's link (instagram.com/reel/CODE/).
 2. **Reference clips.** `ref-fetch` the short, transcribe it, then
    `clip-add ID --video ... --transcript ... --views V --subscribers S --about "creator, title"`.
    Views divided by subscribers is the fair comparison across channels.
@@ -30,9 +37,12 @@ For each clip, two things are needed: attributes and a result.
 
 ## Learning
 
-`uv run stylebrain learn` (target `reach`, views over subscribers), or
-`--target retention` / `--target kept` with his analytics, and `--mine` to use
-only his clips.
+`uv run stylebrain learn` (target `reach`, views over followers). With his
+Instagram export use `--target sends` (shares per 1,000 reached), `saves` or
+`likes` as well; with YouTube analytics `retention` or `kept`. `--mine` uses
+only his clips. Instagram's export has no watch-time column, so retention
+for Reels has to be read off each reel's insights screen and added with
+`clip-add ID --retention N`.
 
 Relay, in this order:
 

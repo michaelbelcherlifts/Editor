@@ -113,14 +113,19 @@ def load_all(base: str | Path = ".") -> list[dict]:
 
 
 TARGETS = {
-    "reach": "views divided by subscribers, on a log scale (how far past the channel's usual audience it went)",
+    "reach": "views divided by followers or subscribers, on a log scale (how far past the usual audience it went)",
     "views": "views on a log scale",
     "retention": "average percentage viewed",
     "kept": "share of viewers who did not swipe away",
+    "sends": "shares per 1,000 accounts reached (Instagram's strongest signal for reaching new people)",
+    "saves": "saves per 1,000 accounts reached",
+    "likes": "likes per 1,000 accounts reached",
 }
 
 
 def target_value(outcome: dict, target: str) -> float | None:
+    if target not in TARGETS:
+        raise EditError(f"unknown target {target!r}; choose from {', '.join(TARGETS)}")
     try:
         if target == "reach":
             return math.log10(max(outcome["views"], 1) / max(outcome["subscribers"], 1))
@@ -130,34 +135,60 @@ def target_value(outcome: dict, target: str) -> float | None:
             return float(outcome["retention"])
         if target == "kept":
             return 100.0 - float(outcome["swiped_away"])
+        per = {"sends": "shares", "saves": "saves", "likes": "likes"}[target]
+        reached = outcome.get("reach") or outcome["views"]
+        return 1000.0 * float(outcome[per]) / max(float(reached), 1.0)
     except (KeyError, TypeError, ValueError):
         return None
-    raise EditError(f"unknown target {target!r}; choose from {', '.join(TARGETS)}")
 
 
 _COLUMNS = {
-    "id": ("content", "video id", "video"),
-    "title": ("video title", "title"),
-    "views": ("views",),
+    "id": ("permalink", "content", "video id", "post id", "video"),
+    "title": ("video title", "description", "title", "post text"),
+    "views": ("views", "plays", "impressions"),
+    "reach": ("reach", "accounts reached"),
     "retention": ("average percentage viewed",),
     "swiped_away": ("swiped away",),
-    "shares": ("shares",),
+    "shares": ("shares", "sends"),
+    "saves": ("saves",),
     "likes": ("likes",),
-    "subscribers_gained": ("subscribers",),
+    "comments": ("comments",),
+    "follows": ("follows", "subscribers"),
+    "seconds": ("duration (sec)", "duration"),
+    "type": ("post type",),
 }
+_NUMBERS = ("views", "reach", "retention", "swiped_away", "shares", "saves", "likes", "comments", "follows", "seconds")
 
 
-def import_analytics(csv_path: str | Path, subscribers: int | None = None, base: str | Path = ".") -> list[str]:
-    """Read a YouTube Studio export (Content tab, Advanced mode, Export) into the dataset.
+def _clip_id(raw: str) -> str | None:
+    """A video id from a cell: an Instagram permalink's shortcode, or a bare id."""
+    raw = raw.strip()
+    m = re.search(r"instagram\.com/(?:[^/]+/)?(?:reel|reels|p|tv)/([A-Za-z0-9_-]+)", raw)
+    if m:
+        return m.group(1)
+    if re.fullmatch(r"[A-Za-z0-9_-]{6,}", raw) and raw.lower() != "total":
+        return raw
+    return None
 
-    Rows are matched to clips by video id; clips not yet in the dataset are
-    created with outcomes only, ready for attributes to be added. Returns the ids.
+
+def import_analytics(csv_path: str | Path, subscribers: int | None = None, base: str | Path = ".",
+                     reels_only: bool = True) -> list[str]:
+    """Read a results export into the dataset. Returns the clip ids.
+
+    Works with a Meta Business Suite content export for Instagram (Insights,
+    Content, Export data) and a YouTube Studio content export. Columns are
+    matched by name, loosely, since both change their wording from time to
+    time. Rows are matched to clips by Instagram shortcode or video id; clips
+    not yet in the dataset are created with results only, ready for
+    attributes to be added. `subscribers` is the follower or subscriber count.
     """
     with open(csv_path, newline="", encoding="utf-8-sig") as f:
-        rows = list(csv.DictReader(f))
+        text = f.read()
+    text = text[text.find("\n") + 1:] if text.lower().startswith("sep=") else text
+    rows = list(csv.DictReader(text.splitlines()))
     if not rows:
         raise EditError("the analytics file has no rows")
-    heads = {h.lower().strip(): h for h in rows[0]}
+    heads = {h.lower().strip(): h for h in rows[0] if h}
     pick = {}
     for field, names in _COLUMNS.items():
         for name in names:
@@ -166,14 +197,18 @@ def import_analytics(csv_path: str | Path, subscribers: int | None = None, base:
                 pick[field] = match
                 break
     if "id" not in pick or "views" not in pick:
-        raise EditError("could not find the video id and views columns; export the Content table from YouTube Studio")
+        raise EditError("could not find a link or id column and a views column. Columns in the file: "
+                        + ", ".join(heads.values()))
     done = []
     for row in rows:
-        vid = row[pick["id"]].strip()
-        if not re.fullmatch(r"[A-Za-z0-9_-]{6,}", vid) or vid.lower() == "total":
+        vid = _clip_id(row.get(pick["id"]) or "")
+        if not vid:
+            continue
+        kind = (row.get(pick.get("type", "")) or "").lower()
+        if reels_only and kind and "reel" not in kind and "video" not in kind and "short" not in kind:
             continue
         outcome = {}
-        for field in ("views", "retention", "swiped_away", "shares", "likes", "subscribers_gained"):
+        for field in _NUMBERS:
             raw = row.get(pick.get(field, ""), "")
             try:
                 outcome[field] = float(str(raw).replace(",", "").replace("%", ""))
@@ -181,8 +216,10 @@ def import_analytics(csv_path: str | Path, subscribers: int | None = None, base:
                 pass
         if subscribers:
             outcome["subscribers"] = subscribers
-        add(vid, {}, outcome, about=row.get(pick.get("title", ""), ""), mine=True, base=base)
+        add(vid, {}, outcome, about=(row.get(pick.get("title", "")) or "")[:120], mine=True, base=base)
         done.append(vid)
+    if not done:
+        raise EditError("no reels or videos found in the file")
     return done
 
 
