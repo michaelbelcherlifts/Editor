@@ -25,7 +25,7 @@ def _store(args) -> Store:
 
 def _summary(edit: EditList) -> str:
     lines = [f"{len(edit.segments)} clips, {format_time(edit.duration, edit.fps)} long, "
-             f"{len(edit.overlays)} overlays, {edit.fps:g} fps"]
+             f"{len(edit.overlays)} overlays, {edit.fps:g} fps" + (f", look {Path(edit.look).stem}" if edit.look else "")]
     for start, seg in edit.pieces():
         lines.append(f"  {format_time(start, edit.fps):>10}  {Path(seg.source).name}  "
                      f"[{seg.src_in}-{seg.src_out})" + (f"  {seg.note}" if seg.note else ""))
@@ -321,6 +321,35 @@ def cmd_style_list(args) -> None:
         print(f"{name}: {p.get('about') or Path(p['source']).name}")
 
 
+def cmd_look_make(args) -> None:
+    from . import look
+    path = look.make(args.name, args.reference, args.footage, args.strength)
+    print(f"saved look {args.name!r} to {path}")
+
+
+def cmd_look_preview(args) -> None:
+    from . import look
+    out = look.preview(args.video, look.find(args.name), _secs(args.at), args.out, args.reference,
+                       _secs(args.ref_at))
+    print(f"{out}: before, after" + (", reference" if args.reference else ""))
+
+
+def cmd_look_list(args) -> None:
+    from . import look
+    for name in look.list_looks():
+        print(name)
+
+
+def cmd_look_use(args) -> None:
+    from . import look
+    store = _store(args); edit = store.load()
+    if args.name == "none":
+        _save(store, edit, edit.set_look(""), "remove the look")
+    else:
+        path = str(look.find(args.name).resolve())
+        _save(store, edit, edit.set_look(path), f"use the look {args.name!r}")
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -387,6 +416,14 @@ def main(argv: list[str] | None = None) -> None:
         A("--about"), A("--threshold", type=float, default=0.3, help="how big a change counts as a cut"))
     add("style-show", cmd_style_show, "describe a saved style", A("name"), A("--json", action="store_true"))
     add("style-list", cmd_style_list, "list saved styles")
+    add("look-make", cmd_look_make, "make a colour look (LUT) that moves your footage toward a reference",
+        A("name"), A("--reference", required=True), A("--footage", required=True, help="your own clip"),
+        A("--strength", type=float, default=1.0, help="0 to 1"))
+    add("look-preview", cmd_look_preview, "before / after / reference image for a look", A("name"),
+        A("--video", required=True), A("--at", default="0"), A("--out", required=True),
+        A("--reference"), A("--ref-at", default="0"))
+    add("look-list", cmd_look_list, "list saved looks")
+    add("look-use", cmd_look_use, "put a saved look on the edit ('none' removes it)", A("name"))
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")

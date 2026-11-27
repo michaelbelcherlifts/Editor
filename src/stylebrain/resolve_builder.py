@@ -47,6 +47,7 @@ class BuildReport:
     clips: int = 0
     overlays: int = 0
     problems: list[str] = field(default_factory=list)
+    look: str = ""
 
     @property
     def ok(self) -> bool:
@@ -54,6 +55,8 @@ class BuildReport:
 
     def text(self) -> str:
         head = f"timeline {self.timeline!r}: {self.clips} clips, {self.overlays} overlays"
+        if self.look:
+            head += f", look {self.look.rsplit('/', 1)[-1]}"
         if self.ok:
             return head + ", all checked"
         return head + "\n" + "\n".join(f"  problem: {p}" for p in self.problems)
@@ -144,6 +147,24 @@ def _check(timeline, origin: int, edit: EditList) -> tuple[list[str], set[int]]:
     return problems, deltas
 
 
+def _apply_look(project, items, path: str) -> list[str]:
+    """Put a LUT on the first colour node of each clip. Returns problems."""
+    if hasattr(project, "RefreshLUTList"):
+        project.RefreshLUTList()
+    failed = 0
+    for item in items:
+        ok = False
+        graph = item.GetNodeGraph() if hasattr(item, "GetNodeGraph") else None
+        if graph is not None and hasattr(graph, "SetLUT"):
+            ok = bool(graph.SetLUT(1, path))
+        if not ok and hasattr(item, "SetLUT"):
+            ok = bool(item.SetLUT(1, path))
+        failed += not ok
+    if failed:
+        return [f"the look {path!r} could not be put on {failed} of {len(items)} clips"]
+    return []
+
+
 def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | None = None) -> BuildReport:
     """Create a new timeline from the edit and verify it.
 
@@ -171,5 +192,7 @@ def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | Non
         if off_by_one and attempt + 1 < len(modes):
             media_pool.DeleteTimelines([timeline])  # wrong guess about endFrame; try the other way
             continue
-        return BuildReport(final, len(main), len(over), warn + problems)
+        if edit.look:
+            problems += _apply_look(project, main, edit.look)
+        return BuildReport(final, len(main), len(over), warn + problems, look=edit.look)
     raise AssertionError("unreachable")

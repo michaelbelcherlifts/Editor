@@ -18,6 +18,7 @@ explainer animations, color looks, overnight autopilot). What exists today:
 | Baked effects | Punch-in zooms and speed changes made with ffmpeg | Tested |
 | Reference study | Downloads a link, makes frame sheets, reads motion timing and colours, and compares a remake against the original | Tested on clips made here. **Not yet run on a real YouTube link** |
 | Style profiles | Measures a video's cut rate, opening, speech pace, picture and sound, and saves it by name | Tested on clips made here |
+| Colour looks | Makes a LUT that moves your footage toward a reference's tone and colour balance, and puts it on the clips at build | Tested on clips made here; applying it in Resolve is tested against a stand-in only |
 | Resolve builder | Builds the edit in Resolve as a new timeline and checks it | Tested against a stand-in only. **Not yet run against real Resolve** |
 
 ## Why an edit list

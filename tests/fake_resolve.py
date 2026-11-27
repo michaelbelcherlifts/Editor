@@ -22,8 +22,16 @@ class Folder:
 
 
 class Item:
+    lut_works = True
+
     def __init__(self, start, duration):
-        self.start, self.duration = start, duration
+        self.start, self.duration, self.lut = start, duration, None
+
+    def SetLUT(self, node, path):
+        if not self.lut_works or node != 1:
+            return False
+        self.lut = path
+        return True
 
     def GetStart(self):
         return self.start
