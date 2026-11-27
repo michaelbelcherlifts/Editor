@@ -744,8 +744,22 @@ def cmd_auto(args) -> None:
     from . import autopilot
     result = autopilot.run(args.name, args.source, args.transcript, args.style, args.look,
                            True if args.captions else None, False if args.keep_retakes else None,
-                           not args.no_build, args.width, args.height)
+                           not args.no_build, args.width, args.height, preset=args.preset)
     print(result.text(Store(args.name).load().fps))
+
+
+def cmd_presets(args) -> None:
+    from . import presets
+    print("Ready-made first-cut styles (auto NAME --source FILE --preset ...):")
+    print(presets.listing())
+
+
+def cmd_preset_preview(args) -> None:
+    from . import presets
+    names = list(presets.PRESETS) if args.name == "all" else [args.name]
+    for name in names:
+        out = presets.preview(name, args.out if len(names) == 1 else None, args.width, args.height)
+        print(f"  {name}: {out}" if out else f"  {name}: no captions on screen, nothing to preview")
 
 
 def cmd_score(args) -> None:
@@ -1517,8 +1531,13 @@ def main(argv: list[str] | None = None) -> None:
     add("auto", cmd_auto, "first cut in one go: retakes, pauses, look, captions, build, review", A("name"),
         A("--source", required=True), A("--transcript"), A("--style"), A("--look"),
         A("--captions", action="store_true"), A("--keep-retakes", action="store_true"),
+        A("--preset", help="a ready-made style; see `presets`"),
         A("--no-build", action="store_true"),
         A("--width", type=int, help="default: the house rule for frame, else 1920"), A("--height", type=int))
+    add("presets", cmd_presets, "list the ready-made first-cut styles")
+    add("preset-preview", cmd_preset_preview, "render a few seconds of a preset's captions to pick by sight",
+        A("name", help="a preset name, or all"), A("--out"), A("--width", type=int, default=1080),
+        A("--height", type=int, default=1920))
     add("score", cmd_score, "score a short clip on the virality rubric, part by part",
         A("--transcript", help="word timings of the clip (leave out for a clip with no speech)"),
         A("--video", help="the clip, to measure cuts, frame and sound"),

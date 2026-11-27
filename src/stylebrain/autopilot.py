@@ -68,15 +68,15 @@ def caption_chunks(words: list[tr.Word], chunk: float = CHUNK_SECONDS) -> list[l
 
 
 def place_captions(edit: EditList, words: list[tr.Word], width: int, height: int, track: int = 2,
-                   render=None) -> EditList:
+                   render=None, template: str = "captions", extra: dict | None = None) -> EditList:
     """Render running captions for timeline words and add them as overlays."""
     if render is None:
         from .effects import render_template as render
     for n, chunk in enumerate(caption_chunks(words), 1):
         start = chunk[0].start
-        params = {"words": [{"word": w.text, "start": round(w.start - start, 3), "end": round(w.end - start, 3)}
+        params = {**(extra or {}), "words": [{"word": w.text, "start": round(w.start - start, 3), "end": round(w.end - start, 3)}
                             for w in chunk]}
-        r = render("captions", params, None, edit.fps, width, height, f"captions{n:03d}")
+        r = render(template, params, None, edit.fps, width, height, f"captions{n:03d}")
         at = round(start * edit.fps)
         frames = min(r.frames, edit.duration - at)
         if frames > 0:
@@ -86,10 +86,19 @@ def place_captions(edit: EditList, words: list[tr.Word], width: int, height: int
 
 def run(name: str, source: str, transcript: str | None = None, style_name: str | None = None,
         look_name: str | None = None, captions: bool | None = None, retakes: bool | None = None, build: bool = True,
-        width: int | None = None, height: int | None = None, connect=None, render=None) -> Result:
-    """Anything left as None follows the house rules (`rules.py`), then the defaults."""
-    from . import rules
+        width: int | None = None, height: int | None = None, connect=None, render=None,
+        preset: str | None = None) -> Result:
+    """Anything left as None follows the house rules (`rules.py`), then the defaults.
+
+    `preset` names a ready-made style (`presets.py`): its caption treatment is
+    used, and its pause length unless a house rule or a learned style sets one.
+    """
+    from . import presets, rules
     from .media import probe
+
+    chosen = presets.get(preset) if preset else None
+    if chosen and captions is None:
+        captions = bool(chosen["template"])
 
     style_name = rules.pick(style_name, "style") or None
     look_name = rules.pick(look_name, "look") or None
@@ -136,6 +145,8 @@ def run(name: str, source: str, transcript: str | None = None, style_name: str |
     store.commit(edit, f"start from {Path(source).name}")
     set_current_project(name)
     result.steps.append(f"started from {Path(source).name}, {format_time(edit.duration, fps)}")
+    if chosen:
+        result.steps.append(f"preset {preset!r}: {chosen['about']}")
     if rules.changed():
         result.steps.append("house rules in force: " + ", ".join(rules.changed()))
 
@@ -163,6 +174,8 @@ def run(name: str, source: str, transcript: str | None = None, style_name: str |
                 result.notes.append(f"retake cut, source {a:.1f}s to {b:.1f}s: \"{said}\"")
 
     min_gap = rules.get("pause_min_gap")
+    if chosen and "pause_min_gap" not in rules.load()["settings"]:
+        min_gap = chosen["pause_min_gap"]
     if target and target.get("speech") and "pause_min_gap" not in rules.load()["settings"]:
         min_gap = round(min(max(target["speech"]["long_gap"] * 1.5, 0.35), 1.0), 2)   # his own rule beats the style
     ranges = _frames(edit, source, tr.tighten_ranges(kept, min_gap, rules.get("pause_air"), frames / fps))
@@ -178,8 +191,14 @@ def run(name: str, source: str, transcript: str | None = None, style_name: str |
     srt.write_text(tr.to_srt(on_tl))
     result.notes.append(f"subtitles for the cut saved to {srt}")
     if captions:
-        new = place_captions(edit, on_tl, width, height, render=render)
-        save(new, f"place captions in {len(new.overlays) - len(edit.overlays)} pieces")
+        if chosen and not chosen["template"]:
+            result.notes.append(f"the preset {preset!r} has no captions on screen; none placed")
+        else:
+            new = place_captions(edit, on_tl, width, height, render=render,
+                                 template=chosen["template"] if chosen else "captions",
+                                 extra=chosen["params"] if chosen else None)
+            save(new, f"place captions in {len(new.overlays) - len(edit.overlays)} pieces"
+                 + (f" ({preset})" if chosen else ""))
 
     if build:
         try:
