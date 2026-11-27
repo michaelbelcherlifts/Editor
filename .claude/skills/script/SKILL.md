@@ -37,8 +37,16 @@ stakes; it is not the story.
 
 ## 2. Write the hook
 
-Run `uv run stylebrain hooks` for the hook types. Offer **three** hooks, each
-a different type, each with:
+Run `uv run stylebrain hooks` for the hook types, then
+`uv run stylebrain hooks --examples TYPE --niche NICHE` for proven YouTube
+examples of a type with their views and first spoken line (the researched
+library is `library/hooks/patterns.json`; niches: powerlifting, running, food,
+guns, lockpicking, fpv). Pick types whose examples did well in his niche, and
+copy the shape of their first line, never their words. What the top openings
+share: the first spoken line is the title nearly word for word, a number is in
+the first five words, and the bar to clear is said before the attempt.
+
+Offer **three** hooks, each a different type, each with:
 
 - the spoken line (under 15 words, the first word means something, no
   greeting, no "in this video"),
@@ -48,6 +56,7 @@ a different type, each with:
   or the payoff itself).
 
 Check each one: `uv run stylebrain hooks "SPOKEN LINE" --text "ON-SCREEN TEXT"`.
+It prints the hook's type; a line that fits no type usually does not hook.
 Every hook must promise something the script pays off on screen. Never write
 a hook the video cannot deliver.
 
