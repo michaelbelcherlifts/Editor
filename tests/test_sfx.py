@@ -60,7 +60,7 @@ def test_auto_place_picks_moments_and_ducks_under_speech(lib):
                            Segment("/v/a.mov", 400, 500, "zoom 1.2"), Segment("/v/a.mov", 500, 600)))
     edit = edit.add_overlay(Overlay("title", "/v/t.mov", 30, 30)).add_overlay(Overlay("captions 1", "/v/c.mov", 0, 300))
     words = [Word("press", 2.9, 3.4)]
-    new, lines = sfx.auto_place(edit, words)
+    new, lines = sfx.auto_place(edit, words, per_minute=0)
     got = {x.name: x for x in new.sounds}
     # pop on the title; whoosh on the first cut (3.0s) but not the one 0.33s later; whoosh on the zoom; whoosh on the last cut
     assert sorted(got) == ["auto:cut@380", "auto:cut@90", "auto:overlay@30", "auto:zoom@280"]
@@ -131,3 +131,49 @@ def test_commands_and_build_put_the_mix_on_an_audio_track(lib, capsys, monkeypat
     assert [x.name for x in Store("p").load().sounds] == ["hello"]
     main(["sfx-list"])
     assert "basic-pop.wav" in capsys.readouterr().out
+
+
+def test_cap_keeps_beats_and_the_opening_and_spreads_the_rest(lib):
+    # A 60 second edit with a cut every 3 seconds, a title at 1s and a punch-in at 30s.
+    segs = [Segment("/v/a.mov", n * 100, n * 100 + 90) for n in range(20)]
+    edit = EditList(30.0, tuple(segs), (Overlay("title", "/v/t.mov", 30, 30),)).reframe(900, 990, zoom=1.2)
+    free, _ = sfx.auto_place(edit, per_minute=0)
+    assert len(free.sounds) == 20
+    new, lines = sfx.auto_place(edit, per_minute=5, beats=(45.0,))
+    names = sorted(x.name for x in new.sounds)
+    assert len(names) == 5 and "left 15 other moments quiet" in lines[-1]
+    assert {"auto:beat@1350", "auto:overlay@30", "auto:zoom@900"} <= set(names)       # beat, hook and zoom stay
+    cuts = sorted(x.at for x in new.sounds if x.name.startswith("auto:cut"))
+    assert len(cuts) == 2 and cuts[1] - cuts[0] > 600                                # the two cuts kept are far apart
+    assert next(x for x in new.sounds if x.name == "auto:beat@1350").tag == "hit"
+    with pytest.raises(EditError, match="outside the edit"):
+        sfx.auto_place(edit, beats=(99.0,))
+
+
+def test_riser_runs_into_a_zoom_when_asked(lib):
+    edit = EditList.from_clip("/v/a.mov", 600, 30.0).reframe(300, 400, zoom=1.2).reframe(10, 20, zoom=1.3)
+    new, lines = sfx.auto_place(edit, on=("zooms", "risers"))
+    riser = next(x for x in new.sounds if x.tag == "riser")
+    assert riser.name == "auto:riser@300" and riser.at + riser.duration == 300      # ends where the zoom lands
+    assert not any(x.name == "auto:riser@10" for x in new.sounds)                    # no room before the first one
+    assert any("into the zoom at 10.00s" in ln for ln in lines)
+    assert [float(ln.split("s")[0]) for ln in lines] == sorted(float(ln.split("s")[0]) for ln in lines)
+
+
+def test_each_kind_of_sound_gets_its_own_track(lib, tmp_path):
+    edit = EditList.from_clip("/v/a.mov", 300, 30.0)
+    for n, tag in enumerate(["whoosh", "pop", "whoosh"]):
+        edit = edit.add_sound(sfx.sound_for(edit, tag, 30 + n * 60, f"s{n}", -6.0))
+    parts = sfx.stems(edit, tmp_path / "r", "p-v1-sfx")
+    assert [(k, c) for k, _, c in parts] == [("pop", 1), ("whoosh", 2)]
+    assert all(p.exists() and abs(sfx._seconds(p) - 10.0) < 0.05 for _, p, _ in parts)
+    project = Project(fps="30")
+    report = build_timeline(Resolve(project), edit, "t", sound_mix=[(k, str(p), c) for k, p, c in parts])
+    assert report.ok and "3 sound effects (pop on A2: 1, whoosh on A3: 2)" in report.text()
+    t = project.timelines[-1]
+    assert len(t.audio[2]) == 1 and len(t.audio[3]) == 1
+    many = edit
+    for n, tag in enumerate(["thud", "click", "riser", "hit"]):
+        many = many.add_sound(Sound(f"x{n}", parts[0][1].as_posix(), 10 * n, 5, 0.0, f"kind{n}"))
+    assert [k for k, _, _ in sfx.stems(many, tmp_path / "r2", "m")][-1] in ("whoosh", "other") and \
+        len(sfx.stems(many, tmp_path / "r2", "m")) == 5

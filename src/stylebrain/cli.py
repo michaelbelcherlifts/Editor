@@ -352,7 +352,8 @@ def cmd_build(args) -> None:
     mixed = None
     if edit.sounds:
         from . import sfx
-        mixed = str(sfx.mix(edit, Path(".stylebrain") / "renders" / f"{store.project}-v{store.head()}-sfx.wav").resolve())
+        mixed = [(kind, str(path.resolve()), count) for kind, path, count in
+                 sfx.stems(edit, Path(".stylebrain") / "renders", f"{store.project}-v{store.head()}-sfx")]
     report = build_timeline(connect(), edit, name, sound_mix=mixed)
     print(report.text())
     if not report.ok:
@@ -745,12 +746,16 @@ def cmd_sfx_auto(args) -> None:
     if args.transcript:
         from .autopilot import timeline_words
         words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
+    try:
+        beats = tuple(parse_time(b, edit.fps) / edit.fps for b in args.beats.split(",")) if args.beats else ()
+    except EditError:
+        raise EditError("--beats is a list of times, such as 12.5,31") from None
     new, lines = sfx.auto_place(edit, words, tuple(args.on.split(",")), args.gain, args.duck, args.min_cut_gap,
-                                 safe_only=args.ad)
+                                 safe_only=args.ad, per_minute=args.per_minute, beats=beats)
     if not lines:
         print("nothing to place sounds on")
         return
-    _save(store, edit, new, f"place {len(lines)} sounds automatically")
+    _save(store, edit, new, f"place {sum(x.name.startswith('auto:') for x in new.sounds)} sounds automatically")
     for line in lines:
         print("  " + line)
 
@@ -1159,7 +1164,10 @@ def main(argv: list[str] | None = None) -> None:
         A("--gain", type=float, default=-12.0), A("--name"), A("--ad", action="store_true", help="paid ad: use only your own, made-here, CC0 or public-domain sounds"))
     add("sfx-auto", cmd_sfx_auto, "place sounds on cuts, graphics and zooms, lowered under speech",
         A("--transcript", help="word timings, to lower sounds under speech"), A("--source"),
-        A("--on", default="cuts,overlays,zooms"), A("--gain", type=float, default=-14.0),
+        A("--on", default="cuts,overlays,zooms", help="any of cuts, overlays, zooms, risers"),
+        A("--per-minute", type=float, default=8.0, help="most automatic sounds a minute (0 for no limit)"),
+        A("--beats", help="times of story beats that get a hit and are kept first, such as 12.5,31"),
+        A("--gain", type=float, default=-14.0),
         A("--duck", type=float, default=6.0), A("--min-cut-gap", type=float, default=2.5), A("--ad", action="store_true", help="paid ad: use only your own, made-here, CC0 or public-domain sounds"))
     add("sfx-remove", cmd_sfx_remove, "remove a sound by name, or 'auto' or 'all'", A("name"))
 

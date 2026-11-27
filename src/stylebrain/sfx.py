@@ -194,18 +194,29 @@ def sound_for(edit: EditList, tag: str, at: int, name: str, gain_db: float, base
 
 def auto_place(edit: EditList, words: list[Word] | None = None, on: tuple[str, ...] = ("cuts", "overlays", "zooms"),
                gain_db: float = -14.0, duck_db: float = 6.0, min_cut_gap: float = 2.5, min_gap: float = 0.35,
-               base: str | Path = ".", safe_only: bool = False) -> tuple[EditList, list[str]]:
+               base: str | Path = ".", safe_only: bool = False, per_minute: float = 8.0,
+               beats: tuple[float, ...] = ()) -> tuple[EditList, list[str]]:
     """Place sounds on cuts, overlay starts and zooms. Returns the new edit and a line per sound.
 
     cuts: a whoosh where the picture cuts, but only cuts at least `min_cut_gap`
       seconds apart, so a run of tightened pauses is left alone.
     overlays: a pop where a graphic or caption effect appears (running
       caption tracks are skipped).
-    zooms: a whoosh where a clip marked as a zoom starts.
+    zooms: a whoosh where a clip marked as a zoom or punched in further starts.
+    risers: a riser that ends where a zoom starts (only when asked for in `on`).
+    beats: timeline seconds of story beats (the turn, the payoff). Each gets a
+      hit, and beats are kept first when the cap bites.
+    per_minute: at most this many automatic sounds a minute (0 for no cap;
+      a short clip still gets three).
+      When there are more moments than that, beats and the opening are kept
+      first, then zooms, graphics and cuts, spread out through the video.
     Sounds that land on speech (from `words`, timeline times) are lowered by `duck_db`.
     Earlier automatic sounds are replaced; sounds placed by hand are kept.
     """
     fps = edit.fps
+    unknown = set(on) - {"cuts", "overlays", "zooms", "risers"}
+    if unknown:
+        raise EditError(f"unknown place {sorted(unknown)[0]!r}; choose from cuts, overlays, zooms, risers")
     if any(x.name.startswith("auto:") for x in edit.sounds):
         edit = edit.remove_sounds("auto:")
     wanted: list[tuple[int, str, str]] = []
@@ -213,6 +224,11 @@ def auto_place(edit: EditList, words: list[Word] | None = None, on: tuple[str, .
     # A zoom is a clip baked as one, or a clip punched in further than the clip before it.
     zooms = {start for n, (start, seg) in enumerate(pieces)
              if seg.note.startswith("zoom") or (n and seg.zoom > pieces[n - 1][1].zoom + 0.02)}
+    for t in beats:
+        at = round(t * fps)
+        if not 0 <= at < edit.duration:
+            raise EditError(f"the beat at {t:g}s is outside the edit")
+        wanted.append((at, "beat", "hit"))
     if "zooms" in on:
         wanted += [(start, "zoom", "whoosh") for start in sorted(zooms)]
     if "overlays" in on:
@@ -225,15 +241,36 @@ def auto_place(edit: EditList, words: list[Word] | None = None, on: tuple[str, .
             if (start - last) / fps >= min_cut_gap:
                 wanted.append((start, "cut", "whoosh"))
                 last = start
-    unknown = set(on) - {"cuts", "overlays", "zooms"}
-    if unknown:
-        raise EditError(f"unknown place {sorted(unknown)[0]!r}; choose from cuts, overlays, zooms")
-    taken = sorted(x.at for x in edit.sounds)
+
+    # One sound per moment: where two fall together the more important one stays.
+    rank = {"beat": 0, "zoom": 1, "overlay": 2, "cut": 3}
+    by_hand = sorted(x.at for x in edit.sounds)
+    moments: list[tuple[int, str, str]] = []
+    for at, why, tag in sorted(wanted, key=lambda w: (rank[w[1]], w[0])):
+        near = [t for t in by_hand] + [m[0] for m in moments]
+        if at < edit.duration and not any(abs(at - t) / fps < min_gap for t in near):
+            moments.append((at, why, tag))
+
+    # The cap. The first moment in the opening three seconds counts as a beat: it is the hook.
+    skipped = 0
+    cap = max(3, int(per_minute * edit.duration / fps / 60)) if per_minute > 0 else len(moments)
+    if len(moments) > cap:
+        opening = min((m for m in moments if m[0] / fps <= 3.0), default=None)
+        score = lambda m: 0 if m is opening else rank[m[1]]  # noqa: E731
+        kept: list[tuple[int, str, str]] = []
+        pool = list(moments)
+        while pool and len(kept) < cap:
+            best = min(score(m) for m in pool)
+            tier = [m for m in pool if score(m) == best]
+            # Among equals take the one furthest from what is already kept, so sounds spread out.
+            pick = max(tier, key=lambda m: (min((abs(m[0] - k[0]) for k in kept), default=10 ** 9), -m[0]))
+            kept.append(pick)
+            pool.remove(pick)
+        skipped = len(moments) - len(kept)
+        moments = kept
+
     lines, turn = [], {}
-    order = {"zoom": 0, "overlay": 1, "cut": 2}
-    for at, why, tag in sorted(wanted, key=lambda w: (w[0], order[w[1]])):
-        if at >= edit.duration or any(abs(at - t) / fps < min_gap for t in taken):
-            continue
+    for at, why, tag in sorted(moments):
         n = turn.get(tag, 0)
         turn[tag] = n + 1
         sound = sound_for(edit, tag, at, f"auto:{why}@{at}", gain_db, base, n, safe_only)
@@ -242,9 +279,45 @@ def auto_place(edit: EditList, words: list[Word] | None = None, on: tuple[str, .
         if spoken:
             sound = Sound(sound.name, sound.source, sound.at, sound.duration, gain_db - duck_db, tag)
         edit = edit.add_sound(sound)
-        taken.append(at)
         lines.append(f"{at / fps:7.2f}s  {tag:<7} on {why}" + ("  (lowered under speech)" if spoken else ""))
+
+    if "risers" in on:
+        placed = sorted(x.at for x in edit.sounds)
+        for start in sorted(zooms):
+            if not any(x.name == f"auto:zoom@{start}" for x in edit.sounds):
+                continue                          # the zoom itself lost its sound to the cap
+            item = find("riser", base, 0, safe_only)
+            frames = max(1, round(item["seconds"] * fps))
+            at = start - frames
+            if at < 0 or any(at - round(min_gap * fps) < t < start for t in placed):
+                continue                          # no clear run-up
+            edit = edit.add_sound(Sound(f"auto:riser@{start}", str((root(base) / item["file"]).resolve()),
+                                        at, frames, gain_db - duck_db, "riser"))
+            placed.append(at)
+            lines.append(f"{at / fps:7.2f}s  riser   into the zoom at {start / fps:.2f}s")
+        lines.sort(key=lambda ln: float(ln.split("s", 1)[0]))
+    if skipped:
+        lines.append(f"left {skipped} other moments quiet to stay under {per_minute:g} sounds a minute")
     return edit, lines
+
+
+def stems(edit: EditList, folder: str | Path, name: str, limit: int = 5) -> list[tuple[str, Path, int]]:
+    """One mixed wav per kind of sound, so each kind can sit on its own track and be muted.
+
+    Returns (kind, file, how many sounds) in a steady order. Past `limit` kinds the rest share one file.
+    """
+    groups: dict[str, list[Sound]] = {}
+    for x in edit.sounds:
+        groups.setdefault(x.tag or "sound", []).append(x)
+    kinds = sorted(groups, key=lambda k: (-len(groups[k]), k))
+    if len(kinds) > limit:
+        groups["other"] = [x for k in kinds[limit - 1:] for x in groups.pop(k)]
+        kinds = kinds[:limit - 1] + ["other"]
+    out = []
+    for kind in sorted(kinds):
+        part = EditList(edit.fps, edit.segments, (), "", tuple(groups[kind]))
+        out.append((kind, mix(part, Path(folder) / f"{name}-{kind}.wav"), len(groups[kind])))
+    return out
 
 
 def mix(edit: EditList, out: str | Path, batch: int = 60) -> Path | None:

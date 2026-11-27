@@ -49,6 +49,7 @@ class BuildReport:
     problems: list[str] = field(default_factory=list)
     look: str = ""
     sounds: int = 0
+    sound_tracks: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -60,6 +61,8 @@ class BuildReport:
             head += f", look {self.look.rsplit('/', 1)[-1]}"
         if self.sounds:
             head += f", {self.sounds} sound effects"
+        if self.sound_tracks:
+            head += " (" + ", ".join(self.sound_tracks) + ")"
         if self.ok:
             return head + ", all checked"
         return head + "\n" + "\n".join(f"  problem: {p}" for p in self.problems)
@@ -195,27 +198,30 @@ def _apply_framing(project, placed, edit: EditList, clips: dict) -> list[str]:
     return []
 
 
-def _place_sound_mix(media_pool, timeline, origin: int, path: str, frames: int, end_inclusive: bool) -> list[str]:
-    """Put the mixed sound effects file on audio track 2, from the start of the timeline."""
+def _place_sound_mix(media_pool, timeline, origin: int, path: str, frames: int, end_inclusive: bool,
+                     track: int = 2) -> list[str]:
+    """Put a mixed sound effects file on an audio track, from the start of the timeline."""
     items = _media_items(media_pool, {path})
-    while timeline.GetTrackCount("audio") < 2:
+    while timeline.GetTrackCount("audio") < track:
         if not timeline.AddTrack("audio"):
             return ["Resolve would not add an audio track for the sound effects"]
     info = {"mediaPoolItem": items[path], "startFrame": 0, "endFrame": frames - (1 if end_inclusive else 0),
-            "trackIndex": 2, "recordFrame": origin, "mediaType": 2}
+            "trackIndex": track, "recordFrame": origin, "mediaType": 2}
     placed = media_pool.AppendToTimeline([info]) or []
-    on_track = timeline.GetItemListInTrack("audio", 2) or []
+    on_track = timeline.GetItemListInTrack("audio", track) or []
     if not placed or not any(i.GetStart() == origin for i in on_track):
-        return ["the sound effects did not land on audio track 2"]
+        return [f"the sound effects did not land on audio track {track}"]
     return []
 
 
 def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | None = None,
-                   sound_mix: str | None = None) -> BuildReport:
+                   sound_mix: str | list | None = None) -> BuildReport:
     """Create a new timeline from the edit and verify it.
 
     end_inclusive: whether a clipInfo's endFrame is the last frame used (True)
     or one past it (False). Leave as None to detect it automatically.
+    sound_mix: one mixed file for audio track 2, or a list of (kind, file, count)
+    from `sfx.stems`, each put on its own track from 2 up so a kind can be muted.
     """
     if not edit.segments:
         raise EditError("the edit is empty")
@@ -242,8 +248,12 @@ def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | Non
             problems += _apply_look(project, main, edit.look)
         if edit.fill:
             problems += _apply_framing(project, main, edit, clips)
-        if sound_mix:
-            problems += _place_sound_mix(media_pool, timeline, origin, sound_mix, edit.duration, mode)
+        tracks = []
+        stems = [("", sound_mix, len(edit.sounds))] if isinstance(sound_mix, str) else list(sound_mix or [])
+        for n, (kind, path, count) in enumerate(stems):
+            problems += _place_sound_mix(media_pool, timeline, origin, str(path), edit.duration, mode, track=2 + n)
+            if kind:
+                tracks.append(f"{kind} on A{2 + n}: {count}")
         return BuildReport(final, len(main), len(over), warn + problems, look=edit.look,
-                           sounds=len(edit.sounds) if sound_mix else 0)
+                           sounds=len(edit.sounds) if stems else 0, sound_tracks=tracks)
     raise AssertionError("unreachable")

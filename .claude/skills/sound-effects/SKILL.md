@@ -6,8 +6,10 @@ description: Use when Michael wants sound effects on his edit or in his sound li
 # Sound effects
 
 Sounds sit on the edit list like overlays: they follow cuts and can be
-undone. At `build` they are mixed into one audio file, levels set and lowered
-under speech, and placed on audio track 2 in Resolve.
+undone. At `build` each kind of sound (whoosh, pop, hit, riser) is mixed into
+its own file, levels set and lowered under speech, and placed on its own audio
+track from A2 up, so he can mute or turn down one kind in Resolve. The build
+report says which kind is on which track.
 
 ## The library
 
@@ -37,6 +39,14 @@ for his guidance on that video.
   It prints every sound it placed: relay the list and the count.
   `--on cuts` or `--on overlays,zooms` limits it. Running it again replaces
   its earlier sounds and keeps hand-placed ones.
+- It holds back by default: at most 8 automatic sounds a minute
+  (`--per-minute N`, 0 for no limit). When there are more moments than that it
+  keeps story beats and the first moment of the opening, then zooms, graphics
+  and cuts, spread through the video, and says how many it left quiet.
+- Story beats: when the script or he names the turn and the payoff, pass their
+  times with `--beats 12.5,31`. Each gets a hit and is kept first.
+- `--on cuts,overlays,zooms,risers` also runs a riser into each zoom that has
+  a clear run-up. Offer it; it is not on by default.
 - By hand: `uv run stylebrain sfx-place TAG --at TIME --gain -12`.
 - Remove: `sfx-remove NAME`, `sfx-remove auto`, or `sfx-remove all`.
 
