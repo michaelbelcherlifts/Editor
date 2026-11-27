@@ -19,6 +19,8 @@ sound, reframing, export, the content calendar and social posts.
 - When a request is ambiguous about where ("cut this"), find out before cutting:
   read the playhead or markers through the Resolve MCP, or ask.
 - Say what changed in one line, including the new length.
+- Before a first cut, run `uv run stylebrain rules` and follow it. When Michael
+  corrects a cut, save the lesson with the house-rules skill so it sticks.
 - Creative choices are Michael's. Offer options; do not add effects or cuts that
   were not asked for. Autopilot is the exception he asked for: it may cut retakes
   and pauses, and must list every cut it made.
@@ -43,6 +45,7 @@ sound, reframing, export, the content calendar and social posts.
 - `src/stylebrain/score.py`: the virality rubric: a 0 to 100 score for a short clip, part by part
 - `src/stylebrain/learn.py`: clip attributes, the private clip dataset (`library/clips/`, not committed) and the model that finds what goes with performance
 - `src/stylebrain/sfx.py`: the sound library (`library/sfx/`, not committed), automatic placement with a cap per minute, and the mixes that go on audio tracks from A2 up
+- `src/stylebrain/rules.py`: house rules: his standing corrections as settings and notes (`library/house-rules.json`, not committed)
 - `src/stylebrain/reframe.py`: finds the subject and sets each clip's framing (`x`, `y`, `zoom`) for vertical crops and punch-ins
 - `src/stylebrain/export.py`: renders the edit list to a postable file with ffmpeg, and checks any finished file (frame, length, loudness, black frames)
 - `src/stylebrain/social.py`: stills for Instagram and YouTube: photo edits, carousels, covers, story suggestions, and the package a reel becomes
