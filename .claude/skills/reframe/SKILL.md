@@ -13,7 +13,8 @@ cuts and moves, exports with `export` and is set on the clips in Resolve at `bui
 
 1. `uv run stylebrain reframe --auto` finds the subject in every shot (faces
    when the tracking extra is installed, otherwise where the movement is) and
-   gives each shot one steady framing. Jump cuts of the same shot share it.
+   gives each shot one steady framing. Jump cuts of the same shot share it,
+   and a clip that holds a hard cut to another shot is split there first.
 2. Relay the lines. A `warning` means the subject moves across more than the
    frame can hold in that shot: offer to split the shot there, or to leave it.
    `nothing to follow` means it stayed in the middle.
@@ -28,6 +29,8 @@ Upright phone footage already fits and is left alone.
   (smaller x looks further left, smaller y looks higher up).
 - Punch in: `uv run stylebrain reframe --from 12 --to 18 --zoom 1.15 --y 0.4`.
   A punch-in on a jump cut hides the jump. Keep it between 1.1 and 1.3 unless asked.
+  After `--auto` found a face, a punch-in closes in on the face by itself.
+  Otherwise give `--y` (about 0.35 to 0.4 for a standing shot) or it crops his head.
 - Leave out `--from` and `--to` to set the whole edit.
 
 Punch-ins are a creative choice: offer them, do not add them unasked. A punch-in
@@ -36,7 +39,10 @@ counts as a zoom for `sfx-auto`.
 ## Limits to say out loud
 
 - The framing is locked per shot. It does not pan to follow someone walking
-  across the frame; split the shot instead.
+  across the frame, and a slow zoom or pan inside one clip is not a cut, so
+  that clip gets one framing: split it by hand where it should change.
+- Words burned into wide footage get cut off by a vertical crop. Say so when
+  the preview shows it.
 - Instagram's grid shows the middle 4:5 of a reel. Keep faces and the lift
   away from the top and bottom sixth when choosing `y`.
 - In Resolve the framing is set as Zoom, Pan and Tilt on each clip, and he can

@@ -49,6 +49,7 @@ class Sample:
     face: tuple[float, float] | None   # centre of the largest face, 0..1
     cols: object                       # movement in each column since the last sample
     rows: object
+    moved: float = 0.0                 # share of the picture that changed since the last sample
 
 
 _cascade = None
@@ -89,13 +90,15 @@ def track(video: str, start: float, end: float, per_second: float = 3.0, width: 
         grey = (frames.astype(np.float32) @ np.array([0.299, 0.587, 0.114], np.float32))
         for n, g in enumerate(grey):
             small = g[::3, ::3]
+            share = 0.0
             if prev is None or prev.shape != small.shape:
                 cols, rows = np.zeros(small.shape[1]), np.zeros(small.shape[0])
             else:
                 moved = np.abs(small - prev) > 14
                 cols, rows = moved.sum(axis=0).astype(float), moved.sum(axis=1).astype(float)
+                share = float(moved.mean())
             prev = small
-            out.append(Sample(round(a + n / per_second, 3), _faces(g.astype(np.uint8)), cols, rows))
+            out.append(Sample(round(a + n / per_second, 3), _faces(g.astype(np.uint8)), cols, rows, share))
         a = b
     return out
 
@@ -128,13 +131,43 @@ def subject(samples: list[Sample]) -> Subject:
         xs, ys = np.array([f[0] for f in faces]), np.array([f[1] for f in faces])
         return Subject(float(np.median(xs)), float(np.median(ys)), float(np.percentile(xs, 10)),
                        float(np.percentile(xs, 90)), "face")
-    if samples:
-        cols, rows = sum(s.cols for s in samples), sum(s.rows for s in samples)
-        area = len(cols) * len(rows) * max(len(samples) - 1, 1)
+    calm = [s for s in samples if s.moved < 0.3]      # a sample taken across a cut says nothing about the subject
+    if calm:
+        cols, rows = sum(s.cols for s in calm), sum(s.rows for s in calm)
+        area = len(cols) * len(rows) * max(len(calm) - 1, 1)
         if cols.sum() / area > 0.0005:
             x, lo, hi = _spot(cols)
             return Subject(x, _spot(rows)[0], lo, hi, "motion")
     return Subject(0.5, 0.5, 0.5, 0.5, "centre")
+
+
+def shot_changes(video: str, samples: list[Sample], fps: float) -> list[int]:
+    """Source frames where the picture cuts to a different shot, found from the samples.
+
+    A sample where much of the picture changed is looked at frame by frame. It
+    counts as a cut only when one pair of frames holds the change; a zoom or a
+    pan spreads it over many frames and is left alone.
+    """
+    import numpy as np
+
+    out = []
+    for before, after in zip(samples, samples[1:]):
+        if after.moved < 0.3:
+            continue
+        first = max(int(before.t * fps) - 1, 0)
+        try:
+            frames = read_frames(video, max(first - 0.25, 0) / fps, (after.t * fps + 2) / fps, width=160)
+        except EditError:
+            continue
+        grey = frames.astype(np.float32).mean(axis=3)
+        change = (np.abs(grey[1:] - grey[:-1]) > 14).mean(axis=(1, 2))
+        if len(change) < 3:
+            continue
+        k = int(change.argmax())
+        rest = np.delete(change, k)
+        if change[k] > 0.3 and change[k] > 3 * float(np.median(rest)) + 0.05:
+            out.append(first + k + 1)
+    return sorted(set(out))
 
 
 # ------------------------------------------------------------------ planning
@@ -158,6 +191,13 @@ def plan(edit: EditList, width: int = 1080, height: int = 1920, per_second: floa
         if abs(i.width / i.height - width / height) < 0.01:
             continue                                  # already the right shape; nothing to choose
         tracks[src] = track(src, lo / fps, hi / fps, per_second)
+
+    # Where a clip holds more than one shot, split it there (a split changes nothing visible).
+    for src, samples in tracks.items():
+        for frame in shot_changes(src, samples, fps):
+            for a, b in edit.timeline_ranges_for_source(src, frame - 1, frame + 1):
+                if b - a == 2:
+                    edit = edit.split_at(a + 1)
 
     # One subject per clip, then group neighbours into shots.
     shots: list[dict] = []
@@ -191,7 +231,9 @@ def plan(edit: EditList, width: int = 1080, height: int = 1920, per_second: floa
         i = sizes[shot["source"]]
         win_w, win_h = geometry(i.width, i.height, width, height, zoom=1.0)["window"]
         x = min(max(sub.x, win_w / 2), 1 - win_w / 2)
-        y = min(max(sub.y, win_h / 2), 1 - win_h / 2)
+        # y is kept as found, even where the frame cannot move that way yet: a later punch-in
+        # then closes in on the face and not on the middle of the picture.
+        y = sub.y if sub.method == "face" else min(max(sub.y, win_h / 2), 1 - win_h / 2)
         edit = edit.reframe(shot["start"], shot["end"], x=x, y=y)
         line = f"{when}  x {x:.2f}, y {y:.2f}  ({sub.method})"
         if sub.method == "centre":

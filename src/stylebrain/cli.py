@@ -384,6 +384,8 @@ def cmd_reframe(args) -> None:
         new = edit.reframe(t0, t1, args.x, args.y, args.zoom)
         parts = [f"{k} {v:g}" for k, v in (("x", args.x), ("y", args.y), ("zoom", args.zoom)) if v is not None]
         message = f"frame {format_time(t0, edit.fps)} to {format_time(t1, edit.fps)}: " + ", ".join(parts)
+        if (args.zoom or 1) > 1 and args.y is None and all(s.y == 0.5 for s in new.segments if s.zoom == args.zoom):
+            print("  note: the punch-in closes in on the middle of the picture; add --y 0.4 or lower if it crops his head")
     _save(store, edit, new, message)
     if not args.no_preview:
         sheet = Path(".stylebrain") / "renders" / f"{store.project}-v{store.head()}-framing.jpg"

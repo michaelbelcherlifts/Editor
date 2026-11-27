@@ -65,7 +65,7 @@ def _main_track(edit: EditList, work: Path, width: int, height: int, fit: str) -
         chains.append(f"{pairs}concat=n={len(group)}:v=1:a=1[v][a]")
         part = work / f"main{b // BATCH:03d}.mkv"
         run(cmd + ["-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]",
-                   "-c:v", "libx264", "-preset", "fast", "-crf", "12", "-c:a", "pcm_s16le", str(part)])
+                   "-c:v", "libx264", "-preset", "veryfast", "-crf", "12", "-c:a", "pcm_s16le", str(part)])
         parts.append(part)
     return parts
 
