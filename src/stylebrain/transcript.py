@@ -6,6 +6,7 @@ to turn a source range into where it currently sits on the timeline.
 
 from __future__ import annotations
 
+import html
 import json
 import re
 from dataclasses import dataclass
@@ -259,12 +260,16 @@ def _stamp(t: float, sep: str = ",") -> str:
     return f"{ms // 3600000:02d}:{ms // 60000 % 60:02d}:{ms // 1000 % 60:02d}{sep}{ms % 1000:03d}"
 
 
-def caption_lines(words: list[Word], max_chars: int = 32, max_gap: float = 0.7) -> list[list[Word]]:
-    """Group words into caption lines by length and pauses."""
+def caption_lines(words: list[Word], max_chars: int = 32, max_gap: float = 0.7,
+                  breaks: list[float] = ()) -> list[list[Word]]:
+    """Group words into caption lines by length and pauses. A line never runs across a time in
+    `breaks` (a cut to another part of the recording, such as a cold open)."""
     lines: list[list[Word]] = []
     for w in words:
         cur = lines[-1] if lines else None
-        if cur and len(" ".join(x.text for x in cur)) + 1 + len(w.text) <= max_chars and w.start - cur[-1].end <= max_gap:
+        crosses = cur and any(cur[-1].start < b <= w.start + 0.001 for b in breaks)
+        if (cur and not crosses and len(" ".join(x.text for x in cur)) + 1 + len(w.text) <= max_chars
+                and w.start - cur[-1].end <= max_gap):
             cur.append(w)
         else:
             lines.append([w])
@@ -289,7 +294,13 @@ def from_subtitles(text: str) -> list[Word]:
     Each cue's words are spread evenly across the cue. YouTube's automatic
     captions repeat the previous line in each cue; repeated lines are dropped.
     Good enough for measuring speech pace, not for frame-accurate cuts.
+
+    YouTube's automatic captions (the ".en-orig.vtt" kind) also carry a time
+    for every word; when those are there they are used, which is close enough
+    to choose sentences and pauses from.
     """
+    if _INLINE.search(text):
+        return _from_timed_vtt(text)
     words: list[Word] = []
     seen: list[str] = []
     cue = None
@@ -321,6 +332,57 @@ def from_subtitles(text: str) -> list[Word]:
             lines.append(raw)
     flush()
     return sorted(words, key=lambda w: w.start)
+
+
+_INLINE = re.compile(r"<(\d+):(\d\d):(\d\d)\.(\d{3})>")
+_WORD_MAX = 1.0  # a word timed only by when the next one starts is held at most this long
+
+
+def _secs(g) -> float:
+    return int(g[0]) * 3600 + int(g[1]) * 60 + int(g[2]) + int(g[3]) / 1000
+
+
+def _from_timed_vtt(text: str) -> list[Word]:
+    """Words from a VTT whose cues carry a time per word: `first<00:00:04.200><c> next</c>...`.
+
+    Each cue repeats the line before and adds one new line, the last one; a new line of one
+    word has no inline times and starts with its cue. Cues of a few milliseconds only repeat.
+    Sound labels such as [music] are dropped.
+    """
+    starts: list[tuple[float, str]] = []
+    ends: list[float] = []   # the end of the cue each word came from
+    cues: list[tuple[float, float, list[str]]] = []
+    for raw in text.splitlines():
+        m = _CUE.search(raw)
+        if m:
+            g = m.groups()
+            cues.append((_secs(g[:4]), _secs(g[4:]), []))
+        elif cues and raw.strip():
+            cues[-1][2].append(raw.strip())
+    last = None
+    for cue_start, cue_end, lines in cues:
+        if not lines or cue_end - cue_start < 0.02:
+            continue
+        line = html.unescape(lines[-1])
+        if line == last:
+            continue
+        last = line
+        at = cue_start
+        for piece in re.split(r"(<\d+:\d\d:\d\d\.\d{3}>)", line):
+            tag = _INLINE.fullmatch(piece)
+            if tag:
+                at = _secs(tag.groups())
+                continue
+            for tok in re.sub(r"</?c[^>]*>", "", piece).split():
+                if not re.fullmatch(r"\[[^\]]*\]|>>|-", tok):
+                    starts.append((at, tok))
+                    ends.append(cue_end)
+    words = []
+    for k, (t, tok) in enumerate(starts):
+        nxt = starts[k + 1][0] if k + 1 < len(starts) else ends[k]
+        end = min(max(nxt, t + 0.05), t + _WORD_MAX)
+        words.append(Word(tok, round(t, 3), round(end, 3)))
+    return words
 
 
 _PHANTOMS = {"thanksforwatching", "thankyouforwatching", "thankyou", "thanks", "you", "pleasesubscribe",

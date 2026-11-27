@@ -56,10 +56,11 @@ def _frames(edit: EditList, source: str, spans: list[tuple[float, float]]) -> li
     return out
 
 
-def caption_chunks(words: list[tr.Word], chunk: float = CHUNK_SECONDS) -> list[list[tr.Word]]:
+def caption_chunks(words: list[tr.Word], chunk: float = CHUNK_SECONDS,
+                   breaks: list[float] = ()) -> list[list[tr.Word]]:
     """Split timeline words into runs of about `chunk` seconds, breaking between caption lines."""
     chunks: list[list[tr.Word]] = []
-    for line in tr.caption_lines(words, max_chars=26):
+    for line in tr.caption_lines(words, max_chars=26, breaks=breaks):
         if chunks and line[-1].end - chunks[-1][0].start <= chunk:
             chunks[-1] += line
         else:
@@ -68,11 +69,12 @@ def caption_chunks(words: list[tr.Word], chunk: float = CHUNK_SECONDS) -> list[l
 
 
 def place_captions(edit: EditList, words: list[tr.Word], width: int, height: int, track: int = 2,
-                   render=None, template: str = "captions", extra: dict | None = None) -> EditList:
+                   render=None, template: str = "captions", extra: dict | None = None,
+                   breaks: list[float] = ()) -> EditList:
     """Render running captions for timeline words and add them as overlays."""
     if render is None:
         from .effects import render_template as render
-    for n, chunk in enumerate(caption_chunks(words), 1):
+    for n, chunk in enumerate(caption_chunks(words, breaks=breaks), 1):
         start = chunk[0].start
         params = {**(extra or {}), "words": [{"word": w.text, "start": round(w.start - start, 3), "end": round(w.end - start, 3)}
                             for w in chunk]}
