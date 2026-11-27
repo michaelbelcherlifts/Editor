@@ -358,6 +358,40 @@ def cmd_build(args) -> None:
         sys.exit(1)
 
 
+def _wh(size: str) -> tuple[int, int]:
+    try:
+        w, h = (int(x) for x in size.lower().split("x"))
+    except ValueError:
+        raise EditError("size looks like 1080x1920") from None
+    return w, h
+
+
+def cmd_export(args) -> None:
+    from . import export
+    store = _store(args); edit = store.load()
+    w, h = _wh(args.size)
+    out = Path(args.out or Path("exports") / f"{store.project}-v{store.head()}.mp4")
+    export.render(edit, out, w, h, args.fit, args.lufs, sounds=not args.no_sounds)
+    print(f"exported {out} ({format_time(edit.duration, edit.fps)})")
+    if args.no_check:
+        return
+    c = export.check(out, edit.duration / edit.fps, w, h, args.lufs, sheet=out.with_suffix(".frames.jpg"))
+    print(c.text())
+    if not c.ok:
+        sys.exit(1)
+
+
+def cmd_export_check(args) -> None:
+    from . import export
+    w, h = _wh(args.size)
+    file = Path(args.file)
+    c = export.check(file, args.seconds, w, h, args.lufs, sheet=None if args.no_sheet else file.with_suffix(".frames.jpg"))
+    print(json.dumps({"file": c.file, **c.facts, "problems": c.problems, "notes": c.notes, "sheet": c.sheet}, indent=2)
+          if args.json else c.text())
+    if not c.ok:
+        sys.exit(1)
+
+
 def cmd_style_learn(args) -> None:
     from . import style
     words = tr.load_words(args.transcript) if args.transcript else None
@@ -1172,6 +1206,13 @@ def main(argv: list[str] | None = None) -> None:
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")
+    out = [A("--size", default="1080x1920"), A("--lufs", type=float, default=-14.0, help="target loudness")]
+    add("export", cmd_export, "render the edit to a file ready to post, then check it", A("out", nargs="?"), *out,
+        A("--fit", default="fill", choices=["fill", "fit"], help="fill crops to cover the frame; fit keeps it all with bars"),
+        A("--no-sounds", action="store_true"), A("--no-check", action="store_true"))
+    add("export-check", cmd_export_check, "check a finished file (from here or from Resolve) before posting", A("file"), *out,
+        A("--seconds", type=float, help="how long it should be"), A("--no-sheet", action="store_true"),
+        A("--json", action="store_true"))
     add("build", cmd_build, "build the current edit in Resolve as a new timeline", A("--name"))
 
     args = p.parse_args(argv)
