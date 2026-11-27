@@ -78,7 +78,7 @@ and is ignored.
 
 Reels with a song under them: the speech tool writes the lyrics down as if he
 said them, and those words then spoil the hook check, the score and the
-learning set. `transcribe` warns when the words look sung. Read the transcript
+learning set. `transcribe` prints how the transcript starts so it can be checked; its guess that words look sung is weak (it misses rap and some songs), and a borrowed spoken sound is written down as his speech too. Read the transcript
 against the video, then run `transcribe VIDEO --speech 0-3.4` (ranges in
 seconds, comma separated) to keep only what is really spoken.
 

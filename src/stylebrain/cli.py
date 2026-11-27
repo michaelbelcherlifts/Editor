@@ -644,10 +644,12 @@ def cmd_transcribe(args) -> None:
             raise EditError("--speech takes ranges in seconds, such as 0-3.4 or 0-3.4,12-15") from None
     path, words = transcribe(args.video, args.out, args.engine, args.model, speech)
     print(f"{len(words)} words, saved to {path}")
-    if speech is None and tr.maybe_sung(words):
-        print("These may be song lyrics, not speech: the words are held as long as sung ones. Read them against the "
-              "video; if a song plays, run again with --speech START-END for the parts where someone talks "
-              "(or leave the transcript out for a music-only clip).")
+    if speech is None and words:
+        said = " ".join(w.text.strip() for w in words[:12])
+        sung = "These look sung (the words are held long). " if tr.maybe_sung(words) else ""
+        print(f"It starts: \"{said}\". {sung}Check these are his words: a song's lyrics or a borrowed sound are "
+              "written down as speech too, and nothing here can tell them apart reliably. If so, run again with "
+              "--speech START-END for the parts where he talks (leave the transcript out if he never does).")
 
 
 def cmd_retakes(args) -> None:
@@ -897,7 +899,7 @@ def cmd_clip_add(args) -> None:
 def cmd_clip_import(args) -> None:
     from . import learn
     ids = learn.import_analytics(args.csv, args.subscribers, reels_only=not args.all_posts)
-    need = [c["id"] for c in learn.load_all() if c["id"] in ids and not c["attributes"]]
+    need = [c["id"] for c in learn.load_all() if c["id"] in ids and learn.unmeasured(c)]
     print(f"{len(ids)} clips read from the analytics file; {len(need)} still need attributes (clip-add ID --video ...)")
 
 
@@ -921,6 +923,12 @@ def cmd_learn(args) -> None:
     within = True if args.within else False if args.mixed else None
     result = learn.fit(learn.load_all(), args.target, only_mine=args.mine, within=within)
     print(json.dumps(result, indent=2) if args.json else learn.report(result))
+
+
+def cmd_backtest(args) -> None:
+    from . import learn
+    b = learn.backtest(learn.load_all(), args.target, args.first, args.step, args.top, only_mine=not args.everyone)
+    print(json.dumps(b, indent=2) if args.json else learn.backtest_report(b))
 
 
 def cmd_sfx_basics(args) -> None:
@@ -1545,6 +1553,10 @@ def main(argv: list[str] | None = None) -> None:
         A("--subscribers", "--followers", type=int, help="your follower or subscriber count, for the reach target"),
         A("--all-posts", action="store_true", help="include photos and carousels, not only reels"))
     add("clip-list", cmd_clip_list, "list clips in the learning set")
+    add("backtest", cmd_backtest, "test what the model learned on the posts that came next, in posting order",
+        A("--target", default="reached"), A("--first", type=int, help="clips to fit on before the first prediction"),
+        A("--step", type=int, default=10), A("--top", type=float, default=0.2, help="share counted as a hit"),
+        A("--everyone", action="store_true", help="include clips that are not yours"), A("--json", action="store_true"))
     add("learn", cmd_learn, "learn which attributes go with clips doing well", A("--target", default="reach"),
         A("--mine", action="store_true", help="use only your own clips"), A("--json", action="store_true"),
         A("--within", action="store_true", help="compare each clip with its own creator's usual (the default when there are several creators)"),
