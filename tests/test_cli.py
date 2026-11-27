@@ -113,3 +113,12 @@ def test_loop_trim_ends_on_the_last_word(tmp_path, monkeypatch, capsys):
     assert "nothing changed" in capsys.readouterr().out
     main(["loop-check", "--transcript", "w.json", "--seconds", "9"])
     assert "[tail]" in capsys.readouterr().out
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="needs ffmpeg")
+def test_loop_check_on_a_file_with_no_sound(tmp_path, capsys):
+    clip = tmp_path / "quiet.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "testsrc=duration=2:size=64x64:rate=30",
+                    "-pix_fmt", "yuv420p", str(clip)], check=True)
+    main(["loop-check", "--video", str(clip)])
+    assert "no sound track" in capsys.readouterr().out

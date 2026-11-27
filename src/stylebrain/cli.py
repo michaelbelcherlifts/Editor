@@ -871,18 +871,21 @@ def cmd_loop_check(args) -> None:
     from . import story
     words = tr.drop_phantom_speech(tr.load_words(args.transcript)) if args.transcript else []
     gap = dark = level = None
+    silent = False
     duration = args.seconds
     if args.video:
         import numpy as np
 
-        from .media import info, read_frame, run
+        from .media import has_audio, info, read_frame, run
         duration = info(args.video).duration
         first, last = (read_frame(args.video, t, width=64).astype(float) for t in (0.0, max(duration - 0.08, 0.0)))
         gap, dark = float(np.abs(first - last).mean() / 255.0), bool(last.mean() < 12)
-        err = run(["ffmpeg", "-v", "info", "-nostats", "-ss", f"{max(duration - 0.25, 0):.3f}", "-i", args.video, "-vn",
-                   "-af", "volumedetect", "-f", "null", "-"], text=True).stderr
-        m = re.search(r"mean_volume: (-?[0-9.]+) dB", err)
-        level = float(m.group(1)) if m else None
+        silent = not has_audio(args.video)
+        if not silent:
+            err = run(["ffmpeg", "-v", "info", "-nostats", "-ss", f"{max(duration - 0.25, 0):.3f}", "-i", args.video,
+                       "-vn", "-af", "volumedetect", "-f", "null", "-"], text=True).stderr
+            m = re.search(r"mean_volume: (-?[0-9.]+) dB", err)
+            level = float(m.group(1)) if m else None
     if duration is None:
         if not words:
             raise EditError("loop-check needs --video, --transcript, or both")
@@ -897,6 +900,8 @@ def cmd_loop_check(args) -> None:
         print(f.line())
     if not args.video:
         print("    No video given: the last frame and the sound at the end were not checked.")
+    elif silent:
+        print("    This file has no sound track: the sound at the end was not checked.")
 
 
 def cmd_loop_trim(args) -> None:
