@@ -56,6 +56,7 @@ def test_transparent_render_must_be_mov(tmp_path):
     ("callout", {"text": "Here", "box": [0.2, 0.3, 0.3, 0.3]}),
     ("captions", {"words": [{"word": "one", "start": 0.1, "end": 0.4}, {"word": "two", "start": 0.5, "end": 0.9}]}),
     ("muscle_diagram", {"title": "Bench", "highlights": ["chest", {"muscle": "triceps", "role": "secondary"}]}),
+    ("letterbox", {"ratio": 4.0, "duration": 2.0}),
 ])
 def test_every_template_renders_something_visible(tmp_path, name, params):
     html, duration = build(name, {**params, **SMALL})
@@ -143,3 +144,13 @@ def test_change_speed(clip, tmp_path):
     assert abs(media.info(fast).duration - 1.0) < 0.21 and media.has_audio(fast)
     with pytest.raises(EditError):
         bake.change_speed(clip, "x.mp4", 20)
+
+
+def test_letterbox_covers_top_and_bottom_and_leaves_the_middle_clear(tmp_path):
+    html, duration = build("letterbox", {"ratio": 4.0, "duration": 2.0, "slide": 0.2, **SMALL})
+    r = render_html(html, tmp_path / "bars.mov", duration, fps=10, **SMALL)
+    mid = alpha_at(r.path, 1.0)
+    assert mid[5, 160, 3] > 200 and mid[175, 160, 3] > 200    # bars at the top and bottom
+    assert mid[90, 160, 3] < 10                               # the picture shows through the middle
+    with pytest.raises(EditError):
+        build("letterbox", {"ratio": 1.0, **SMALL})            # a wide frame has no room for 1:1 bars

@@ -27,6 +27,7 @@ Run `uv run stylebrain templates` for the list. Today:
 | `counter` | Rep counter ticking on each rep, or a day counter | `ticks` (rep times) or `value`, `label`, `total` |
 | `clipper` | Vertical frame: bands round a fitted landscape clip, headline on top | `headline`, `sub`, `duration`, `accent_words` |
 | `lift_diagram` | Muscle diagram preset for a lift | `lift` (bench, squat, deadlift, sumo_deadlift, rdl, overhead_press, row, pull_up, dip, hip_thrust, lunge, close_grip_bench, low_bar_squat), `only` |
+| `letterbox` | Cinematic black bars that slide in top and bottom over a pose | `ratio` (2.39 cinema), `duration`, `slide` (0 cuts them in) |
 | `form_cue` | Arrows, lines and measured joint angles over a freeze frame | `arrows`, `lines`, `angles` (points as [x, y] fractions) |
 | `tempo_counter` | Rep tempo counted down phase by phase | `tempo` such as "3-1-1-0", `reps` |
 | `compare_chart` | Bars that grow and count, for comparisons | `bars` = [{label, value}], `highlight`, `unit` |

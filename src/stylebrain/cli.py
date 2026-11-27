@@ -535,6 +535,17 @@ def cmd_reframe(args) -> None:
             print(f"  note: no preview ({e})")
 
 
+def cmd_speed(args) -> None:
+    from . import speed
+    store = _store(args); edit = store.load()
+    t0, t1 = parse_time(args.start, edit.fps), parse_time(args.end, edit.fps)
+    new, lines = speed.apply(edit, t0, t1, args.speed, store.dir / "speed", ramp=args.ramp,
+                             smooth=args.smooth, sound=args.sound)
+    how = f"{args.speed:g}x" + (f" with {args.ramp:g}s ramps" if args.ramp else "")
+    _save(store, edit, new, f"speed {format_time(t0, edit.fps)} to {format_time(t1, edit.fps)}: {how}")
+    print("\n".join(lines))
+
+
 def cmd_export(args) -> None:
     from . import export
     store = _store(args); edit = store.load()
@@ -1447,6 +1458,12 @@ def main(argv: list[str] | None = None) -> None:
         A("--x", type=float, help="0 is the left edge, 1 the right"), A("--y", type=float, help="0 is the top"),
         A("--zoom", type=float, help="1 is no punch-in"), A("--size", help="default: the house rule for frame, else 1080x1920"),
         A("--no-preview", action="store_true"))
+    add("speed", cmd_speed, "slow motion or speed-up on part of the timeline, with optional ramps in and out",
+        A("--from", dest="start", required=True), A("--to", dest="end", required=True),
+        A("--speed", type=float, required=True, help="0.5 is half speed, 2 is double"),
+        A("--ramp", type=float, default=0.0, help="seconds of source to ease in and out of the speed"),
+        A("--smooth", action="store_true", help="make in-between frames by motion interpolation (slower to render)"),
+        A("--sound", action="store_true", help="keep the clip's own sound, pitch kept (no ramps)"))
     add("export", cmd_export, "render the edit to a file ready to post, then check it", A("out", nargs="?"), *out,
         A("--fit", default="fill", choices=["fill", "fit"], help="fill crops to cover the frame; fit keeps it all with bars"),
         A("--no-sounds", action="store_true"), A("--no-music", action="store_true"),

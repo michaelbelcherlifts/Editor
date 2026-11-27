@@ -39,6 +39,7 @@ plausible, ask one short question before cutting.
 | Shorten pauses | `stylebrain tighten --transcript FILE --min-gap 0.6 --pad 0.12` |
 | Move a section | `stylebrain move START END TO` |
 | Swap two sections | `stylebrain swap A_START A_END B_START B_END` |
+| Slow motion, or slow into a pose | `stylebrain speed --from A --to B --speed 0.5 --ramp 0.3` (silent unless `--sound`; see `docs/aesthetic-shots.md`) |
 | Place a clip above | `stylebrain overlay-add NAME --source PATH --at T --duration D` |
 | Undo | `stylebrain undo` |
 | Go back further | `stylebrain log`, then `stylebrain goto N` |
