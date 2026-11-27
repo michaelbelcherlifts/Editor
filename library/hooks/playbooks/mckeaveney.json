@@ -1,0 +1,155 @@
+{
+ "who": "Robert McKeaveney (@robertmckeaveney, 653K Instagram followers on 2026-11-27), co-owner of the Wants and Needs clothing brand",
+ "read": "2026-11-27, from the on-screen captions of 8 teaching reels (Instagram, signed out) and the transcripts of his YouTube channel @Robertmckeaveney. Paraphrased, not copied.",
+ "sources": [
+  {
+   "url": "https://www.instagram.com/reel/DeYZ_aVz-h4/",
+   "about": "Breakdown of a 2-second reel that got 30,000 followers and sold out a drop",
+   "likes": 268000
+  },
+  {
+   "url": "https://www.instagram.com/reel/DgOzzqyOu-H/",
+   "about": "Others copied his format and beat his views: steal formats, add a twist",
+   "likes": 123000
+  },
+  {
+   "url": "https://www.instagram.com/reel/DgB81DrOExl/",
+   "about": "The hook ladder, with the views each version would get",
+   "likes": 54000
+  },
+  {
+   "url": "https://www.instagram.com/reel/DgHUE9ozzWU/",
+   "about": "Tier list: what really matters, what doesn't, what hurts your account",
+   "likes": 46000
+  },
+  {
+   "url": "https://www.instagram.com/reel/DfrEJGFTZ7J/",
+   "about": "Reading the retention graph: hook, buildup or payoff",
+   "likes": 40000
+  },
+  {
+   "url": "https://www.instagram.com/reel/DfwL2leTrZE/",
+   "about": "Take a viral clip and add a transition into your thing",
+   "likes": 17000
+  },
+  {
+   "url": "https://www.instagram.com/reel/Dftdu9XTCFK/",
+   "about": "Baseline: why consistent winners matter",
+   "likes": 4800
+  },
+  {
+   "url": "https://www.instagram.com/reel/DgJ0rZAzCNX/",
+   "about": "Every great hook asks a question",
+   "likes": 4300
+  },
+  {
+   "url": "https://www.youtube.com/watch?v=vuLfDsdUjLU",
+   "about": "10 days of reels before a clothing drop (125K views)"
+  }
+ ],
+ "rules": [
+  {
+   "key": "question",
+   "part": "hook",
+   "rule": "Every great hook makes the viewer ask a question. If they aren't asking one, they have no reason to wait for an answer.",
+   "check": "stylebrain hooks \"LINE\" prints its type; a line that fits no type usually asks nothing."
+  },
+  {
+   "key": "layers",
+   "part": "hook",
+   "rule": "Build the hook in layers. A plain value hook gets stronger with each layer: a bold claim, then the payoff they'll get, then a number, then credibility.",
+   "example": [
+    "How to bench more (value)",
+    "This is the best way to add to your bench (+ claim)",
+    "The best way to add [x] lb to your bench without more volume (+ payoff)",
+    "The [n] changes that added [x] lb to my bench (+ number)",
+    "I'm an All-American powerlifter, and these [n] changes added [x] lb to my bench (+ credibility)"
+   ],
+   "check": "stylebrain hooks \"LINE\" prints which layers it has and which to add."
+  },
+  {
+   "key": "value",
+   "part": "hook",
+   "rule": "The hook presents the value of the video. Without it there is no reason to keep watching."
+  },
+  {
+   "key": "credibility",
+   "part": "hook",
+   "rule": "Open on proof you can say it: a result you got or a test you ran (\"This 2-second reel got me 30,000 followers\", \"I tested 30 hooks\"). For Michael, that's real numbers: All-American, Army powerlifting team, his lifts."
+  },
+  {
+   "key": "structure",
+   "part": "structure",
+   "rule": "Hook, buildup, payoff. The hook asks the question, the buildup keeps them engaged and strengthens the question, and the payoff answers it so they watch to the end."
+  },
+  {
+   "key": "retention",
+   "part": "structure",
+   "rule": "Read the retention graph. A drop at the start means the hook failed, a slide through the middle means the buildup failed, and a drop at the end means the payoff failed. A flat line means all three worked.",
+   "check": "stylebrain retention '[[0,100],[3,70],...]' names the part to fix."
+  },
+  {
+   "key": "steal-formats",
+   "part": "format",
+   "rule": "You don't need to reinvent the wheel. Take a format that has already gone viral, add your own topic or a twist, and make it yours. How you structure a topic matters more than the topic itself.",
+   "check": "stylebrain hooks --examples TYPE --niche NICHE lists proven formats."
+  },
+  {
+   "key": "transition",
+   "part": "format",
+   "rule": "For a brand: open on an entertaining viral-format clip (the hook clip), then transition into your thing (for a clothing brand, the edit in the clothes). The entertainment earns the view and the transition carries the brand."
+  },
+  {
+   "key": "rewatch",
+   "part": "format",
+   "rule": "Give people a reason to rewatch. A challenge they can fail by a few frames (\"only 1% can pause at the right time\") makes them try again, so average watch time can be longer than the video, and Instagram pushes it."
+  },
+  {
+   "key": "conversion-layer",
+   "part": "format",
+   "rule": "Add one extra layer that converts, like a hidden frame that says \"DM us a screenshot for a discount\". His version brought in about 29,000 DMs and sold out a drop."
+  },
+  {
+   "key": "baseline",
+   "part": "posting",
+   "rule": "Each video is measured against your baseline. Three weak videos in a row pull the baseline down, and three good ones push it up. Post consistent winners, and hold back a video you expect to flop (he skipped one on drop day)."
+  },
+  {
+   "key": "volume",
+   "part": "posting",
+   "rule": "Post as many quality videos a week as you can make. Posting every day isn't the point."
+  },
+  {
+   "key": "trial-reels",
+   "part": "posting",
+   "rule": "Use trial reels: A/B test hooks, repost old videos, and get about 5x the output without hurting the main feed."
+  },
+  {
+   "key": "cta",
+   "part": "ending",
+   "rule": "Calls to action matter, but only after you've given value. Tie the ask to more of the same (\"for more content strategies, follow\")."
+  },
+  {
+   "key": "measure",
+   "part": "posting",
+   "rule": "Judge each post by views against baseline, watch time and follows per view. His best drop reel got 874K views and 1,300 follows within a day."
+  }
+ ],
+ "doesnt_matter": [
+  "posting every day",
+  "hashtags",
+  "posting time (a good video wins whenever it goes up)",
+  "fancy editing (the edit just has to do its job)",
+  "follower count (engagement per video matters more)"
+ ],
+ "hurts": [
+  "the promote / boost button: he says Instagram then stops recommending your posts organically, so you stay reliant on paying"
+ ],
+ "fits_michael": [
+  "Use his credibility in the first line: All-American at 516 DOTS, the Army powerlifting team, real PRs (never framed around worlds).",
+  "Hook clip plus transition: a funny gym or running bit that turns into a heavy lift, the same way the drop reels turn into the clothes.",
+  "Rewatch challenges: \"pause when the bar hits depth\", \"guess the weight before the plates show\".",
+  "Coaching conversion layer: a frame or a last line that sends people to nospotter.com, only after the value.",
+  "Trial reels to test two or three hooks for the same lift before it goes to the main feed."
+ ]
+}

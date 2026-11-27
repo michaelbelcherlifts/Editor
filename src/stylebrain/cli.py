@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -841,6 +842,52 @@ def cmd_hook_check(args) -> None:
         print(f.line())
 
 
+def cmd_loop_check(args) -> None:
+    from . import story
+    words = tr.drop_phantom_speech(tr.load_words(args.transcript)) if args.transcript else []
+    gap = dark = level = None
+    duration = args.seconds
+    if args.video:
+        import numpy as np
+
+        from .media import info, read_frame, run
+        duration = info(args.video).duration
+        first, last = (read_frame(args.video, t, width=64).astype(float) for t in (0.0, max(duration - 0.08, 0.0)))
+        gap, dark = float(np.abs(first - last).mean() / 255.0), bool(last.mean() < 12)
+        err = run(["ffmpeg", "-v", "info", "-nostats", "-ss", f"{max(duration - 0.25, 0):.3f}", "-i", args.video, "-vn",
+                   "-af", "volumedetect", "-f", "null", "-"], text=True).stderr
+        m = re.search(r"mean_volume: (-?[0-9.]+) dB", err)
+        level = float(m.group(1)) if m else None
+    if duration is None:
+        if not words:
+            raise EditError("loop-check needs --video, --transcript, or both")
+        duration = words[-1].end
+    found = story.loop_check(words, duration, gap, bool(dark), level)
+    if args.json:
+        print(json.dumps(story.to_json(found), indent=2))
+        return
+    serious = [f for f in found if f.serious]
+    print(f"{len(serious)} thing(s) that break the loop" if serious else "Nothing breaks the loop at the seam.")
+    for f in found:
+        print(f.line())
+    if not args.video:
+        print("    No video given: the last frame and the sound at the end were not checked.")
+
+
+def cmd_loop_trim(args) -> None:
+    from .autopilot import timeline_words
+    store = _store(args); edit = store.load()
+    words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
+    if not words:
+        raise EditError("no words of that transcript are left in the edit")
+    end = min(edit.duration, round((words[-1].end + args.air) * edit.fps))
+    if edit.duration - end < 2:
+        print("it already ends on the last word; nothing changed")
+        return
+    _save(store, edit, edit.remove_range(end, edit.duration),
+          f"end {args.air:g}s after the last word (\"{words[-1].text.strip()}\") so it runs into the opening")
+
+
 def cmd_beats(args) -> None:
     from . import story
     words, duration, _ = _clip_inputs(args)
@@ -884,8 +931,30 @@ def cmd_hooks(args) -> None:
         return
     kinds = story.classify_hook(args.spoken)
     print("type: " + (", ".join(kinds) if kinds else "none of the hook types; it may not hook at all"))
+    lay = story.hook_layers(args.spoken)
+    print(f"layers: {lay['layers']} of {len(story.HOOK_LAYERS)} (" + (", ".join(lay["have"]) or "none") + ")")
+    for a in lay["add"]:
+        print(f"  could add {a}")
     problems = story.check_hook_option(args.spoken, args.text or "")
     print("hook ok" if not problems else "\n".join(f"  {p}" for p in problems))
+
+
+def cmd_retention(args) -> None:
+    from . import story
+    raw = _json_arg(args.points, None)
+    if not raw:
+        raise EditError('give the curve as JSON or @file: [[0, 100], [3, 72], [10, 60], ...] (seconds, % watching)')
+    pts = [(p["t"], p["v"]) if isinstance(p, dict) else (p[0], p[1]) for p in raw]
+    try:
+        d = story.retention_diagnosis(pts, args.seconds)
+    except ValueError as e:
+        raise EditError(str(e)) from e
+    if args.json:
+        print(json.dumps(d, indent=2)); return
+    print(f"kept to the end: {d['kept_to_end']:.0%}")
+    for k in story.RETENTION_PARTS:
+        print(f"  {k:<8} lost {d['lost'][k]:.0%}")
+    print("fix " + d["fix"] if d["worst"] else d["fix"])
 
 
 def cmd_script_check(args) -> None:
@@ -1651,6 +1720,11 @@ def main(argv: list[str] | None = None) -> None:
         A("--questions", action="store_true", help="list the judgements and flags"), A("--json", action="store_true"))
     clip = [A("--transcript", required=True, help="word timings of the clip"),
             A("--video", help="the clip, to measure cuts"), A("--seconds", type=float, help="length when no video is given")]
+    add("loop-check", cmd_loop_check, "how cleanly a short runs from its end back into its opening",
+        A("--transcript", help="word timings of the clip"), A("--video", help="the clip, to check the last frame and sound"),
+        A("--seconds", type=float, help="length when no video is given"), A("--json", action="store_true"))
+    add("loop-trim", cmd_loop_trim, "end the edit just after the last word, so a replay runs straight into the hook", *tx,
+        A("--air", type=float, default=0.1, help="seconds kept after the last word"))
     add("hook-check", cmd_hook_check, "what holds the first seconds back, with the second it happens", *clip,
         A("--judge", help="JSON or @file: text_on_frame_1, undelivered, first_point"), A("--json", action="store_true"))
     add("beats", cmd_beats, "beat map of a long-form transcript: dead stretches and \"and then\" runs", *clip,
@@ -1663,6 +1737,9 @@ def main(argv: list[str] | None = None) -> None:
         A("--examples", nargs="?", const="", help="researched examples with views, of one TYPE or all"),
         A("--niche", help="powerlifting, running, food, guns, lockpicking or fpv"),
         A("--limit", type=int, default=8))
+    add("retention", cmd_retention, "which part lost viewers (hook, buildup or payoff) from a retention curve",
+        A("points", help='JSON or @file: [[seconds, percent watching], ...]'), A("--seconds", type=float,
+        help="video length (default: the last point)"), A("--json", action="store_true"))
     add("script-check", cmd_script_check, "measured checks on a written script (one spoken line per line)", A("script", nargs="?"),
         A("--questions", action="store_true", help="list the five story questions"),
         A("--story", help="your answers to the five story questions, JSON or @file"), A("--json", action="store_true"))

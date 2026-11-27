@@ -10,6 +10,8 @@
   wide-spaced title words, quiet plain captions, hand-drawn burst marks.
 - clipper: the "clipper" layout: black bands above and below a fitted landscape
   clip, with a headline in the top band.
+- hud_card: game-style stakes and payoff cards (mission, passed, failed) and a
+  hazard-striped warning card for "don't let X see this" hooks.
 
 All draw on a transparent page and are stepped by the renderer. Counting numbers
 use `window.seek`, so they land on exact values on every frame.
@@ -438,3 +440,65 @@ def burst(x: float = 0.5, y: float = 0.45, radius: float = 0.16, duration: float
            "<feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='2' seed='7'/>"
            "<feDisplacementMap in='SourceGraphic' scale='6'/></filter></svg>")
     return _page(svg + "".join(marks), css, width, height), duration
+
+
+_HUD = {
+    # kind: (label shown above the text, text colour, accent, default sub)
+    "mission": ("MISSION", "#ffffff", "#ffe14a", ""),
+    "passed": ("", "#ffe14a", "#ffe14a", ""),
+    "failed": ("", "#ff3b30", "#ff3b30", ""),
+    "warning": ("WARNING", "#111111", "#ffd400", ""),
+}
+
+
+def hud_card(text: str, kind: str = "mission", sub: str = "", duration: float = 2.5, y: float = 0.38,
+             size: int = 110, width: int = 1080, height: int = 1920):
+    """Game-style cards for a stake and its payoff (our own design, no game's art or font).
+
+    kind: mission (the stake: a label, then the goal, sliding in), passed (the payoff:
+    big text punching in, sub such as "+RESPECT"), failed (red, the frame darkens behind it),
+    warning (black-on-yellow hazard bar for "Do NOT let a ... see this" hooks).
+    """
+    if kind not in _HUD:
+        raise EditError(f"hud_card kind must be one of {', '.join(_HUD)}")
+    if not text.strip():
+        raise EditError("hud_card needs text")
+    label, fg, accent, _ = _HUD[kind]
+    out = max(float(duration) - 0.35, 0.3)
+    shadow = "0 8px 0 rgba(0,0,0,.55),0 0 30px rgba(0,0,0,.6)"
+    base = (f".h{{position:absolute;left:0;right:0;top:{y * 100:.1f}%;text-align:center;font-family:{HEAVY};"
+            f"animation:hout .3s ease-in {out:.3f}s forwards}}"
+            f".t{{font-size:{size}px;font-weight:900;line-height:.95;letter-spacing:-0.01em;color:{fg};"
+            "text-transform:uppercase;padding:0 6%}"
+            f".s{{font-size:{int(size * 0.42)}px;font-weight:800;margin-top:14px;color:#fff;letter-spacing:.06em;"
+            f"text-shadow:{shadow}}}"
+            "@keyframes hout{to{opacity:0}}")
+    sub_html = f"<div class='s'>{escape(sub)}</div>" if sub else ""
+    if kind == "mission":
+        css = base + (f".lb{{display:inline-block;font-size:{int(size * 0.36)}px;font-weight:900;letter-spacing:.3em;"
+                      f"color:#111;background:{accent};padding:6px 22px 6px 30px;margin-bottom:16px}}"
+                      f".t{{text-shadow:{shadow};animation:slide .45s cubic-bezier(.2,1,.3,1) .12s both}}"
+                      ".lb{animation:slide .35s cubic-bezier(.2,1,.3,1) both}"
+                      "@keyframes slide{from{opacity:0;transform:translateX(-120px)}to{opacity:1;transform:none}}")
+        body = f"<div class='h'><div class='lb'>{label}</div><div class='t'>{escape(text)}</div>{sub_html}</div>"
+    elif kind == "warning":
+        stripes = f"repeating-linear-gradient(-45deg,{accent} 0 34px,#111 34px 68px)"
+        css = base + (f".bar{{background:{accent};border-top:22px solid transparent;border-bottom:22px solid transparent;"
+                      f"border-image:{stripes} 22;padding:26px 0 30px;box-shadow:0 20px 60px rgba(0,0,0,.5);"
+                      "animation:slam .32s cubic-bezier(.2,1.4,.3,1) both}"
+                      f".lb{{font-size:{int(size * 0.34)}px;font-weight:900;letter-spacing:.35em;color:#111;margin-bottom:8px}}"
+                      ".s{color:#111;text-shadow:none}"
+                      "@keyframes slam{from{opacity:0;transform:scaleY(.2)}to{opacity:1;transform:none}}")
+        body = f"<div class='h'><div class='bar'><div class='lb'>{label}</div><div class='t'>{escape(text)}</div>{sub_html}</div></div>"
+    else:
+        dim = ("<div class='dim'></div>" if kind == "failed" else "")
+        css = base + (f".t{{font-size:{int(size * 1.25)}px;-webkit-text-stroke:{max(3, size // 18)}px #000;"
+                      f"paint-order:stroke fill;text-shadow:{shadow};animation:punch .4s cubic-bezier(.2,1.5,.3,1) both}}"
+                      ".s{animation:up .3s ease-out .3s both}"
+                      ".dim{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(60,0,0,.25),rgba(0,0,0,.75));"
+                      f"animation:fade .4s ease-out both,hout .3s ease-in {out:.3f}s forwards}}"
+                      "@keyframes punch{from{opacity:0;transform:scale(1.8)}to{opacity:1;transform:none}}"
+                      "@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}"
+                      "@keyframes fade{from{opacity:0}to{opacity:1}}")
+        body = f"{dim}<div class='h'><div class='t'>{escape(text)}</div>{sub_html}</div>"
+    return _page(body, css, width, height), float(duration)

@@ -20,6 +20,7 @@ from .story import (  # noqa: F401
     average_sentence_words,
     first_real_word,
     first_useful_point,
+    hook_layers,
     longest_shot,
 )
 from .transcript import Word
@@ -27,7 +28,8 @@ from .transcript import Word
 JUDGEMENTS = {
     "story": ("Is there something to find out: a want, a doubt and an answer worth waiting for? 1 nothing, 5 gripping "
               "(2 or less caps the total at 55)"),
-    "promise": "Is it clear in the first line what the viewer will get? 1 no idea, 5 unmistakable",
+    "promise": ("Is it clear in the first line what the viewer will get, and does it make them ask a question the "
+                "video answers? 1 no idea, 5 unmistakable"),
     "payoff": "Is the opening promise answered on screen, and does the end land or loop? 1 never, 5 fully",
     "value": "Does the viewer learn a usable thing or feel something? 1 nothing, 5 strongly",
     "share": "Is there a clear reason to send this to someone or argue in comments? 1 none, 5 obvious",
@@ -161,6 +163,10 @@ def score(words: list[Word], duration: float, cuts: list[float] | None = None, f
         why.append("text on frame 1" if judge["text_on_frame_1"] else "no text on frame 1")
     else:
         text_pts, judged = 2.5, False
+    if words:
+        opening = " ".join(w.text for w in words if w.start < (first.start if first else 0) + 4)
+        lay = hook_layers(opening)
+        why.append(f"opening has {lay['layers']} of 5 hook layers" + (f" ({', '.join(lay['have'])})" if lay["have"] else ""))
     promise, ok = rated("promise")
     judged &= ok
     out.parts.append(Part("Hook", round(word_pts + change_pts + text_pts + 5 * promise, 1), 25, "; ".join(why), judged))

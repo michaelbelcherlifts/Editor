@@ -230,13 +230,13 @@ TEMPLATES = {
     "html": html_file,
 }
 
-from .kinetic import (burst, clipper, counter, end_card, kinetic_scatter, kinetic_type, mid_captions,  # noqa: E402
-                      plain_captions, spaced_title, title_bar)
+from .kinetic import (burst, clipper, counter, end_card, hud_card, kinetic_scatter, kinetic_type,  # noqa: E402
+                      mid_captions, plain_captions, spaced_title, title_bar)
 from .explainers import compare_chart, form_cue, lift_diagram, tempo_counter  # noqa: E402
 
 TEMPLATES.update({
     "kinetic_type": kinetic_type, "kinetic_scatter": kinetic_scatter, "mid_captions": mid_captions, "title_bar": title_bar,
-    "end_card": end_card, "counter": counter, "clipper": clipper,
+    "end_card": end_card, "counter": counter, "clipper": clipper, "hud_card": hud_card,
     "lift_diagram": lift_diagram, "form_cue": form_cue, "tempo_counter": tempo_counter,
     "compare_chart": compare_chart,
     "spaced_title": spaced_title, "plain_captions": plain_captions, "burst": burst,
