@@ -418,6 +418,28 @@ def cmd_auto(args) -> None:
     print(result.text(Store(args.name).load().fps))
 
 
+def cmd_score(args) -> None:
+    from . import score as sc
+    if args.questions:
+        for key, text in {**sc.JUDGEMENTS, **sc.FLAGS}.items():
+            print(f"  {key}: {text}")
+        return
+    if not args.transcript:
+        raise EditError("score needs --transcript")
+    words = tr.load_words(args.transcript)
+    judge = json.loads(Path(args.judge[1:]).read_text() if args.judge and args.judge.startswith("@") else args.judge or "{}")
+    cuts = frame = audio = None
+    duration = args.seconds
+    if args.video:
+        from . import style
+        m = style.measure(args.video, None)
+        cuts, frame, audio, duration = m["cuts"], m["frame"], m["audio"], m["frame"]["seconds"]
+    if duration is None:
+        duration = words[-1].end if words else 0.0
+    result = sc.score(words, duration, cuts, frame, audio, judge)
+    print(json.dumps(result.to_dict(), indent=2) if args.json else result.text())
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -504,6 +526,11 @@ def main(argv: list[str] | None = None) -> None:
         A("--source", required=True), A("--transcript"), A("--style"), A("--look"),
         A("--captions", action="store_true"), A("--keep-retakes", action="store_true"),
         A("--no-build", action="store_true"), *size)
+    add("score", cmd_score, "score a short clip on the virality rubric, part by part",
+        A("--transcript", help="word timings of the clip"), A("--video", help="the clip, to measure cuts, frame and sound"),
+        A("--seconds", type=float, help="clip length when no video is given"),
+        A("--judge", help="Claude's judgements as JSON or @file (see --questions)"),
+        A("--questions", action="store_true", help="list the judgements and flags"), A("--json", action="store_true"))
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")

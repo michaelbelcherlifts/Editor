@@ -27,3 +27,12 @@ performs well; it knows what the reference does. Say "the reference does X",
 not "X is better". In an edit made of jump cuts on one camera, every jump
 counts as a cut, while the reference's cuts may be changes of picture, so
 treat pace comparisons as a prompt to look, not a verdict.
+
+## Scoring a short
+
+`uv run stylebrain score --transcript CLIP.words.json --video CLIP.mp4 --judge '{...}'`
+gives 0 to 100 with every part listed. Run `score --questions` for the
+judgements to make (1 to 5 each, from reading the transcript and looking at a
+`ref-sheet` of the clip) and the flags. Always show the parts, name the weakest
+one, and say that the weights are untuned: the score ranks clips against each
+other and does not predict views.
