@@ -491,18 +491,22 @@ def cmd_retakes(args) -> None:
     store = _store(args); edit = store.load()
     source = _source_for(edit, args.source)
     words = tr.load_words(args.transcript)
-    found = tr.find_retakes(words, args.min_words)
+    found = tr.find_takes(words, args.min_words)
     if not found:
         print("no likely retakes found")
         return
-    for a, b in found:
-        said = " ".join(w.text for w in words if a <= w.start < b)[:70]
-        where = ", ".join(format_time(lo, edit.fps) for lo, _ in _to_timeline(edit, source, [(a, b)])) or "already cut"
-        print(f"  {where}: {b - a:.1f}s  \"{said}\"")
+    for t in found:
+        said = " ".join(w.text for w in words if t.start <= w.start < t.end)[:70]
+        where = ", ".join(format_time(lo, edit.fps) for lo, _ in _to_timeline(edit, source, [(t.start, t.end)])) or "already cut"
+        print(f"  {where}: {t.end - t.start:.1f}s  {t.kind:<10} {'sure ' if t.sure else 'maybe'}  \"{said}\"  ({t.why})")
     if args.cut:
-        ranges = _to_timeline(edit, source, [(a, b - 0.12) for a, b in found if b - a > 0.12])
+        chosen = [t for t in found if t.sure or args.maybe]
+        ranges = _to_timeline(edit, source, [(t.start, t.end - 0.12) for t in chosen if t.end - t.start > 0.12])
         if ranges:
-            _save(store, edit, edit.remove_ranges(ranges), f"cut {len(found)} likely retakes")
+            _save(store, edit, edit.remove_ranges(ranges), f"cut {len(chosen)} likely retakes")
+        left = len(found) - len(chosen)
+        if left:
+            print(f"  {left} marked maybe were left in; cut them by time, or run again with --maybe")
 
 
 def cmd_srt(args) -> None:
@@ -1114,8 +1118,9 @@ def main(argv: list[str] | None = None) -> None:
     add("look-use", cmd_look_use, "put a saved look on the edit ('none' removes it)", A("name"))
     add("transcribe", cmd_transcribe, "make a word-timing transcript with a local speech-to-text tool",
         A("video"), A("--out"), A("--engine"), A("--model"))
-    add("retakes", cmd_retakes, "list likely false starts (a phrase said again straight after)", *tx,
-        A("--min-words", type=int, default=4), A("--cut", action="store_true", help="cut them"))
+    add("retakes", cmd_retakes, "list likely failed attempts: repeats, restarts, lines said again, 'start over', stutters", *tx,
+        A("--min-words", type=int, default=4), A("--cut", action="store_true", help="cut the sure ones"),
+        A("--maybe", action="store_true", help="with --cut, also cut the ones marked maybe"))
     add("srt", cmd_srt, "write subtitles for the current cut", *tx, A("--out", required=True))
     add("review", cmd_review, "hook check, then compare the current cut (or a video file) with a saved style", A("style", nargs="?"),
         A("--video", help="a finished video file to review, not the current edit"),

@@ -105,5 +105,5 @@ uv run pytest
 - The muscle figure is a simple stylized diagram, not a medical illustration.
 - Rebuilding does not carry over work done by hand on the previous timeline.
 - Transcription needs a free local tool installed (`uv tool install mlx-whisper` on Apple Silicon).
-- Retake detection only catches a phrase repeated in the same words.
+- Retake detection reads the words only: repeats, restarts, "start over" and lines said again. It cannot tell a flat take from a good one.
 - A colour look matches overall tone and balance, not local work such as vignettes or skin isolation.

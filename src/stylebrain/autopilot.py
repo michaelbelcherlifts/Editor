@@ -135,7 +135,13 @@ def run(name: str, source: str, transcript: str | None = None, style_name: str |
 
     kept = words
     if retakes:
-        found = tr.find_retakes(words)
+        takes = tr.find_takes(words)
+        found = [(t.start, t.end) for t in takes if t.sure]
+        for t in takes:
+            if not t.sure:
+                said = " ".join(w.text for w in words if t.start <= w.start < t.end)[:60]
+                result.notes.append(f"possible {t.kind}, not cut, source {t.start:.1f}s to {t.end:.1f}s: "
+                                    f"\"{said}\" ({t.why})")
         kept = [w for w in words if not any(a <= w.start < b for a, b in found)]
         ranges = _frames(edit, source, [(a, b - 0.12) for a, b in found if b - a > 0.12])  # leave air before the repeat
         if ranges:

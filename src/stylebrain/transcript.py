@@ -101,15 +101,37 @@ def tighten_ranges(
     return cuts
 
 
-def find_retakes(words: list[Word], min_words: int = 4, window: float = 30.0) -> list[tuple[float, float]]:
-    """Likely false starts: a run of words said again shortly after.
+@dataclass(frozen=True)
+class Take:
+    """A stretch that looks like a failed attempt, to cut so the good attempt remains."""
 
-    When the same `min_words` words in a row come up again within `window`
-    seconds, the first attempt (from its start to where the repeat starts) is
-    returned as a stretch to cut. Deliberate repetition looks the same, so
-    these are candidates to review, not certainties.
-    """
-    norm = [_norm(w.text) for w in words]
+    start: float
+    end: float
+    kind: str        # repeat, restart, said-again, cue or stutter
+    sure: bool       # safe to cut without asking; the rest are for a person to judge
+    why: str
+
+
+CUES_SURE = ("start over", "scratch that", "take two", "let me try that again", "let me redo that",
+             "let me say that again", "let me do that again", "i messed that up", "let me restart")
+CUES_MAYBE = ("one more time", "try that again", "say that again", "sorry", "hold on", "wait")
+FILLER_DOUBLES = {"i", "the", "a", "and", "so", "but", "we", "you", "it", "to", "my", "this", "is", "i'm", "it's",
+                  "that's", "if", "when", "because", "like", "um", "uh", "that", "in", "of", "for", "with"}
+
+
+def phrases(words: list[Word], gap: float = 0.45) -> list[tuple[int, int]]:
+    """Index ranges [i, j) of words said in one breath: split at pauses and at sentence ends."""
+    out, i = [], 0
+    for n in range(1, len(words) + 1):
+        if n == len(words) or words[n].start - words[n - 1].end >= gap \
+                or words[n - 1].text.rstrip("\"')").endswith((".", "!", "?")):
+            if n > i:
+                out.append((i, n))
+            i = n
+    return out
+
+
+def _exact_repeats(words: list[Word], norm: list[str], min_words: int, window: float) -> list[Take]:
     out, i, n = [], 0, len(words)
     while i + min_words <= n:
         key = norm[i:i + min_words]
@@ -124,9 +146,76 @@ def find_retakes(words: list[Word], min_words: int = 4, window: float = 30.0) ->
         if hit is None:
             i += 1
         else:
-            out.append((words[i].start, words[hit].start))
+            out.append(Take(words[i].start, words[hit].start, "repeat", True,
+                            f"the same {min_words} words come again"))
             i = hit
     return out
+
+
+def find_takes(words: list[Word], min_words: int = 4, window: float = 30.0) -> list[Take]:
+    """Every stretch that looks like a failed attempt, surest kinds first where they overlap.
+
+    repeat: the same `min_words` words in a row come again within `window` seconds.
+    restart: a phrase is dropped unfinished and the next one starts with the same words.
+    said-again: a whole phrase is said again in nearly the same words.
+    cue: he says so ("let me start over"); the flubbed phrase and the cue both go.
+    stutter: a small word doubled ("I I think").
+    Deliberate repetition can look the same, so only `sure` ones are safe to cut unasked.
+    """
+    norm = [_norm(w.text) for w in words]
+    found = _exact_repeats(words, norm, min_words, window)
+    ph = phrases(words)
+    punctuated = any(w.text.rstrip("\"')").endswith((".", "!", "?", ",")) for w in words)
+
+    for n, (i0, i1) in enumerate(ph):
+        a = [x for x in norm[i0:i1] if x]
+        if not a:
+            continue
+        last = words[i1 - 1].text.rstrip("\"')")
+        finished = last.endswith((".", "!", "?")) if punctuated else len(a) > 5
+        for j0, j1 in ph[n + 1:n + 4]:
+            if words[j0].start - words[i0].start > min(window, 20.0):
+                break
+            b = [x for x in norm[j0:j1] if x]
+            prefix = 0
+            while prefix < min(len(a), len(b)) and a[prefix] == b[prefix]:
+                prefix += 1
+            overlap = len(set(a) & set(b)) / len(set(a))
+            if prefix >= 2 and not finished and len(b) >= len(a) - 1:
+                found.append(Take(words[i0].start, words[j0].start, "restart", prefix >= 3 or len(a) <= 4,
+                                  f"breaks off, then starts again with \"{' '.join(a[:prefix])}\""))
+                break
+            if len(a) >= 4 and prefix >= 1 and overlap >= 0.75:
+                found.append(Take(words[i0].start, words[j0].start, "said-again", overlap >= 0.9 and prefix >= 2,
+                                  "nearly the same line comes again"))
+                break
+
+    for n, (i0, i1) in enumerate(ph):
+        said = " ".join(x for x in norm[i0:i1] if x)
+        sure = any(c in said for c in CUES_SURE)
+        maybe = (i1 - i0) <= 6 and any(re.search(rf"\b{re.escape(c)}\b", said) for c in CUES_MAYBE)
+        if not (sure or maybe):
+            continue
+        start = words[ph[n - 1][0]].start if n else words[i0].start
+        end = words[i1].start if i1 < len(words) else words[i1 - 1].end
+        found.append(Take(start, end, "cue", sure, f"he says \"{said[:40]}\""))
+
+    for i in range(len(words) - 1):
+        if norm[i] and norm[i] == norm[i + 1] and norm[i] in FILLER_DOUBLES \
+                and words[i + 1].start - words[i].end < 0.6:
+            found.append(Take(words[i].start, words[i + 1].start, "stutter", False, f"\"{norm[i]}\" twice"))
+
+    # Where two overlap keep the sure one, then the longer one.
+    out: list[Take] = []
+    for t in sorted(found, key=lambda t: (not t.sure, -(t.end - t.start), t.start)):
+        if t.end - t.start > 0.01 and not any(t.start < o.end and o.start < t.end for o in out):
+            out.append(t)
+    return sorted(out, key=lambda t: t.start)
+
+
+def find_retakes(words: list[Word], min_words: int = 4, window: float = 30.0) -> list[tuple[float, float]]:
+    """The failed attempts that are safe to cut unasked, as (start, end) in seconds. See `find_takes`."""
+    return [(t.start, t.end) for t in find_takes(words, min_words, window) if t.sure]
 
 
 def on_timeline(words: list[Word], spans) -> list[Word]:
