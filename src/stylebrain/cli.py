@@ -1249,6 +1249,49 @@ def cmd_crosspost_week(args) -> None:
     print(json.dumps(rows, indent=2) if args.json else crosspost.format_week(rows))
 
 
+def cmd_connect(args) -> None:
+    from . import publish as pub
+    if args.platform == "youtube":
+        if not args.client:
+            raise EditError("give --client client_secret.json (a Google Cloud 'Desktop app' OAuth client)")
+        pub.connect_youtube(args.client)
+        print("YouTube connected: library/accounts/youtube.json")
+    elif args.platform == "tiktok":
+        if not (args.key and args.secret):
+            raise EditError("give --key and --secret from your TikTok for Developers app")
+        pub.connect_tiktok(args.key, args.secret, audited=args.audited)
+        print("TikTok connected: library/accounts/tiktok.json"
+              + ("" if args.audited else " (posts go up private until TikTok audits the app)"))
+    else:
+        if not args.token:
+            raise EditError("give --token (a user token from Graph API Explorer), plus --app-id and --app-secret")
+        a = pub.connect_instagram(args.token, args.app_id, args.app_secret)
+        print(f"Instagram connected: @{a.get('username')} through the Page {a.get('page')!r}")
+
+
+def cmd_publish(args) -> None:
+    from . import publish as pub
+    plan = _plan()
+    post = args.post
+    if post in ("today", "tomorrow") or post[:1].isdigit():
+        import datetime as _dt
+        day = _dt.date.today() + _dt.timedelta(days=1) if post == "tomorrow" else post
+        post = pub.due_post(plan, day)
+    idea = plan.idea(plan.post(post)["idea"])
+    print(f"{'checking' if args.dry_run else 'posting'} {post}: {idea['title']}")
+    r = pub.publish(plan, post, only=args.only.split(",") if args.only else None, dry_run=args.dry_run)
+    plan.save()
+    print(pub.format_report(r))
+    if any(x.get("error") for x in r["results"].values()):
+        sys.exit(1)
+
+
+def cmd_publish_shortcut(args) -> None:
+    from . import publish as pub
+    path = pub.shortcut(args.where, ".")
+    print(f"double-click {path} to post today's reel (a Mac version sits beside it)")
+
+
 def cmd_shoot_list(args) -> None:
     from .content import format_shoot_list
     sl = _plan().shoot_list(args.week)
@@ -1577,6 +1620,15 @@ def main(argv: list[str] | None = None) -> None:
     add("crosspost-week", cmd_crosspost_week, "which of a week's reels are ready for every platform", week,
         A("--make", action="store_true", help="prepare every approved post that has a cut and no package yet"),
         A("--json", action="store_true"))
+    add("connect", cmd_connect, "sign in to an account the poster uses (once per account)",
+        A("platform", choices=["youtube", "instagram", "tiktok"]), A("--client", help="YouTube: client_secret.json"),
+        A("--key"), A("--secret"), A("--audited", action="store_true", help="TikTok: the app passed TikTok's audit"),
+        A("--token", help="Instagram: user token"), A("--app-id"), A("--app-secret"))
+    add("publish", cmd_publish, "post a prepared reel to Instagram, TikTok and YouTube Shorts (only when he asks)",
+        A("post", help="post id, a date, today or tomorrow"), A("--only", help="comma-separated platforms"),
+        A("--dry-run", action="store_true", help="check everything, send nothing"))
+    add("publish-shortcut", cmd_publish_shortcut, "make the double-click 'Post today's reel' button",
+        A("where", nargs="?", default=".", help="folder for the shortcut, e.g. the Desktop"))
     add("shoot-list", cmd_shoot_list, "what to film for a week, by location", week, A("--json", action="store_true"))
     add("week-report", cmd_week_report, "planned versus posted for a week, with results", week,
         A("--json", action="store_true"))
