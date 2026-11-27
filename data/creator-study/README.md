@@ -92,3 +92,26 @@ From `hits_vs_flops.md` (11 creators with 8 or more Shorts, |rho| of 0.3 or more
   and Michael's own reels (`mine: true`). Instagram does not list a profile's
   reels when signed out, so this needs a burner account signed in to the
   browser. Michael's main account is never used to browse other creators.
+
+## Story judgements
+
+`story_judgements.json` scores each of the 232 Shorts from 1 to 5 on promise
+(does the opening set up a question or stakes), payoff (does what follows
+deliver on it), value (does the viewer learn or get something) and share
+(would someone send it to a friend). Each clip was scored from its title and the
+first 420 or so characters of its transcript, in shuffled order, with view
+counts hidden. Clips with no speech were scored from the title alone. One
+caveat: the judge had already seen each creator's three best and three worst
+titles, so those 66 clips were not scored fully blind. The scores are also
+copied into the learning-set clips as `judge_promise`, `judge_payoff`,
+`judge_value` and `judge_share`.
+
+First look, within creators (11 creators with 8 or more Shorts): share goes
+with more views for 5 of 11 (median rho +0.18), and with fewer views for none.
+Promise goes with more views for 4 of 11 (median +0.08) and payoff for 3 of 11
+(+0.13). Value shows nothing (median 0.00).
+
+Leakage check: with each creator's 3 best and 3 worst clips dropped (the
+titles the judge had seen), share still leans positive (median rho +0.16 over
+10 creators, none negative). Payoff falls to +0.06 and promise to -0.03, so
+only share holds up without those clips.
