@@ -46,6 +46,7 @@ sound, music, reframing, export, house rules, the content calendar, social posts
 - `src/stylebrain/look.py`: colour looks: a LUT made from a reference or a measured style, saved in `library/looks/`
 - `src/stylebrain/transcribe.py`: word-timing transcripts from a local speech-to-text tool
 - `src/stylebrain/autopilot.py`: first cut in one command (retakes, pauses, look, captions, build, review)
+- `src/stylebrain/presets.py`: ready-made first-cut styles (caption treatment and pause length under one name) and their previews
 - `src/stylebrain/review.py`: timestamped suggestions from comparing a cut with a style
 - `src/stylebrain/story.py`: hook check, beat map, "and then" pass, hook types (sorting a line into a type, the researched examples in `library/hooks/`), script checks
 - `library/hooks/`: researched hook patterns with proven YouTube examples and views, and video ideas ready for `idea-import`; `data/hook-research/youtube_hooks.js` refreshes them in the browser pane
