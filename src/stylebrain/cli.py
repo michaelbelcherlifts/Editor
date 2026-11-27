@@ -555,6 +555,92 @@ def cmd_sfx_remove(args) -> None:
     _save(store, edit, new, f"remove {len(edit.sounds) - len(new.sounds)} sounds")
 
 
+def _focus(text: str | None) -> tuple[float, float]:
+    if not text:
+        return (0.5, 0.5)
+    try:
+        x, y = (float(v) for v in text.split(","))
+    except ValueError:
+        raise EditError("--focus is two fractions, like 0.5,0.3") from None
+    return x, y
+
+
+def _report(stills, what: str) -> None:
+    print(f"{len(stills)} {what}:")
+    for s in stills:
+        print(f"  {s.path}  {s.width}x{s.height}")
+        for problem in s.problems:
+            print(f"    problem: {problem}")
+
+
+def cmd_social_sizes(args) -> None:
+    from . import social
+    for sz in social.SIZES.values():
+        x, y, w, h = sz.safe
+        print(f"  {sz.name:10} {sz.width}x{sz.height}  text inside x {x}-{x + w}, y {y}-{y + h}  ({sz.about})")
+
+
+def cmd_social_photo(args) -> None:
+    from . import social
+    s = social.photo(args.source, args.out, args.size, args.look, args.text or "", args.place, _focus(args.focus))
+    _report([s], "image")
+
+
+def cmd_social_carousel_draft(args) -> None:
+    from . import social
+    words = tr.load_words(args.transcript)
+    slides = social.carousel_draft(words, args.video, args.hook, args.cta, args.max_words, args.max_ideas,
+                                   social.brand())
+    social.save_plan(args.out, slides, look=args.look or "", size="portrait")
+    print(f"{len(slides)} slides drafted from what was said, saved to {args.out}. Rewrite the text, then render:")
+    for n, s in enumerate(slides, 1):
+        print(f"  {n:2}. [{s.kind}] {s.text}")
+    for problem in social.check_carousel(slides):
+        print(f"  problem: {problem}")
+
+
+def cmd_social_carousel(args) -> None:
+    from . import social
+    slides, data = social.load_plan(args.plan)
+    for problem in social.check_carousel(slides):
+        print(f"problem: {problem}")
+    stills = social.render_carousel(slides, args.out, args.look or data.get("look") or None,
+                                    data.get("size", "portrait"))
+    social.contact([s.path for s in stills], Path(args.out) / "overview.jpg")
+    _report(stills, "slides")
+
+
+def cmd_social_covers(args) -> None:
+    from . import social
+    times = [_secs(t) for t in args.at.split(",")] if args.at else None
+    stills = social.covers(args.video, args.title, args.out, args.count, args.look, args.thumbnail, times)
+    _report(stills, "covers (each cover_N.jpg has a cover_N_grid.jpg showing the profile grid crop)")
+
+
+def cmd_social_stories(args) -> None:
+    from . import social
+    stories = social.story_suggestions(args.hook, args.video, args.topic or "", args.cta, social.brand())
+    Path(args.out).mkdir(parents=True, exist_ok=True)
+    (Path(args.out) / "stories.json").write_text(json.dumps([s.to_dict() for s in stories], indent=2) + "\n")
+    stills = social.render_stories(stories, args.out, args.look)
+    for s, st in zip(stories, stills):
+        print(f"  day +{s.day:g} {s.kind}: \"{social.plain(s.text)}\"  sticker: {s.sticker}")
+        print(f"     {st.path}" + "".join(f"\n     problem: {p}" for p in st.problems))
+
+
+def cmd_social_package(args) -> None:
+    from . import social
+    words = tr.load_words(args.transcript)
+    out = args.out or str(Path("library") / "social" / args.name)
+    r = social.package(args.video, words, args.title, out, args.hook, args.look, args.topic or "", args.cta,
+                       args.caption or "", args.thumbnail)
+    count = lambda f: sum(len(p["files"]) if f == "cover" else 1 for p in r["posts"] if p["format"] == f)  # noqa: E731
+    print(f"package {r['name']!r} in {out}: {count('cover')} cover options, a carousel of {count('carousel') and len(next(p for p in r['posts'] if p['format'] == 'carousel')['files'])} slides, {count('story')} stories")
+    for problem in r["problems"]:
+        print(f"  problem: {problem}")
+    print(f"  look at {out}/carousel_overview.jpg, covers_overview.jpg and stories_overview.jpg")
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -671,6 +757,38 @@ def main(argv: list[str] | None = None) -> None:
         A("--on", default="cuts,overlays,zooms"), A("--gain", type=float, default=-14.0),
         A("--duck", type=float, default=6.0), A("--min-cut-gap", type=float, default=2.5), A("--ad", action="store_true", help="paid ad: use only your own, made-here, CC0 or public-domain sounds"))
     add("sfx-remove", cmd_sfx_remove, "remove a sound by name, or 'auto' or 'all'", A("name"))
+
+    soc = sub.add_parser("social", help="photos, carousels, covers and stories for Instagram and YouTube")
+    ssub = soc.add_subparsers(dest="social_command", required=True)
+
+    def sadd(name, fn, help, *arguments):
+        s = ssub.add_parser(name, help=help)
+        for flags, kw in arguments:
+            s.add_argument(*flags, **kw)
+        s.set_defaults(fn=fn)
+
+    lk = A("--look", help="a saved colour look, or a .cube file")
+    ctas = A("--cta", default="follow", choices=["follow", "save", "send", "comment", "coaching", "none"])
+    sadd("sizes", cmd_social_sizes, "list sizes and where text must stay")
+    sadd("photo", cmd_social_photo, "crop a photo or video frame (video.mp4@12.5) to a size, with a look and text",
+         A("source"), A("--out", required=True), A("--size", default="portrait"), lk, A("--text"),
+         A("--place", default="bottom", choices=["top", "middle", "bottom"]),
+         A("--focus", help="point to keep in view when cropping, as x,y fractions"))
+    sadd("carousel-draft", cmd_social_carousel_draft, "draft carousel slides from what was said in a reel",
+         A("--transcript", required=True), A("--video", help="the reel, for each slide's picture"),
+         A("--hook", help="slide 1 text (default: the first sentence)"), ctas, lk,
+         A("--max-words", type=int, default=22), A("--max-ideas", type=int, default=8), A("--out", required=True))
+    sadd("carousel", cmd_social_carousel, "render a carousel plan (JSON) to slides", A("plan"),
+         A("--out", required=True), lk)
+    sadd("covers", cmd_social_covers, "reel cover options (and YouTube thumbnails) from a video and its title",
+         A("video"), A("--title", required=True), A("--out", required=True), A("--count", type=int, default=3),
+         A("--at", help="cover moments, comma separated (default: sharpest frames)"), lk,
+         A("--thumbnail", action="store_true", help="also make 1280x720 YouTube thumbnails"))
+    sadd("stories", cmd_social_stories, "three story suggestions with drafts, to post around a reel",
+         A("--hook", required=True), A("--video"), A("--topic"), ctas, lk, A("--out", required=True))
+    sadd("package", cmd_social_package, "one reel in: carousel, covers and three stories out, with package.json",
+         A("video"), A("--transcript", required=True), A("--title", required=True), A("--name", required=True),
+         A("--hook"), A("--topic"), ctas, lk, A("--caption"), A("--thumbnail", action="store_true"), A("--out"))
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")
