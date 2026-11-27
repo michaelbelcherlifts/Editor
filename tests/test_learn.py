@@ -117,3 +117,62 @@ def test_instagram_export_is_read_by_permalink_and_reels_only(tmp_path, monkeypa
     with pytest.raises(SystemExit):
         main(["clip-import", "bad.csv"])
     assert "Columns in the file: Date, Followers" in capsys.readouterr().err
+
+
+def _creator_clips(seed=3):
+    """Six creators with very different usual reach. Within each, faster cutting helps; older clips have more views.
+    `tint` differs between creators but says nothing about which of a creator's clips do well."""
+    import numpy as np
+    rng = np.random.default_rng(seed)
+    clips = []
+    for g in range(6):
+        base, tint = rng.normal(-1, 1.0), rng.normal(0, 1)
+        for k in range(14):
+            pace, age = rng.normal(10 + g, 3), float(rng.integers(5, 900))
+            reach = base + 0.12 * (pace - (10 + g)) + 0.15 * np.log1p(age) + rng.normal(0, 0.15)
+            clips.append({"id": f"g{g}c{k}", "group": f"creator {g}", "about": "", "mine": False,
+                          "attributes": {"cuts_per_minute": pace, "tint": tint + rng.normal(0, 0.05), "age_days": age,
+                                         "noise": rng.normal()},
+                          "outcome": {"views": 10 ** (reach + 5), "subscribers": 1e5}})
+    return clips
+
+
+def test_within_creator_fit_finds_the_edit_not_the_creator():
+    clips = _creator_clips()
+    r = learn.fit(clips)
+    assert r["within"] and r["groups"] == 6 and r["clips"] == 84
+    top = [e for e in r["effects"] if not e["control"]][0]
+    assert top["attribute"] == "cuts_per_minute" and top["effect"] > 0 and top["steady"] >= 0.9
+    assert next(e for e in r["effects"] if e["attribute"] == "age_days")["control"]
+    assert r["predicts_unseen_r2"] > r["controls_alone_r2"] + 0.2
+    text = learn.report(r)
+    assert "its own creator's usual (6 creators)" in text and "held steady: age_days" in text and "age alone" in text
+    mixed = learn.fit(clips, within=False)
+    assert not mixed["within"]
+    assert abs(next(e for e in mixed["effects"] if e["attribute"] == "tint")["effect"]) > \
+        abs(next(e for e in r["effects"] if e["attribute"] == "tint")["effect"]) if any(
+            e["attribute"] == "tint" for e in r["effects"]) else True
+
+
+def test_within_needs_two_creators_and_small_groups_are_left_out():
+    clips = _creator_clips()
+    lone = [dict(c, group="solo") for c in clips[:2]]
+    r = learn.fit(clips + lone)
+    assert r["left_out"] == 2 and "left out" in learn.report(r)
+    with pytest.raises(EditError, match="two or more creators"):
+        learn.fit([dict(c, group="one") for c in clips], within=True)
+    assert learn.group_of({"about": "Jun Yuh, a title, a link"}) == "Jun Yuh"
+
+
+def test_pull_takes_records_from_a_shared_folder(tmp_path, monkeypatch, capsys):
+    import json
+    shared = tmp_path / "shared"
+    shared.mkdir()
+    for c in _creator_clips()[:5]:
+        (shared / f"{c['id']}.json").write_text(json.dumps(c))
+    (shared / "notes.json").write_text("[1, 2]")
+    monkeypatch.chdir(tmp_path)
+    from stylebrain.cli import main
+    main(["clip-pull", str(shared)])
+    assert "took 5 clip records" in capsys.readouterr().out
+    assert learn.load_all()[0]["group"] == "creator 0"

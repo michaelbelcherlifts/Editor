@@ -63,3 +63,18 @@ Relay, in this order:
   differ in that one thing, and compare.
 - Reference clips teach what works in the niche; only his analytics teach
   what works for his audience. Weight his own results more as they grow.
+
+## Clips from several creators
+
+Creators differ far more from each other than any one creator's clips differ,
+so a pooled fit mostly learns who the creator is. `learn` therefore compares
+each clip with its own creator's usual whenever there are two or more creators
+(a record's `group`, or the name before the first comma of `about`), tests on
+creators it has not seen, and holds a clip's age (`age_days`) steady, since
+older clips have had longer to collect views. Read out three numbers: the R2,
+what age alone gets, and what the edit adds on top. If the edit adds under
+about 0.05, say plainly that the attributes barely predict results and treat
+the list as hints to test, not rules. `--mixed` gives the pooled fit for comparison.
+
+`uv run stylebrain clip-pull FOLDER` copies records another thread prepared
+(for example `/mnt/project-files/style-brain/clips/`) into the learning set.

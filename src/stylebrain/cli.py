@@ -860,9 +860,15 @@ def cmd_clip_list(args) -> None:
     print(f"{len(clips)} clips")
 
 
+def cmd_clip_pull(args) -> None:
+    from . import learn
+    print(f"took {learn.pull(args.folder)} clip records into the learning set")
+
+
 def cmd_learn(args) -> None:
     from . import learn
-    result = learn.fit(learn.load_all(), args.target, only_mine=args.mine)
+    within = True if args.within else False if args.mixed else None
+    result = learn.fit(learn.load_all(), args.target, only_mine=args.mine, within=within)
     print(json.dumps(result, indent=2) if args.json else learn.report(result))
 
 
@@ -1323,7 +1329,10 @@ def main(argv: list[str] | None = None) -> None:
         A("--all-posts", action="store_true", help="include photos and carousels, not only reels"))
     add("clip-list", cmd_clip_list, "list clips in the learning set")
     add("learn", cmd_learn, "learn which attributes go with clips doing well", A("--target", default="reach"),
-        A("--mine", action="store_true", help="use only your own clips"), A("--json", action="store_true"))
+        A("--mine", action="store_true", help="use only your own clips"), A("--json", action="store_true"),
+        A("--within", action="store_true", help="compare each clip with its own creator's usual (the default when there are several creators)"),
+        A("--mixed", action="store_true", help="pool all creators together; mostly learns who the creator is"))
+    add("clip-pull", cmd_clip_pull, "copy clip records from a shared folder into the learning set", A("folder"))
     add("sfx-basics", cmd_sfx_basics, "make a starter set of sounds (pop, click, whoosh, thud, riser)")
     add("sfx-add", cmd_sfx_add, "add a sound file to the library", A("file"), A("--tags", required=True),
         A("--licence", required=True, help="recorded, not enforced: own, cc0, by, unknown ..."), A("--source"), A("--credit"))
