@@ -112,6 +112,23 @@ def add(clip_id: str, attrs: dict, outcome: dict | None = None, about: str = "",
     return path
 
 
+def pull(folder: str | Path, base: str | Path = ".") -> int:
+    """Copy clip records from a shared folder into the learning set. Returns how many were taken."""
+    folder = Path(folder)
+    if not folder.is_dir():
+        raise EditError(f"cannot find the folder {folder}")
+    n = 0
+    for p in sorted(folder.glob("*.json")):
+        record = json.loads(p.read_text())
+        if not isinstance(record, dict) or "id" not in record or not isinstance(record.get("attributes"), dict):
+            continue
+        dest = root(base) / f"{_check(str(record['id']))}.json"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(json.dumps(record, indent=2) + "\n")
+        n += 1
+    return n
+
+
 def load_all(base: str | Path = ".") -> list[dict]:
     return [json.loads(p.read_text()) for p in sorted(root(base).glob("*.json"))]
 
@@ -249,12 +266,39 @@ def _ridge(X, y, alpha: float):
     return np.linalg.solve(X.T @ X + alpha * np.eye(X.shape[1]), X.T @ y)
 
 
-def fit(clips: list[dict], target: str = "reach", alpha: float | None = None, only_mine: bool = False) -> dict:
-    """Fit the model. Returns what was learned, with how far to trust it."""
+CONTROLS = {"age_days"}     # things that move results but are not editing choices; held steady, reported apart
+LOGGED = {"age_days"}       # long-tailed; used on a log scale
+
+
+def group_of(clip: dict) -> str:
+    """Whose clip it is: the record's `group`, else the name before the first comma of `about`."""
+    return str(clip.get("group") or clip.get("about", "").split(",")[0]).strip()
+
+
+def fit(clips: list[dict], target: str = "reach", alpha: float | None = None, only_mine: bool = False,
+        within: bool | None = None) -> dict:
+    """Fit the model. Returns what was learned, with how far to trust it.
+
+    within: compare each clip with its own creator's usual, and test on creators
+    the model has not seen. Without it a mixed set mostly learns who the creator
+    is. Left as None it is used whenever the clips come from two or more creators.
+    """
     import numpy as np
 
     rows = [(c, target_value(c.get("outcome", {}), target)) for c in clips if not only_mine or c.get("mine")]
     rows = [(c, t) for c, t in rows if t is not None and c.get("attributes")]
+    sizes: dict[str, int] = {}
+    for c, _ in rows:
+        sizes[group_of(c)] = sizes.get(group_of(c), 0) + 1
+    big = {g for g, k in sizes.items() if g and k >= 3}
+    if within is None:
+        within = len(big) >= 2
+    dropped = 0
+    if within:
+        if len(big) < 2:
+            raise EditError("comparing within creators needs two or more creators with three or more clips each")
+        dropped = sum(group_of(c) not in big for c, _ in rows)
+        rows = [(c, t) for c, t in rows if group_of(c) in big]
     if len(rows) < MIN_CLIPS:
         raise EditError(f"{len(rows)} clips have both attributes and a {target!r} result; "
                         f"{MIN_CLIPS} is the least worth fitting, {SOLID_CLIPS} or more for a result to rely on")
@@ -263,53 +307,76 @@ def fit(clips: list[dict], target: str = "reach", alpha: float | None = None, on
     names = sorted({k for c, _ in rows for k in c["attributes"]} - {"score_total"})
     names = [k for k in names if sum(k in c["attributes"] for c, _ in rows) >= 0.8 * n]
     raw = np.array([[c["attributes"].get(k, np.nan) for k in names] for c, _ in rows], float)
+    for j, k in enumerate(names):
+        if k in LOGGED:
+            raw[:, j] = np.log1p(np.maximum(raw[:, j], 0))
     med = np.nanmedian(raw, axis=0)
     raw = np.where(np.isnan(raw), med, raw)
+    y = np.array([t for _, t in rows], float)
+    groups = np.array([group_of(c) for c, _ in rows])
+    if within:                                     # everything becomes "compared with this creator's usual"
+        for g in set(groups):
+            m = groups == g
+            raw[m] -= raw[m].mean(axis=0)
+            y[m] -= y[m].mean()
     keep = raw.std(axis=0) > 1e-9
     names, raw = [k for k, ok in zip(names, keep) if ok], raw[:, keep]
     if not names:
         raise EditError("no attribute varies between these clips")
-    y = np.array([t for _, t in rows], float)
+    folds = [groups == g for g in sorted(set(groups))] if within else [np.arange(n) == i for i in range(n)]
 
     def standardise(train, test):
         mu, sd = train.mean(axis=0), train.std(axis=0)
         sd = np.where(sd < 1e-9, 1.0, sd)
         return (train - mu) / sd, (test - mu) / sd
 
-    def loo(a: float):
+    def held_out(a: float, cols=slice(None)):
         preds = np.empty(n)
-        for i in range(n):
-            m = np.arange(n) != i
-            Xt, Xv = standardise(raw[m], raw[i:i + 1])
+        for test in folds:
+            m = ~test
+            Xt, Xv = standardise(raw[m][:, cols], raw[test][:, cols])
             w = _ridge(Xt, y[m] - y[m].mean(), a)
-            preds[i] = (Xv @ w)[0] + y[m].mean()
+            preds[test] = Xv @ w + y[m].mean()
         return preds
 
-    alphas = [alpha] if alpha is not None else [1.0, 3.0, 10.0, 30.0, 100.0]
-    best = min(alphas, key=lambda a: float(((loo(a) - y) ** 2).sum()))
-    preds = loo(best)
-    ss_res, ss_tot = float(((preds - y) ** 2).sum()), float(((y - y.mean()) ** 2).sum())
-    r2 = 1 - ss_res / ss_tot if ss_tot else 0.0
+    def r2_of(preds) -> float:
+        ss_res, ss_tot = float(((preds - y) ** 2).sum()), float(((y - y.mean()) ** 2).sum())
+        return 1 - ss_res / ss_tot if ss_tot else 0.0
+
+    alphas = [alpha] if alpha is not None else [1.0, 3.0, 10.0, 30.0, 100.0, 300.0]
+    best = min(alphas, key=lambda a: float(((held_out(a) - y) ** 2).sum()))
+    preds = held_out(best)
+    r2 = r2_of(preds)
     rank = _corr(_rank(preds), _rank(y))
+    # How much of that is the controls alone (a clip's age, say) and not the edit?
+    control_cols = [j for j, k in enumerate(names) if k in CONTROLS]
+    r2_controls = r2_of(held_out(best, control_cols)) if control_cols else None
 
     X, _ = standardise(raw, raw)
     w = _ridge(X, y - y.mean(), best)
-    # How steady is each sign when the clips are resampled?
+    # How steady is each sign when the clips (or whole creators) are resampled?
     rng = np.random.default_rng(0)
     signs = np.zeros(len(names))
     rounds = 200
+    members = [np.flatnonzero(f) for f in folds]
     for _ in range(rounds):
-        idx = rng.integers(0, n, n)
+        if within:
+            idx = np.concatenate([members[i] for i in rng.integers(0, len(members), len(members))])
+        else:
+            idx = rng.integers(0, n, n)
         Xb, _ = standardise(raw[idx], raw[idx])
         signs += np.sign(_ridge(Xb, y[idx] - y[idx].mean(), best)) == np.sign(w)
     effects = sorted(({"attribute": k, "effect": round(float(c), 3), "steady": round(float(s / rounds), 2),
-                       "alone": round(_corr(raw[:, j], y), 2)}
+                       "alone": round(_corr(raw[:, j], y), 2), "control": k in CONTROLS}
                       for j, (k, c, s) in enumerate(zip(names, w, signs))), key=lambda e: -abs(e["effect"]))
 
-    trust = ("no better than guessing the average" if r2 <= 0.05 else
-             "a rough read; treat as hints" if n < SOLID_CLIPS or r2 < 0.25 else "a usable signal")
+    gain = r2 - max(r2_controls or 0.0, 0.0)
+    trust = ("no better than guessing the average" if r2 <= 0.05 or gain <= 0.02 else
+             "a rough read; treat as hints" if n < SOLID_CLIPS or gain < 0.25 else "a usable signal")
     return {"target": target, "clips": n, "attributes": len(names), "alpha": best,
-            "predicts_unseen_r2": round(r2, 2), "predicts_unseen_rank": round(rank, 2), "trust": trust,
+            "within": bool(within), "groups": len(set(groups)) if within else 0, "left_out": dropped,
+            "predicts_unseen_r2": round(r2, 2), "predicts_unseen_rank": round(rank, 2),
+            "controls_alone_r2": None if r2_controls is None else round(r2_controls, 2), "trust": trust,
             "effects": effects, "weights": propose_weights(rows, y)}
 
 
@@ -338,13 +405,25 @@ def propose_weights(rows, y) -> dict | None:
 
 
 def report(result: dict, top: int = 10) -> str:
-    lines = [f"Learned from {result['clips']} clips, {result['attributes']} attributes, target: {TARGETS[result['target']]}.",
-             f"On clips it had not seen: R2 {result['predicts_unseen_r2']:g}, rank agreement "
-             f"{result['predicts_unseen_rank']:g}. Verdict: {result['trust']}.",
-             "Goes with doing better (+) or worse (-), strongest first:"]
-    for e in result["effects"][:top]:
+    lines = [f"Learned from {result['clips']} clips, {result['attributes']} attributes, target: {TARGETS[result['target']]}."]
+    if result.get("within"):
+        lines.append(f"Each clip is compared with its own creator's usual ({result['groups']} creators), and the test "
+                     "is on creators the model had not seen."
+                     + (f" {result['left_out']} clips from creators with under three clips were left out."
+                        if result.get("left_out") else ""))
+    lines.append(f"On clips it had not seen: R2 {result['predicts_unseen_r2']:g}, rank agreement "
+                 f"{result['predicts_unseen_rank']:g}. Verdict: {result['trust']}.")
+    if result.get("controls_alone_r2") is not None:
+        lines.append(f"A clip's age alone gets R2 {result['controls_alone_r2']:g}, so the edit adds "
+                     f"{result['predicts_unseen_r2'] - max(result['controls_alone_r2'], 0):+.2f}.")
+    lines.append("Goes with doing better (+) or worse (-), strongest first:")
+    shown = [e for e in result["effects"] if not e.get("control")][:top]
+    for e in shown:
         mark = "" if e["steady"] >= 0.9 else "  (unsteady)" if e["steady"] < 0.75 else "  (fairly steady)"
         lines.append(f"  {'+' if e['effect'] > 0 else '-'} {e['attribute']:<22} effect {e['effect']:+.2f}, alone {e['alone']:+.2f}{mark}")
+    for e in result["effects"]:
+        if e.get("control"):
+            lines.append(f"  held steady: {e['attribute']} (effect {e['effect']:+.2f})")
     if result["weights"]:
         lines.append("Suggested virality score weights (now -> suggested):")
         lines += [f"  {p:<14}{PARTS[p]:>4} -> {v:g}" for p, v in result["weights"].items()]
