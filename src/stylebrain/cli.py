@@ -450,20 +450,23 @@ def cmd_clip_add(args) -> None:
         from . import style
         m = style.measure(args.video, None)
         cuts, frame, audio, colour, duration = m["cuts"], m["frame"], m["audio"], m["colour"], m["frame"]["seconds"]
-    if duration is None:
-        if not words:
-            raise EditError("give --video, or --transcript (with --seconds if the clip runs past the last word)")
-        duration = words[-1].end
     outcome = {k: v for k, v in (("views", args.views), ("subscribers", args.subscribers),
                                  ("retention", args.retention), ("swiped_away", args.swiped_away)) if v is not None}
-    path = learn.add(args.id, learn.attributes(words, duration, cuts, frame, audio, colour, judge), outcome,
-                     args.about or "", args.mine)
+    if duration is None and words:
+        duration = words[-1].end
+    if duration is None:
+        if not outcome:
+            raise EditError("give --video or --transcript to measure the clip, or results such as --views")
+        attrs = {}  # results only: update what happened to a clip already in the set
+    else:
+        attrs = learn.attributes(words, duration, cuts, frame, audio, colour, judge)
+    path = learn.add(args.id, attrs, outcome, args.about or "", args.mine)
     print(f"saved {path}")
 
 
 def cmd_clip_import(args) -> None:
     from . import learn
-    ids = learn.import_analytics(args.csv, args.subscribers)
+    ids = learn.import_analytics(args.csv, args.subscribers, reels_only=not args.all_posts)
     need = [c["id"] for c in learn.load_all() if c["id"] in ids and not c["attributes"]]
     print(f"{len(ids)} clips read from the analytics file; {len(need)} still need attributes (clip-add ID --video ...)")
 
@@ -579,8 +582,9 @@ def main(argv: list[str] | None = None) -> None:
         A("--transcript"), A("--video"), A("--seconds", type=float), A("--judge"), A("--about"),
         A("--views", type=float), A("--subscribers", type=float), A("--retention", type=float),
         A("--swiped-away", type=float), A("--mine", action="store_true", help="it is one of your own clips"))
-    add("clip-import", cmd_clip_import, "read results from a YouTube Studio export (CSV)", A("csv"),
-        A("--subscribers", type=int, help="your subscriber count, for the reach target"))
+    add("clip-import", cmd_clip_import, "read results from an Instagram (Meta Business Suite) or YouTube Studio export (CSV)", A("csv"),
+        A("--subscribers", "--followers", type=int, help="your follower or subscriber count, for the reach target"),
+        A("--all-posts", action="store_true", help="include photos and carousels, not only reels"))
     add("clip-list", cmd_clip_list, "list clips in the learning set")
     add("learn", cmd_learn, "learn which attributes go with clips doing well", A("--target", default="reach"),
         A("--mine", action="store_true", help="use only your own clips"), A("--json", action="store_true"))
