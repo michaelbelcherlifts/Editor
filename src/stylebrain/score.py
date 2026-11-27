@@ -122,19 +122,27 @@ def score(words: list[Word], duration: float, cuts: list[float] | None = None, f
     out = Score()
 
     # Hook, 25: first meaningful word (10), first visual change (5), text on frame 1 (5), clear promise (5)
+    # A clip with no speech (music and pictures only) is judged on its pictures: the 10 points
+    # for the first word go to how soon the picture changes instead.
     first = first_real_word(words)
-    t = first.start if first else duration
-    word_pts = 10 * _ramp(t, 0.3, 3.0)
-    why = [f"first real word at {t:.1f}s" if first else "no speech"]
+    silent = not words
     judged = True
+    if silent:
+        why = ["no speech, so the opening is judged on the picture"]
+        word_pts = 0.0
+    else:
+        t = first.start if first else duration
+        word_pts = 10 * _ramp(t, 0.3, 3.0)
+        why = [f"first real word at {t:.1f}s"]
+    change_max = 15 if silent else 5
     if cuts is None:
-        change_pts = 2.5
+        change_pts = change_max / 2
         why.append("first visual change not measured")
         judged = False
     else:
         c = cuts[0] if cuts else duration
-        change_pts = 5 * _ramp(c, 1.0, 4.0)
-        why.append(f"first visual change at {c:.1f}s" if cuts else "picture never changes")
+        change_pts = change_max * _ramp(c, 1.0, 4.0)
+        why.append(f"first cut at {c:.1f}s" if cuts else "picture never cuts")
     if "text_on_frame_1" in judge:
         text_pts = 5.0 if judge["text_on_frame_1"] else 0.0
         why.append("text on frame 1" if judge["text_on_frame_1"] else "no text on frame 1")
@@ -145,11 +153,14 @@ def score(words: list[Word], duration: float, cuts: list[float] | None = None, f
     out.parts.append(Part("Hook", round(word_pts + change_pts + text_pts + 5 * promise, 1), 25, "; ".join(why), judged))
 
     # Pacing, 20: pauses (8), a change every 2 to 4 s (7), length 15 to 45 s (5)
-    gaps = [b.start - a.end for a, b in zip(words, words[1:])]
-    worst = max(gaps, default=0.0)
-    pause_pts = 8 * _ramp(worst, 0.3, 1.5)
-    why = [f"longest pause {worst:.1f}s"]
     judged = True
+    if silent:
+        pause_pts, why = 8.0, ["no speech"]
+    else:
+        gaps = [b.start - a.end for a, b in zip(words, words[1:])]
+        worst = max(gaps, default=0.0)
+        pause_pts = 8 * _ramp(worst, 0.3, 1.5)
+        why = [f"longest pause {worst:.1f}s"]
     if cuts is None:
         change_pts, judged = 3.5, False
         why.append("visual changes not measured")

@@ -102,3 +102,9 @@ def test_cli_ref_commands(ref, tmp_path, capsys):
     assert capsys.readouterr().out.count("#") == 2
     main(["ref-sheet", ref[0], "--start", "0", "--end", "2", "--out", str(tmp_path / "x.png"), "--count", "4"])
     assert "reading order" in capsys.readouterr().out
+
+
+def test_motion_in_a_box_ignores_movement_elsewhere(ref):
+    # The square slides along the top half; the bottom half never changes.
+    assert reference.motion(ref[0], 0.0, 2.5, box=[0, 0.75, 1, 0.25]).bursts == []
+    assert len(reference.motion(ref[0], 0.0, 2.5, box=[0, 0.3, 1, 0.4]).bursts) == 1

@@ -256,7 +256,8 @@ def cmd_ref_frames(args) -> None:
 
 def cmd_ref_motion(args) -> None:
     from . import reference
-    m = reference.motion(args.video, _secs(args.start), _secs(args.end), args.threshold)
+    m = reference.motion(args.video, _secs(args.start), _secs(args.end), args.threshold,
+                         box=json.loads(args.box) if args.box else None)
     data = m.to_dict()
     if not args.curve:
         data.pop("curve")
@@ -431,9 +432,9 @@ def cmd_score(args) -> None:
         for key, text in {**sc.JUDGEMENTS, **sc.FLAGS}.items():
             print(f"  {key}: {text}")
         return
-    if not args.transcript:
-        raise EditError("score needs --transcript")
-    words = tr.load_words(args.transcript)
+    if not args.transcript and not args.video:
+        raise EditError("score needs --video, --transcript, or both")
+    words = tr.drop_phantom_speech(tr.load_words(args.transcript)) if args.transcript else []
     judge = json.loads(Path(args.judge[1:]).read_text() if args.judge and args.judge.startswith("@") else args.judge or "{}")
     cuts = frame = audio = None
     duration = args.seconds
@@ -609,7 +610,8 @@ def main(argv: list[str] | None = None) -> None:
     add("ref-frames", cmd_ref_frames, "save larger single frames from a moment", *span,
         A("--out", required=True), A("--count", type=int, default=12))
     add("ref-motion", cmd_ref_motion, "when things move in a moment, and for how long", *span,
-        A("--threshold", type=float, default=0.6), A("--curve", action="store_true"))
+        A("--threshold", type=float, default=0.6), A("--curve", action="store_true"),
+        A("--box", help="[x, y, w, h] as fractions: watch only this part of the frame"))
     add("ref-palette", cmd_ref_palette, "main colours of a frame", A("video"), A("--at", required=True),
         A("--colours", type=int, default=5), A("--box", help="[x, y, w, h] as fractions"))
     add("ref-compare", cmd_ref_compare, "reference on top, your render below, at matching moments",
@@ -642,7 +644,8 @@ def main(argv: list[str] | None = None) -> None:
         A("--captions", action="store_true"), A("--keep-retakes", action="store_true"),
         A("--no-build", action="store_true"), *size)
     add("score", cmd_score, "score a short clip on the virality rubric, part by part",
-        A("--transcript", help="word timings of the clip"), A("--video", help="the clip, to measure cuts, frame and sound"),
+        A("--transcript", help="word timings of the clip (leave out for a clip with no speech)"),
+        A("--video", help="the clip, to measure cuts, frame and sound"),
         A("--seconds", type=float, help="clip length when no video is given"),
         A("--judge", help="Claude's judgements as JSON or @file (see --questions)"),
         A("--questions", action="store_true", help="list the judgements and flags"), A("--json", action="store_true"))
