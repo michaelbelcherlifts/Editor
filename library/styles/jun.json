@@ -1,0 +1,128 @@
+{
+  "name": "jun",
+  "about": "jun: medians over 20 measured short clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "vertical",
+    "width": 360,
+    "height": 640,
+    "fps": 30,
+    "seconds": 56.0
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 11,
+    "cuts_per_minute": 13.1,
+    "median_shot": 3.51,
+    "mean_shot": 4.19,
+    "short_shot": 1.825,
+    "long_shot": 7.26,
+    "longest_shot": 8.73,
+    "cuts_per_minute_by_quarter": [
+      12.3,
+      13.85,
+      16.0,
+      10.7
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 3,
+      "median_shot": 3.45,
+      "first_cut": 3.295
+    }
+  },
+  "colour": {
+    "brightness": 0.465,
+    "contrast": 0.74,
+    "saturation": 0.211,
+    "warmth": 0.057,
+    "green_magenta": -0.009,
+    "black_point": 0.005,
+    "white_point": 0.938,
+    "shadow_rgb": [
+      30,
+      25,
+      26
+    ],
+    "highlight_rgb": [
+      211,
+      207,
+      200
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 20,
+    "format": "short",
+    "thin": false,
+    "subscribers": 762000.0,
+    "views_median": 4170.5,
+    "views_range": [
+      1274,
+      13407
+    ],
+    "cuts_per_minute_iqr": [
+      7.775,
+      22.975
+    ],
+    "cuts_in_first_3s": 0.0,
+    "text_share": 0.342,
+    "text_changes_per_10s": 1.72,
+    "captions_share": 0.2,
+    "text_on_frame_1_share": 0.75,
+    "text_position": 0.409,
+    "zoom_events_per_minute": 0.0,
+    "letterbox_share": 0.0,
+    "talking_share": 0.9,
+    "hook_types": {
+      "question": 0.15,
+      "number": 0.4,
+      "you": 0.3,
+      "me": 0.45,
+      "money": 0.05,
+      "warning": 0.05
+    },
+    "top": [
+      {
+        "id": "Uqt7gJttYLQ",
+        "title": "so\u2026.I have some news",
+        "views": 13407
+      },
+      {
+        "id": "dOaO82PsUtU",
+        "title": "the MOST important choice",
+        "views": 8786
+      },
+      {
+        "id": "7wQhYIiWoOU",
+        "title": "you DO NOT need fancy equipment",
+        "views": 7532
+      }
+    ],
+    "bottom": [
+      {
+        "id": "EbHIf7XgmCU",
+        "title": "The $1.5T Siblings",
+        "views": 2301
+      },
+      {
+        "id": "NwqxvNom7Xc",
+        "title": "The Psychology of Storytelling",
+        "views": 1335
+      },
+      {
+        "id": "tw9bDe1Pp6A",
+        "title": "IT\u2019S MY BIRTHDAYYYYY",
+        "views": 1274
+      }
+    ]
+  },
+  "speech": {
+    "words_per_minute": 197,
+    "words_per_minute_while_talking": 197,
+    "longest_pause": 0.0,
+    "first_word_at": 0.0,
+    "hook_text": "I wasn't ready for a child, a son or a daughter. [music] I just turned 25, so",
+    "clips": 18
+  }
+}

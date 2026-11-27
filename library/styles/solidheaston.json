@@ -1,0 +1,128 @@
+{
+  "name": "solidheaston",
+  "about": "solidheaston: medians over 20 measured short clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "vertical",
+    "width": 480,
+    "height": 854,
+    "fps": 30,
+    "seconds": 103.0
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 6,
+    "cuts_per_minute": 8.0,
+    "median_shot": 5.045,
+    "mean_shot": 6.74,
+    "short_shot": 3.48,
+    "long_shot": 12.675,
+    "longest_shot": 17.87,
+    "cuts_per_minute_by_quarter": [
+      4.0,
+      6.0,
+      2.0,
+      4.0
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 1,
+      "median_shot": 7.5,
+      "first_cut": 3.17
+    }
+  },
+  "colour": {
+    "brightness": 0.498,
+    "contrast": 0.786,
+    "saturation": 0.211,
+    "warmth": 0.066,
+    "green_magenta": -0.002,
+    "black_point": 0.032,
+    "white_point": 0.948,
+    "shadow_rgb": [
+      37,
+      34,
+      35
+    ],
+    "highlight_rgb": [
+      220,
+      210,
+      194
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 20,
+    "format": "short",
+    "thin": false,
+    "subscribers": 96100.0,
+    "views_median": 121018.0,
+    "views_range": [
+      4835,
+      6105863
+    ],
+    "cuts_per_minute_iqr": [
+      0.0,
+      16.75
+    ],
+    "cuts_in_first_3s": 0.0,
+    "text_share": 0.224,
+    "text_changes_per_10s": 5.845,
+    "captions_share": 0.3,
+    "text_on_frame_1_share": 0.65,
+    "text_position": 0.492,
+    "zoom_events_per_minute": 0.0,
+    "letterbox_share": 0.0,
+    "talking_share": 0.95,
+    "hook_types": {
+      "question": 0.1,
+      "number": 0.65,
+      "you": 0.2,
+      "me": 0.9,
+      "money": 0.0,
+      "warning": 0.05
+    },
+    "top": [
+      {
+        "id": "g76LTs0U2d4",
+        "title": "Imma miss that parking lot \ud83d\ude22 #carcamping #fitnessinfluencer #gyminfluencer #dayinthelife #ditl #gym",
+        "views": 6105863
+      },
+      {
+        "id": "PurVRhg5Rzw",
+        "title": "Making these videos is destroying brain holy cow. #carcamping #dayinthelife #fitnessinfluencer #gym",
+        "views": 1617531
+      },
+      {
+        "id": "XxyDRPtZxGM",
+        "title": "I\u2019m dropping to 180lbs ASAP #hyrox #hyroxworld #fitnessinfluencer #gyminfluencer #fitnesslifestyle",
+        "views": 1257824
+      }
+    ],
+    "bottom": [
+      {
+        "id": "Gg7UWheI_KQ",
+        "title": "YouTube recommendation of the week #degen #unemployed #fitness",
+        "views": 33858
+      },
+      {
+        "id": "7dKrYe17-PA",
+        "title": "I wasted so much time. #handstand #calisthenics #fitnessinfluencer #gyminfluencer #fitness",
+        "views": 22838
+      },
+      {
+        "id": "xXr0ew-oiBQ",
+        "title": "Isometrics on top #hyrox #gymlife #fitnessmotivation #baki #bakihanma",
+        "views": 4835
+      }
+    ]
+  },
+  "speech": {
+    "words_per_minute": 189,
+    "words_per_minute_while_talking": 189,
+    "longest_pause": 0.0,
+    "first_word_at": 0.0,
+    "hook_text": "Someone messaged me from my last video and told me they live across the street",
+    "clips": 20
+  }
+}

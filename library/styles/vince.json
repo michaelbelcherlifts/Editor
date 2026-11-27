@@ -1,0 +1,120 @@
+{
+  "name": "vince",
+  "about": "vince: medians over 26 measured short clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "vertical",
+    "width": 360,
+    "height": 640,
+    "fps": 30,
+    "seconds": 38.0
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 5,
+    "cuts_per_minute": 12.9,
+    "median_shot": 3.21,
+    "mean_shot": 4.275,
+    "short_shot": 1.915,
+    "long_shot": 6.93,
+    "longest_shot": 8.75,
+    "cuts_per_minute_by_quarter": [
+      4.0,
+      13.5,
+      12.0,
+      8.0
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 2,
+      "median_shot": 3.31,
+      "first_cut": 3.605
+    }
+  },
+  "colour": {
+    "brightness": 0.413,
+    "contrast": 0.756,
+    "saturation": 0.212,
+    "warmth": 0.03,
+    "green_magenta": -0.012,
+    "black_point": 0.009,
+    "white_point": 0.858,
+    "shadow_rgb": [
+      28,
+      27,
+      29
+    ],
+    "highlight_rgb": [
+      216,
+      201,
+      193
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 26,
+    "format": "short",
+    "thin": false,
+    "subscribers": 106000.0,
+    "views_median": 28903.5,
+    "views_range": [
+      5520,
+      262694
+    ],
+    "cuts_per_minute_iqr": [
+      4.175,
+      17.15
+    ],
+    "cuts_in_first_3s": 0.0,
+    "text_share": 0.184,
+    "text_changes_per_10s": 1.965,
+    "captions_share": 0.08,
+    "text_on_frame_1_share": 0.65,
+    "text_position": 0.552,
+    "zoom_events_per_minute": 0.0,
+    "letterbox_share": 0.023,
+    "talking_share": 0.85,
+    "hook_types": {
+      "question": 0.15,
+      "number": 0.46,
+      "you": 0.31,
+      "me": 0.5,
+      "money": 0.04,
+      "warning": 0.0
+    },
+    "top": [
+      {
+        "id": "V44tXkMi3-Y",
+        "title": "Any questions?",
+        "views": 262694
+      },
+      {
+        "id": "q5j4pitLrC0",
+        "title": "Each failure brings me closer to success",
+        "views": 111843
+      },
+      {
+        "id": "pHwxFzo1UTc",
+        "title": "Ran out of shampoo",
+        "views": 95354
+      }
+    ],
+    "bottom": [
+      {
+        "id": "ieiSyD7gweA",
+        "title": "Day 96/100, drop your check in Beast!",
+        "views": 12375
+      },
+      {
+        "id": "yv8yZQsxfAo",
+        "title": "How to become disgustingly consistent and achieve anything",
+        "views": 9472
+      },
+      {
+        "id": "curu4tgWgBQ",
+        "title": "How\u2019d you get after it today?",
+        "views": 5520
+      }
+    ]
+  }
+}

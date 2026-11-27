@@ -1,0 +1,120 @@
+{
+  "name": "sam",
+  "about": "sam: medians over 13 measured long-form opening clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "wide",
+    "width": 854,
+    "height": 450,
+    "fps": 30,
+    "seconds": 59.92
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 1,
+    "cuts_per_minute": 0.0,
+    "median_shot": 59.92,
+    "mean_shot": 59.92,
+    "short_shot": 59.92,
+    "long_shot": 59.92,
+    "longest_shot": 59.92,
+    "cuts_per_minute_by_quarter": [
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 0,
+      "median_shot": 15.0,
+      "first_cut": 13.355
+    }
+  },
+  "colour": {
+    "brightness": 0.278,
+    "contrast": 0.533,
+    "saturation": 0.219,
+    "warmth": 0.001,
+    "green_magenta": 0,
+    "black_point": 0.026,
+    "white_point": 0.75,
+    "shadow_rgb": [
+      20,
+      25,
+      29
+    ],
+    "highlight_rgb": [
+      220,
+      209,
+      221
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 13,
+    "format": "long-form opening",
+    "thin": false,
+    "subscribers": 4580000.0,
+    "views_median": 146052,
+    "views_range": [
+      58624,
+      1142555
+    ],
+    "cuts_per_minute_iqr": [
+      0.0,
+      2.0
+    ],
+    "cuts_in_first_3s": 0,
+    "text_share": 0,
+    "text_changes_per_10s": 0,
+    "captions_share": 0.0,
+    "text_on_frame_1_share": 0.08,
+    "text_position": 0.624,
+    "zoom_events_per_minute": 0,
+    "letterbox_share": 0,
+    "talking_share": 1.0,
+    "hook_types": {
+      "question": 0.15,
+      "number": 0.31,
+      "you": 0.08,
+      "me": 0.08,
+      "money": 0.0,
+      "warning": 0.0
+    },
+    "top": [
+      {
+        "id": "cSa_ku1dvBk",
+        "title": "Sam and Mark Sulek Olympic Diving Tryout",
+        "views": 1142555
+      },
+      {
+        "id": "M--TH9q_HY0",
+        "title": "Super Saiyan Halloween Special - Chest",
+        "views": 375978
+      },
+      {
+        "id": "9xkcPDXHEsY",
+        "title": "The Bulk Rebirth Day 66 - Legs 249.5 lbs",
+        "views": 256644
+      }
+    ],
+    "bottom": [
+      {
+        "id": "2CWZD6L9t6Q",
+        "title": "The Bulk Rebirth Day 55 - Arms In Texas",
+        "views": 91095
+      },
+      {
+        "id": "GPCp_FbdoX0",
+        "title": "The Bulk Rebirth Day 74 - Weight PR 255.0 lbs",
+        "views": 72470
+      },
+      {
+        "id": "OhIyB26QwP8",
+        "title": "Thanksgiving Arm Pump",
+        "views": 58624
+      }
+    ]
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "name": "mekluvin",
+  "about": "mekluvin: medians over 27 measured short clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "vertical",
+    "width": 360,
+    "height": 640,
+    "fps": 30,
+    "seconds": 48
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 12,
+    "cuts_per_minute": 14.3,
+    "median_shot": 1.88,
+    "mean_shot": 3.77,
+    "short_shot": 0.85,
+    "long_shot": 6.69,
+    "longest_shot": 11.96,
+    "cuts_per_minute_by_quarter": [
+      24.1,
+      11.0,
+      12.4,
+      8.0
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 6,
+      "median_shot": 1.63,
+      "first_cut": 1.92
+    }
+  },
+  "colour": {
+    "brightness": 0.37,
+    "contrast": 0.766,
+    "saturation": 0.234,
+    "warmth": 0.052,
+    "green_magenta": -0.003,
+    "black_point": 0.006,
+    "white_point": 0.959,
+    "shadow_rgb": [
+      34,
+      32,
+      33
+    ],
+    "highlight_rgb": [
+      216,
+      212,
+      200
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 27,
+    "format": "short",
+    "thin": false,
+    "subscribers": 345000.0,
+    "views_median": 225119,
+    "views_range": [
+      24597,
+      9076654
+    ],
+    "cuts_per_minute_iqr": [
+      11.1,
+      20.2
+    ],
+    "cuts_in_first_3s": 1,
+    "text_share": 0.858,
+    "text_changes_per_10s": 20.97,
+    "captions_share": 0.81,
+    "text_on_frame_1_share": 0.81,
+    "text_position": 0.374,
+    "zoom_events_per_minute": 0,
+    "letterbox_share": 0,
+    "talking_share": 0.85,
+    "hook_types": {
+      "question": 0.37,
+      "number": 0.74,
+      "you": 0.7,
+      "me": 0.59,
+      "money": 0.3,
+      "warning": 0.0
+    },
+    "top": [
+      {
+        "id": "o-QimLtgN_M",
+        "title": "This Made Me Quit The Gym \ud83d\ude2d",
+        "views": 9076654
+      },
+      {
+        "id": "B_UIeWKgmsk",
+        "title": "Testing if Gymbros Lie",
+        "views": 3927422
+      },
+      {
+        "id": "aao73NjQTdk",
+        "title": "The Most INSANE Bench Challenge on YouTube \ud83d\ude33",
+        "views": 2050647
+      }
+    ],
+    "bottom": [
+      {
+        "id": "u06pmpszXis",
+        "title": "Challenging the BIGGEST Guy in My Gym",
+        "views": 59830
+      },
+      {
+        "id": "hvn92Rz6Gfs",
+        "title": "I Challenged The Biggest Guy In My Gym \ud83d\ude33",
+        "views": 46433
+      },
+      {
+        "id": "GppHChjs5TE",
+        "title": "I Paid for EVERYONES Gas Because of THIS:",
+        "views": 24597
+      }
+    ]
+  }
+}

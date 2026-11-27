@@ -576,6 +576,12 @@ def cmd_style_show(args) -> None:
     print(json.dumps(p, indent=2) if args.json else style.summary(p))
 
 
+def cmd_style_from_study(args) -> None:
+    from . import creators
+    for name, n in creators.build(args.folder):
+        print(f"saved style {name!r} from {n} clips" + (" (thin)" if n < creators.MIN_CLIPS else ""))
+
+
 def cmd_style_list(args) -> None:
     from . import style
     for name in style.list_styles():
@@ -1259,6 +1265,8 @@ def main(argv: list[str] | None = None) -> None:
         A("--about"), A("--threshold", type=float, default=0.3, help="how big a change counts as a cut"))
     add("style-show", cmd_style_show, "describe a saved style", A("name"), A("--json", action="store_true"))
     add("style-list", cmd_style_list, "list saved styles")
+    add("style-from-study", cmd_style_from_study, "save one style per creator from the creator study",
+        A("folder", nargs="?", default="data/creator-study"))
     add("look-make", cmd_look_make, "make a colour look (LUT) that moves your footage toward a reference",
         A("name"), A("--reference", required=True), A("--footage", required=True, help="your own clip"),
         A("--strength", type=float, default=1.0, help="0 to 1"))

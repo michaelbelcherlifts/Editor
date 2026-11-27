@@ -85,11 +85,11 @@ def compare(mine: dict, target: dict, limit: int = 8) -> list[Suggestion]:
             out.append(Suggestion(None, "pace",
                                   f"You speak {ms['words_per_minute']} words a minute across the cut; {name} runs "
                                   f"{ts['words_per_minute']}. Tightening pauses would close the gap."))
-        gap_limit = max(ts["long_gap"] * 2, 0.5)
+        gap_limit = max(ts.get("long_gap", ts.get("longest_pause", 0.5)) * 2, 0.5)
         ws = mine.get("words", [])
         gaps = sorted(((b[1] - a[2], a[2]) for a, b in zip(ws, ws[1:]) if b[1] - a[2] > gap_limit), reverse=True)
         for gap, at in gaps[:limit]:
-            out.append(Suggestion(at, "pause", f"A {gap:.1f}s pause. {name}'s long pauses are about {ts['long_gap']:g}s."))
+            out.append(Suggestion(at, "pause", f"A {gap:.1f}s pause. {name}'s long pauses are about {ts.get('long_gap', gap_limit / 2):g}s."))
 
     # Picture and sound, when both were measured from video files
     mc, tc = mine.get("colour"), target.get("colour")
