@@ -24,7 +24,8 @@ What exists today:
 | Autopilot | One command from a raw clip to a first cut: retakes out, pauses tightened, look, captions, build, review | Tested with a stand-in for Resolve; ran end to end here on a generated clip |
 | Cut review | Timestamped notes on how your cut differs from a saved style | Tested |
 | Transcription | Runs a free local speech-to-text tool (mlx-whisper or whisper) | Plumbing tested with a stand-in. **Not yet run with the real tools** |
-| Virality score | Scores a short clip 0 to 100 on seven listed parts (hook, pacing, payoff, value, shareability, trend, craft). Weights are a starting proposal, not yet tuned on real analytics | Tested |
+| Story and hook checks | Hook check with the second each problem happens, a beat map for long-form that flags stretches with no new question and "and then" runs, hook types and a checker for written hooks, script checks. A script skill writes story first, then hooks, then lines | Tested on made-up transcripts. **Not yet run on his real videos** |
+| Virality score | Scores a short clip 0 to 100 on seven listed parts (hook, pacing, payoff, value, shareability, trend, craft), including time to first useful point, longest held shot and sentence length, with a story gate that caps a clip with nothing to find out at 55. Weights are a starting proposal, not yet tuned on real analytics | Tested |
 | Learning | Turns clips into attributes, reads a YouTube Studio export, and fits a small local model that shows which attributes go with reach or retention and suggests score weights | Tested on made-up data with a planted signal. **No real result yet: it needs at least 12 clips with results, 30 to rely on** |
 | Sound effects | A tagged local sound library, a fetcher for Openverse, automatic hits on cuts, graphics and zooms lowered under speech, mixed onto its own audio track at build | Tested with a stand-in for Resolve. **Openverse download not yet run for real; nobody has listened to a mix yet** |
 | Resolve builder | Builds the edit in Resolve as a new timeline and checks it | Tested against a stand-in only. **Not yet run against real Resolve** |
@@ -95,8 +96,8 @@ uv run pytest
 
 ## Known limits of this version
 
-- One layer of footage on the main track, plus overlays above it. No transitions or
-  audio-only edits yet. Zooms and speed changes are baked into a new file, not live
+- Several clips can share the main track, with b-roll and graphics above it, but all
+  must be at the edit's frame rate. No transitions or audio-only edits yet. Zooms and speed changes are baked into a new file, not live
   in Resolve.
 - Transparent clips are ProRes 4444 and large, roughly 10 to 20 MB per second at 1080p.
 - The muscle figure is a simple stylized diagram, not a medical illustration.

@@ -34,3 +34,14 @@ results:
 
 If `build` reports problems, paste its output to Claude. The builder reads every
 clip back after placing it, so the report says exactly what differed.
+
+## Windows notes (from the first real run, 2026-11-27)
+
+The editor runs on Windows: 100 of 101 tests passed, and the one that did not is a
+test that cannot run there. Two things to know:
+
+- Inside the Claude desktop app, `uv sync` can fail with "Missing expected target
+  directory for Python minor version link". Set `UV_PYTHON_INSTALL_DIR` to a folder
+  you own (for example `.uv-python` beside the repository) and run it again.
+- Install the tools with winget: `yt-dlp`, `ffmpeg`, `deno` (yt-dlp needs it for
+  full-quality YouTube formats) and `uv`. Open a new terminal afterwards.
