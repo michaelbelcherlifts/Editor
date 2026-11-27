@@ -387,15 +387,10 @@ def cmd_build(args) -> None:
         sys.exit(1)
 
 
-def _wh(size: str | None) -> tuple[int, int]:
-    if size is None:
-        from . import rules
-        size = rules.get("frame") or "1080x1920"
-    try:
-        w, h = (int(x) for x in size.lower().split("x"))
-    except ValueError:
-        raise EditError("size looks like 1080x1920") from None
-    return w, h
+def _wh(size: str | None, edit: EditList | None = None) -> tuple[int, int]:
+    """The asked size, else the edit's format, else the house rule for frame, else 1080x1920."""
+    from .formats import size_for
+    return size_for(edit, size)
 
 
 def _resolve_timeline(store, edit):
@@ -511,7 +506,7 @@ def cmd_rule_note(args) -> None:
 def cmd_reframe(args) -> None:
     from . import reframe
     store = _store(args); edit = store.load()
-    w, h = _wh(args.size)
+    w, h = _wh(args.size, edit)
     if args.auto:
         new, lines = reframe.plan(edit, w, h)
         print("\n".join(lines))
@@ -549,7 +544,7 @@ def cmd_speed(args) -> None:
 def cmd_export(args) -> None:
     from . import export
     store = _store(args); edit = store.load()
-    w, h = _wh(args.size)
+    w, h = _wh(args.size, edit)
     out = Path(args.out or Path("exports") / f"{store.project}-v{store.head()}.mp4")
     export.render(edit, out, w, h, args.fit, args.lufs, sounds=not args.no_sounds, music=not args.no_music)
     print(f"exported {out} ({format_time(edit.duration, edit.fps)})")
@@ -1206,6 +1201,87 @@ def cmd_week_report(args) -> None:
     print(json.dumps(rep, indent=2) if args.json else format_week_report(rep))
 
 
+def cmd_format(args) -> None:
+    from . import formats
+    store = _store(args); edit = store.load()
+    if not args.name:
+        f = formats.of(edit)
+        w, h = _wh(None, edit)
+        print(f"format: {f.name} ({f.about})" if f else f"no format set; frame {w}x{h} from the house rule or the default")
+        for name, x in formats.FORMATS.items():
+            print(f"  {name:<12} {x.size:<10} {x.about}")
+        return
+    f = formats.get(args.name)
+    _save(store, edit, edit.set_format(f.name), f"format {f.name} ({f.size})")
+    print(f"format {f.name}: {f.size}, {f.about}. Exports, builds and reframing now use {f.size}.")
+    if f.width > f.height and any(s.framing != (0.5, 0.5, 1.0) for s in edit.segments):
+        print("  note: clips were framed for another shape; run `stylebrain reframe --auto` again")
+
+
+def _chapter_items(edit: EditList) -> list[tuple[float | None, str]]:
+    return [(None if at is None else at / edit.fps, c.title) for at, c in edit.chapter_times()]
+
+
+def cmd_chapter(args) -> None:
+    store = _store(args); edit = store.load()
+    if args.remove:
+        _save(store, edit, edit.remove_chapter(args.title), f"remove chapter {args.title!r}")
+        return
+    if args.at is None:
+        raise EditError("give a time and a title, such as: stylebrain chapter 2:10 \"Why I tried it\"")
+    t = parse_time(args.at, edit.fps)
+    _save(store, edit, edit.add_chapter(args.title, t), f"chapter at {format_time(t, edit.fps)}: {args.title}")
+
+
+def cmd_chapters(args) -> None:
+    from . import longform
+    edit = _store(args).load()
+    report = longform.check_chapters(_chapter_items(edit), edit.duration / edit.fps)
+    if args.json:
+        print(json.dumps({"lines": report.lines, "problems": report.problems, "notes": report.notes}, indent=2))
+    else:
+        print(report.text())
+    if args.out:
+        Path(args.out).write_text("\n".join(report.lines) + "\n")
+        print(f"description block written to {args.out}")
+
+
+def cmd_longform_check(args) -> None:
+    from . import longform, style
+    from .autopilot import timeline_words
+    store = _store(args); edit = store.load()
+    words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
+    duration = edit.duration / edit.fps
+    cuts = style.cut_times(args.video) if args.video else None
+    chapters = [(at, t) for at, t in _chapter_items(edit) if at is not None]
+    payoff = _secs_on(args.payoff, edit) if args.payoff else None
+    cta = [_secs_on(c, edit) for c in args.cta] if args.cta else None
+    found = longform.structure_check(words, duration, chapters, cuts, payoff, cta)
+    if args.json:
+        print(json.dumps([f.__dict__ for f in found], indent=2))
+        return
+    serious = [f for f in found if f.serious]
+    print(f"long-form check, {longform.clock(duration)}, {len(chapters)} chapters: "
+          f"{len(serious)} to fix, {len(found) - len(serious)} to look at")
+    for f in found:
+        print(("  ! " if f.serious else "    ") + f.line())
+    if not found:
+        print("  nothing found")
+
+
+def _secs_on(text: str, edit: EditList) -> float:
+    return parse_time(text, edit.fps) / edit.fps
+
+
+def cmd_outline(args) -> None:
+    from . import longform
+    if args.kind is None:
+        for k, (about, _) in longform.OUTLINES.items():
+            print(f"  {k:<11} {about}")
+        return
+    print(longform.outline_text(args.kind, args.minutes))
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -1458,6 +1534,19 @@ def main(argv: list[str] | None = None) -> None:
         A("--x", type=float, help="0 is the left edge, 1 the right"), A("--y", type=float, help="0 is the top"),
         A("--zoom", type=float, help="1 is no punch-in"), A("--size", help="default: the house rule for frame, else 1080x1920"),
         A("--no-preview", action="store_true"))
+    add("format", cmd_format, "set where this video is posted (reel, short, longform): sets its frame and checks",
+        A("name", nargs="?"))
+    add("chapter", cmd_chapter, "start a YouTube chapter at a time, or --remove one", A("at", nargs="?"), A("title"),
+        A("--remove", action="store_true"))
+    add("chapters", cmd_chapters, "the chapter list for the YouTube description, checked against YouTube's rules",
+        A("--out", help="also write the description block to this file"), A("--json", action="store_true"))
+    add("longform-check", cmd_longform_check, "check a long-form cut: opening, chapters, re-hooks, pace, payoff",
+        *tx, A("--video", help="the rendered cut, to find long shots"),
+        A("--payoff", help="when the main question is answered"),
+        A("--cta", action="append", help="when a pitch runs (repeatable); found in the words if not given"),
+        A("--json", action="store_true"))
+    add("outline", cmd_outline, "a chapter plan for a long-form video (experiment, list, challenge, day, explainer)",
+        A("kind", nargs="?"), A("--minutes", type=float, default=14.0))
     add("speed", cmd_speed, "slow motion or speed-up on part of the timeline, with optional ramps in and out",
         A("--from", dest="start", required=True), A("--to", dest="end", required=True),
         A("--speed", type=float, required=True, help="0.5 is half speed, 2 is double"),

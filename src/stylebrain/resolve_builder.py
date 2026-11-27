@@ -50,6 +50,8 @@ class BuildReport:
     look: str = ""
     sounds: int = 0
     sound_tracks: list[str] = field(default_factory=list)
+    frame: str = ""
+    chapters: int = 0
 
     @property
     def ok(self) -> bool:
@@ -63,6 +65,10 @@ class BuildReport:
             head += f", {self.sounds} sound effects"
         if self.sound_tracks:
             head += " (" + ", ".join(self.sound_tracks) + ")"
+        if self.frame:
+            head += f", {self.frame}"
+        if self.chapters:
+            head += f", {self.chapters} chapter markers"
         if self.ok:
             return head + ", all checked"
         return head + "\n" + "\n".join(f"  problem: {p}" for p in self.problems)
@@ -171,14 +177,49 @@ def _apply_look(project, items, path: str) -> list[str]:
     return []
 
 
+def _format_size(edit: EditList) -> str:
+    from .formats import get
+    return get(edit.format).size
+
+
+def _apply_format(timeline, edit: EditList) -> list[str]:
+    """Give the timeline the format's frame (1920x1080 for long-form) as its own custom setting."""
+    from .formats import get
+    f = get(edit.format)
+    ok = (timeline.SetSetting("useCustomSettings", "1")
+          and timeline.SetSetting("timelineResolutionWidth", str(f.width))
+          and timeline.SetSetting("timelineResolutionHeight", str(f.height)))
+    if not ok:
+        return [f"could not set the timeline to {f.size} for {f.name}; set it in Timeline > Timeline Settings"]
+    return []
+
+
+def _apply_chapters(timeline, edit: EditList) -> tuple[int, list[str]]:
+    """One blue marker per chapter, so the chapters can be checked against the picture in Resolve."""
+    placed, lost = 0, []
+    for at, c in edit.chapter_times():
+        if at is None:
+            lost.append(c.title)
+            continue
+        placed += bool(timeline.AddMarker(at, "Blue", f"chapter: {c.title}", "YouTube chapter", 1, "stylebrain-chapter"))
+    problems = [f"chapter {t!r} sits on a moment that was cut; add it again" for t in lost]
+    if placed + len(lost) < len(edit.chapters):
+        problems.append(f"{len(edit.chapters) - placed - len(lost)} chapter markers could not be placed")
+    return placed, problems
+
+
 def _apply_framing(project, placed, edit: EditList, clips: dict) -> list[str]:
     """Scale each main-track clip to cover the frame and slide it so its framing point is in the middle."""
     from .reframe import geometry
 
-    try:
-        tw, th = int(project.GetSetting("timelineResolutionWidth")), int(project.GetSetting("timelineResolutionHeight"))
-    except (TypeError, ValueError):
-        return ["could not read the timeline size, so clips were not reframed"]
+    if edit.format:
+        from .formats import get
+        tw, th = get(edit.format).width, get(edit.format).height
+    else:
+        try:
+            tw, th = int(project.GetSetting("timelineResolutionWidth")), int(project.GetSetting("timelineResolutionHeight"))
+        except (TypeError, ValueError):
+            return ["could not read the timeline size, so clips were not reframed"]
     failed = 0
     for item, seg in zip(placed, edit.segments):
         try:
@@ -244,6 +285,12 @@ def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | Non
         if off_by_one and attempt + 1 < len(modes):
             media_pool.DeleteTimelines([timeline])  # wrong guess about endFrame; try the other way
             continue
+        if edit.format:
+            problems += _apply_format(timeline, edit)
+        chapters = 0
+        if edit.chapters:
+            chapters, lost = _apply_chapters(timeline, edit)
+            problems += lost
         if edit.look:
             problems += _apply_look(project, main, edit.look)
         if edit.fill:
@@ -255,5 +302,6 @@ def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | Non
             if kind:
                 tracks.append(f"{kind} on A{2 + n}: {count}")
         return BuildReport(final, len(main), len(over), warn + problems, look=edit.look,
-                           sounds=len(edit.sounds) if stems else 0, sound_tracks=tracks)
+                           sounds=len(edit.sounds) if stems else 0, sound_tracks=tracks,
+                           frame=edit.format and _format_size(edit), chapters=chapters)
     raise AssertionError("unreachable")

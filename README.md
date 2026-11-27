@@ -88,6 +88,16 @@ uv run stylebrain auto bench2 --source ~/Movies/bench2.mov --style fastcut --loo
 uv run stylebrain review fastcut --transcript ~/Movies/bench2.words.json
 ```
 
+Long-form YouTube (16:9, chapters, structure check; see [docs/long-form.md](docs/long-form.md)):
+
+```
+uv run stylebrain outline experiment --minutes 14   # a chapter plan before filming
+uv run stylebrain format longform                   # 1920x1080 for build, reframe and export
+uv run stylebrain chapter 1:10 "Why I tried it"
+uv run stylebrain chapters --out description.txt    # the block for the YouTube description
+uv run stylebrain longform-check --transcript bench.words.json --payoff 11:30
+```
+
 Times are timeline times: seconds (`83.5`), `1:23.5`, timecode `00:01:23:12`, or
 frames `120f`.
 
@@ -106,6 +116,9 @@ uv run pytest
   in Resolve.
 - Transparent clips are ProRes 4444 and large, roughly 10 to 20 MB per second at 1080p.
 - The muscle figure is a simple stylized diagram, not a medical illustration.
+- Long-form: the timeline's 16:9 size is set per timeline (`useCustomSettings`) and chapters are placed as blue
+  markers; both are only tested against the stand-in Resolve. The long-form targets describe six creators'
+  videos, not Michael's own retention.
 - Rebuilding does not carry over work done by hand on the previous timeline.
 - Transcription needs a free local tool installed (`uv tool install mlx-whisper` on Apple Silicon).
 - Retake detection reads the words only: repeats, restarts, "start over" and lines said again. It cannot tell a flat take from a good one.
