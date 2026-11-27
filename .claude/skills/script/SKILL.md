@@ -117,3 +117,17 @@ claim results he has not got.
 For a recurring format ("Mid at both?", "30 days to X"), keep the episode
 number and the stakes line ("Day 12: 385 to go") in the series notes in
 project memory, and open each episode on the last one's open question.
+
+## Loop endings
+
+When a short suits it, write the last line so the first line finishes it.
+Three ways, in order of how natural they sound:
+
+1. **Unfinished line.** Stop on a connective and let the hook complete it:
+   last line "...and that is exactly why", first line "This one cue fixed my bench."
+2. **Echo.** Say the hook's key words again in the last line with the answer attached.
+3. **Question back.** End on the question the hook opens with.
+
+Offer a loop ending as one option beside a plain payoff ending, and say the
+line out loud across the seam (last line, then first line) before keeping it.
+Skip it when the payoff is a punchline: a joke should end on the laugh.

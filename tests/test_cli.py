@@ -97,3 +97,19 @@ def test_j_l_and_straight_cut_commands(tmp_path, monkeypatch, capsys):
     with pytest.raises(SystemExit):
         main(["jcut", "8"])
     assert "no cut within" in capsys.readouterr().err
+
+
+def test_loop_trim_ends_on_the_last_word(tmp_path, monkeypatch, capsys):
+    import json
+    monkeypatch.chdir(tmp_path)
+    main(["new", "loop", "--source", "a.mov", "--fps", "30", "--frames", "300"])
+    (tmp_path / "w.json").write_text(json.dumps([{"word": "one", "start": 1.0, "end": 1.4},
+                                                 {"word": "cue", "start": 5.0, "end": 5.5}]))
+    capsys.readouterr()
+    main(["loop-trim", "--transcript", "w.json"])
+    out = capsys.readouterr().out
+    assert 'after the last word ("cue")' in out and "0:10.00 -> 0:05.60" in out
+    main(["loop-trim", "--transcript", "w.json"])
+    assert "nothing changed" in capsys.readouterr().out
+    main(["loop-check", "--transcript", "w.json", "--seconds", "9"])
+    assert "[tail]" in capsys.readouterr().out

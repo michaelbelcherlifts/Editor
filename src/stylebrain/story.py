@@ -216,6 +216,56 @@ def hook_check(words: list[Word], duration: float, cuts: list[float] | None = No
 
 # ------------------------------------------------------------------ long-form
 
+LEAD_INS = ("because", "so", "and", "but", "which is why", "that's why", "thats why", "and that's why", "which means",
+            "and that is why", "the reason is", "here's why", "heres why", "until", "unless", "when")
+SIGN_OFFS = {"yeah", "it", "guys", "bye", "peace", "out", "watching", "follow", "subscribe", "video"}
+
+
+def loop_check(words: list[Word], duration: float, frame_gap: float | None = None,
+               end_dark: bool = False, end_level: float | None = None) -> list[Finding]:
+    """How cleanly a short runs from its last moment back into its first.
+
+    frame_gap: how different the last frame is from the first, 0 (same) to 1.
+    end_dark: the last frame is close to black (a fade out).
+    end_level: sound level in dB over the last quarter second.
+    A loop is optional. These are things to weigh, with the seam problems first.
+    """
+    out: list[Finding] = []
+    ss = sentences(words)
+    if words:
+        tail = duration - words[-1].end
+        if tail > 0.45:
+            out.append(Finding(words[-1].end, "tail", f"{tail:.1f}s runs on after the last word. On replay that is dead "
+                               f"air before the hook; end about 0.1s after \"{words[-1].text.strip()}\" (`loop-trim`)."))
+    if end_dark:
+        out.append(Finding(duration, "fade", "It ends on black. A fade out tells the viewer it is over; end on a "
+                           "live frame so the first frame follows straight on."))
+    if end_level is not None and end_level < -45 and not (words and duration - words[-1].end > 0.45):
+        out.append(Finding(duration, "silence", "The sound has died away by the last frame. Keep the room tone or the "
+                           "music running to the cut so the replay does not open on a hole.", serious=False))
+    if len(ss) >= 2:
+        first, last = ss[0], ss[-1]
+        low = _low(last.text).rstrip(" .!?,")
+        if _norm(last.text.split()[-1]) in SIGN_OFFS or "so yeah" in low:
+            out.append(Finding(last.start, "sign_off", f"Ends on \"{last.text}\", a sign-off. It gives the viewer a "
+                               "reason to leave; end on the payoff or on a line the opening finishes."))
+        elif any(low.endswith(" " + c) or low == c for c in LEAD_INS):
+            out.append(Finding(last.start, "leads_in", f"Good: the last line stops on \"{low.split()[-1]}\", so the "
+                               f"opening (\"{first.text[:50]}\") finishes the sentence.", serious=False))
+        elif _overlap(first.text, last.text) >= 0.25:
+            out.append(Finding(last.start, "echo", "Good: the last line picks up words from the first, so the replay "
+                               "feels like one thought.", serious=False))
+        else:
+            out.append(Finding(last.start, "no_loop", f"The last line (\"{last.text[:50]}\") does not lead into the "
+                               f"first (\"{first.text[:50]}\"). To loop it, end on an unfinished line the hook "
+                               "completes (…\"and that is why\"), or say the hook's key words again. That needs a "
+                               "new last line; it cannot be cut in.", serious=False))
+    if frame_gap is not None and not end_dark and frame_gap > 0.25:
+        out.append(Finding(duration, "picture", "The last frame looks nothing like the first, so the replay shows as a "
+                           "cut. Ending in the opening shot (same framing, same place) hides it.", serious=False))
+    return sorted(out, key=lambda f: (not f.serious, f.at or 0.0))
+
+
 BEATS = ("hook", "setup", "escalation", "low point", "payoff", "next loop")
 
 
