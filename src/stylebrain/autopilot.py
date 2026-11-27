@@ -85,9 +85,19 @@ def place_captions(edit: EditList, words: list[tr.Word], width: int, height: int
 
 
 def run(name: str, source: str, transcript: str | None = None, style_name: str | None = None,
-        look_name: str | None = None, captions: bool = False, retakes: bool = True, build: bool = True,
-        width: int = 1920, height: int = 1080, connect=None, render=None) -> Result:
+        look_name: str | None = None, captions: bool | None = None, retakes: bool | None = None, build: bool = True,
+        width: int | None = None, height: int | None = None, connect=None, render=None) -> Result:
+    """Anything left as None follows the house rules (`rules.py`), then the defaults."""
+    from . import rules
     from .media import probe
+
+    style_name = rules.pick(style_name, "style") or None
+    look_name = rules.pick(look_name, "look") or None
+    captions = rules.pick(captions, "captions")
+    retakes = rules.pick(retakes, "cut_retakes")
+    if width is None or height is None:
+        frame = rules.get("frame")
+        width, height = (int(x) for x in frame.split("x")) if frame else (1920, 1080)
 
     store = Store(name)
     if store.exists():
@@ -126,6 +136,8 @@ def run(name: str, source: str, transcript: str | None = None, style_name: str |
     store.commit(edit, f"start from {Path(source).name}")
     set_current_project(name)
     result.steps.append(f"started from {Path(source).name}, {format_time(edit.duration, fps)}")
+    if rules.changed():
+        result.steps.append("house rules in force: " + ", ".join(rules.changed()))
 
     def save(new: EditList, message: str) -> None:
         nonlocal edit
@@ -150,10 +162,10 @@ def run(name: str, source: str, transcript: str | None = None, style_name: str |
                 said = " ".join(w.text for w in words if a <= w.start < b)[:60]
                 result.notes.append(f"retake cut, source {a:.1f}s to {b:.1f}s: \"{said}\"")
 
-    min_gap = 0.6
-    if target and target.get("speech"):
-        min_gap = round(min(max(target["speech"]["long_gap"] * 1.5, 0.35), 1.0), 2)
-    ranges = _frames(edit, source, tr.tighten_ranges(kept, min_gap, 0.12, frames / fps))
+    min_gap = rules.get("pause_min_gap")
+    if target and target.get("speech") and "pause_min_gap" not in rules.load()["settings"]:
+        min_gap = round(min(max(target["speech"]["long_gap"] * 1.5, 0.35), 1.0), 2)   # his own rule beats the style
+    ranges = _frames(edit, source, tr.tighten_ranges(kept, min_gap, rules.get("pause_air"), frames / fps))
     if ranges:
         save(edit.remove_ranges(ranges), f"tighten {len(ranges)} pauses of {min_gap:g}s or more")
 

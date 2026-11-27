@@ -141,6 +141,8 @@ def cmd_tighten(args) -> None:
     store = _store(args); edit = store.load()
     source = _source_for(edit, args.source)
     length = max(s.src_out for s in edit.segments if s.source == source) / edit.fps
+    from . import rules
+    args.min_gap, args.pad = rules.pick(args.min_gap, "pause_min_gap"), rules.pick(args.pad, "pause_air")
     cuts = tr.tighten_ranges(tr.load_words(args.transcript), args.min_gap, args.pad, length)
     ranges = _to_timeline(edit, source, cuts)
     if not ranges:
@@ -360,12 +362,41 @@ def cmd_build(args) -> None:
         sys.exit(1)
 
 
-def _wh(size: str) -> tuple[int, int]:
+def _wh(size: str | None) -> tuple[int, int]:
+    if size is None:
+        from . import rules
+        size = rules.get("frame") or "1080x1920"
     try:
         w, h = (int(x) for x in size.lower().split("x"))
     except ValueError:
         raise EditError("size looks like 1080x1920") from None
     return w, h
+
+
+def cmd_rules(args) -> None:
+    from . import rules
+    print(rules.text())
+
+
+def cmd_rule(args) -> None:
+    from . import rules
+    if args.clear:
+        rules.clear(args.name)
+        print(f"house rule cleared: {args.name} is back to {rules._show(rules.get(args.name))}")
+        return
+    if args.value is None:
+        raise EditError("give a value, or --clear")
+    print(f"house rule saved: {args.name} {rules._show(rules.set_rule(args.name, args.value))}")
+
+
+def cmd_rule_note(args) -> None:
+    from . import rules
+    if args.remove:
+        print(f"note removed: {rules.remove_note(args.remove)}")
+        return
+    if not args.text:
+        raise EditError("give the note in quotes, or --remove N")
+    print(f"house rule saved as note {rules.add_note(args.text)}")
 
 
 def cmd_reframe(args) -> None:
@@ -560,8 +591,9 @@ def cmd_review(args) -> None:
 
 def cmd_auto(args) -> None:
     from . import autopilot
-    result = autopilot.run(args.name, args.source, args.transcript, args.style, args.look, args.captions,
-                           not args.keep_retakes, not args.no_build, args.width, args.height)
+    result = autopilot.run(args.name, args.source, args.transcript, args.style, args.look,
+                           True if args.captions else None, False if args.keep_retakes else None,
+                           not args.no_build, args.width, args.height)
     print(result.text(Store(args.name).load().fps))
 
 
@@ -752,6 +784,8 @@ def cmd_sfx_auto(args) -> None:
     if args.transcript:
         from .autopilot import timeline_words
         words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
+    from . import rules
+    args.gain, args.per_minute = rules.pick(args.gain, "sound_gain"), rules.pick(args.per_minute, "sounds_per_minute")
     try:
         beats = tuple(parse_time(b, edit.fps) / edit.fps for b in args.beats.split(",")) if args.beats else ()
     except EditError:
@@ -1056,7 +1090,8 @@ def main(argv: list[str] | None = None) -> None:
     add("cut-phrase", cmd_cut_phrase, "cut the words of a phrase", A("phrase"), *tx,
         A("--all", action="store_true", help="cut every time it is said"))
     add("tighten", cmd_tighten, "shorten long pauses", *tx,
-        A("--min-gap", type=float, default=0.6), A("--pad", type=float, default=0.12))
+        A("--min-gap", type=float, help="default: the house rule, else 0.6"),
+        A("--pad", type=float, help="default: the house rule, else 0.12"))
     add("overlay-add", cmd_overlay_add, "place a clip above the main track", A("name"),
         A("--source", required=True), A("--at", required=True), A("--duration", required=True),
         A("--track", type=int, default=2), A("--start", default="0", help="where in the clip to start from"))
@@ -1128,7 +1163,8 @@ def main(argv: list[str] | None = None) -> None:
     add("auto", cmd_auto, "first cut in one go: retakes, pauses, look, captions, build, review", A("name"),
         A("--source", required=True), A("--transcript"), A("--style"), A("--look"),
         A("--captions", action="store_true"), A("--keep-retakes", action="store_true"),
-        A("--no-build", action="store_true"), *size)
+        A("--no-build", action="store_true"),
+        A("--width", type=int, help="default: the house rule for frame, else 1920"), A("--height", type=int))
     add("score", cmd_score, "score a short clip on the virality rubric, part by part",
         A("--transcript", help="word timings of the clip (leave out for a clip with no speech)"),
         A("--video", help="the clip, to measure cuts, frame and sound"),
@@ -1172,9 +1208,9 @@ def main(argv: list[str] | None = None) -> None:
     add("sfx-auto", cmd_sfx_auto, "place sounds on cuts, graphics and zooms, lowered under speech",
         A("--transcript", help="word timings, to lower sounds under speech"), A("--source"),
         A("--on", default="cuts,overlays,zooms", help="any of cuts, overlays, zooms, risers"),
-        A("--per-minute", type=float, default=8.0, help="most automatic sounds a minute (0 for no limit)"),
+        A("--per-minute", type=float, help="most automatic sounds a minute (0 for no limit; default: the house rule, else 8)"),
         A("--beats", help="times of story beats that get a hit and are kept first, such as 12.5,31"),
-        A("--gain", type=float, default=-14.0),
+        A("--gain", type=float, help="default: the house rule, else -14"),
         A("--duck", type=float, default=6.0), A("--min-cut-gap", type=float, default=2.5), A("--ad", action="store_true", help="paid ad: use only your own, made-here, CC0 or public-domain sounds"))
     add("sfx-remove", cmd_sfx_remove, "remove a sound by name, or 'auto' or 'all'", A("name"))
 
@@ -1247,12 +1283,17 @@ def main(argv: list[str] | None = None) -> None:
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")
-    out = [A("--size", default="1080x1920"), A("--lufs", type=float, default=-14.0, help="target loudness")]
+    out = [A("--size", help="default: the house rule for frame, else 1080x1920"), A("--lufs", type=float, default=-14.0, help="target loudness")]
+    add("rules", cmd_rules, "show the house rules: his standing corrections")
+    add("rule", cmd_rule, "set a house rule, such as: rule pause_min_gap 0.45", A("name"), A("value", nargs="?"),
+        A("--clear", action="store_true", help="go back to the default"))
+    add("rule-note", cmd_rule_note, "save a correction in his words for Claude to follow", A("text", nargs="?"),
+        A("--remove", type=int, help="remove note N"))
     add("reframe", cmd_reframe, "place the crop when footage fills a frame of another shape, or punch in",
         A("--auto", action="store_true", help="follow the subject through every shot"),
         A("--from", dest="start"), A("--to", dest="end"),
         A("--x", type=float, help="0 is the left edge, 1 the right"), A("--y", type=float, help="0 is the top"),
-        A("--zoom", type=float, help="1 is no punch-in"), A("--size", default="1080x1920"),
+        A("--zoom", type=float, help="1 is no punch-in"), A("--size", help="default: the house rule for frame, else 1080x1920"),
         A("--no-preview", action="store_true"))
     add("export", cmd_export, "render the edit to a file ready to post, then check it", A("out", nargs="?"), *out,
         A("--fit", default="fill", choices=["fill", "fit"], help="fill crops to cover the frame; fit keeps it all with bars"),
