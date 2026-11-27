@@ -16,6 +16,9 @@ def test_fonts_are_embedded_so_pages_never_fall_back_to_arial_black():
     assert font_stack("montserrat").startswith("'Montserrat'")
     page = with_font("<style></style>", "anton")
     assert "@font-face" in page and "'Anton'" in page and "!important" in page
+    assert "'Bebas Neue'" in with_font("<style></style>", "bebas") and "base64," in font_faces("bebas")
+    html, _ = build("spaced_title", {"text": "built different", "duration": 2})
+    assert "@font-face{font-family:'Bebas Neue'" in html
 
 
 def test_caption_groups_end_at_a_full_stop_and_stay_short():
