@@ -57,6 +57,9 @@ def test_transparent_render_must_be_mov(tmp_path):
     ("captions", {"words": [{"word": "one", "start": 0.1, "end": 0.4}, {"word": "two", "start": 0.5, "end": 0.9}]}),
     ("muscle_diagram", {"title": "Bench", "highlights": ["chest", {"muscle": "triceps", "role": "secondary"}]}),
     ("letterbox", {"ratio": 4.0, "duration": 2.0}),
+    ("spaced_title", {"text": "Tell me how", "duration": 1.2, "rough": False}),
+    ("plain_captions", {"text": "in just three steps", "duration": 1.2}),
+    ("burst", {"duration": 1.2}),
 ])
 def test_every_template_renders_something_visible(tmp_path, name, params):
     html, duration = build(name, {**params, **SMALL})

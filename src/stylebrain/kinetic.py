@@ -6,6 +6,8 @@
 - title_bar: a title held across the whole video.
 - end_card: numbers or macros that count up on a card.
 - counter: a rep or day counter that ticks at given times.
+- spaced_title, plain_captions, burst: the cinematic edit study (docs/cinematic-editing.md):
+  wide-spaced title words, quiet plain captions, hand-drawn burst marks.
 - clipper: the "clipper" layout: black bands above and below a fitted landscape
   clip, with a headline in the top band.
 
@@ -341,3 +343,98 @@ def clipper(headline: str, duration: float, sub: str = "", accent_words: list[st
     bottom = f"<div class='s'>{escape(sub)}</div>" if sub else ""
     body = f"<div class='b top'><div class='h'>{words}</div></div><div class='b bot'>{bottom}</div>"
     return _page(body, css, width, height), float(duration)
+
+
+CONDENSED = "'Bebas Neue','Oswald','League Gothic','Barlow Condensed','Arial Narrow','Helvetica Neue',sans-serif"
+
+
+def spaced_title(words: list[dict] | None = None, text: str | None = None, duration: float | None = None,
+                 per_group: int = 1, size: int = 190, spacing: float = 0.45, y: float = 0.55,
+                 color: str = "#ffffff", rough: bool = True, fade: float = 0.25,
+                 width: int = 1920, height: int = 1080):
+    """Cinematic title words, one (or `per_group`) at a time: tall condensed capitals spread wide
+    with letter spacing, a soft shadow and an optional worn print texture (`rough`). Each word
+    fades in from a slight blur on its own time and holds until the next.
+
+    The look of military and sports cinematic edits: the voice-over's key words set
+    across the picture, quiet and large, rather than captions that shout.
+    """
+    ws = timed_words(words, text, duration)
+    if spacing < 0 or fade < 0:
+        raise EditError("spacing and fade cannot be negative")
+    groups = _chunks(ws, max(1, per_group))
+    total = max(duration or 0, ws[-1][2] + 0.4)
+    divs = []
+    for gi, g in enumerate(groups):
+        start = g[0][1]
+        end = groups[gi + 1][0][1] if gi + 1 < len(groups) else total
+        label = escape(" ".join(t.upper().strip(_PUNCT) or t for t, _s, _e in g))
+        divs.append(f"<div class='st' style='{_window(start, end)}'>"
+                    f"<div class='in' style='animation-delay:{start:.3f}s'>{label}</div></div>")
+    grain = ("filter:url(#rough);" if rough else "")
+    css = (f".st{{position:absolute;left:3%;right:3%;top:{y * 100:.1f}%;transform:translateY(-50%);"
+           f"text-align:center;white-space:nowrap}}"
+           f".in{{display:inline-block;font-family:{CONDENSED};font-weight:700;font-size:{size}px;line-height:1;"
+           f"letter-spacing:{spacing:.3f}em;margin-right:-{spacing:.3f}em;color:{color};{grain}"
+           "text-shadow:0 6px 24px rgba(0,0,0,.55);"
+           f"animation:sti {max(fade, 0.01):.3f}s ease-out both}}"
+           "@keyframes sti{from{opacity:0;filter:blur(6px)}to{opacity:1}}" + _SHOW)
+    svg = ("<svg width='0' height='0' style='position:absolute'><filter id='rough'>"
+           "<feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' seed='3'/>"
+           "<feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.4 1.6'/>"
+           "<feComposite in='SourceGraphic' operator='in'/></filter></svg>") if rough else ""
+    return _page(svg + "".join(divs), css, width, height), total
+
+
+def plain_captions(words: list[dict] | None = None, text: str | None = None, duration: float | None = None,
+                   max_words: int = 2, size: int = 64, y: float = 0.62, color: str = "#ffffff",
+                   uppercase: bool = True, width: int = 1920, height: int = 1080):
+    """Quiet captions: one or two words at a time in plain bold white, no box, no outline,
+    no colour, no bounce. They cut on with the word and sit just below the middle.
+
+    The editor-tutorial look (and the opposite of the busy, highlighted caption style
+    that reads as auto-generated): it lets the footage carry the video.
+    """
+    ws = timed_words(words, text, duration)
+    groups = _chunks(ws, max(1, max_words))
+    total = max(duration or 0, ws[-1][2] + 0.3)
+    divs = []
+    for gi, g in enumerate(groups):
+        start = g[0][1]
+        end = min(groups[gi + 1][0][1], g[-1][2] + 0.5) if gi + 1 < len(groups) else total
+        label = escape(" ".join(t.upper() if uppercase else t for t, _s, _e in g))
+        divs.append(f"<div class='pc' style='{_window(start, end)}'>{label}</div>")
+    css = (f".pc{{position:absolute;left:8%;right:8%;top:{y * 100:.1f}%;transform:translateY(-50%);"
+           f"text-align:center;font-weight:800;font-size:{size}px;line-height:1.1;color:{color};"
+           "letter-spacing:0.01em;text-shadow:0 2px 10px rgba(0,0,0,.45)}" + _SHOW)
+    return _page("".join(divs), css, width, height), total
+
+
+def burst(x: float = 0.5, y: float = 0.45, radius: float = 0.16, duration: float = 0.8, strokes: int = 9,
+          color: str = "#ffffff", width: int = 1080, height: int = 1920):
+    """Hand-drawn marks bursting out around a point, then fading: the chalky emphasis lines
+    editors draw around a subject on a hit, a catch or a lockout.
+
+    x, y (0 to 1) place the centre; radius is a share of the frame's short side.
+    """
+    if not (0 <= x <= 1 and 0 <= y <= 1) or radius <= 0 or duration <= 0 or strokes < 3:
+        raise EditError("burst needs x and y between 0 and 1, a radius and duration above 0, and 3 or more strokes")
+    sw, sh, _ = _stage(width, height)
+    r = radius * min(sw, sh)
+    cx, cy = x * sw, y * sh
+    marks = []
+    for k in range(strokes):
+        ang = 360 * k / strokes + (17 if k % 2 else -9)
+        ln = r * (0.32 if k % 3 else 0.42)
+        marks.append(f"<div class='mk' style='left:{cx:.1f}px;top:{cy:.1f}px;height:{ln:.1f}px;"
+                     f"transform:rotate({ang:.1f}deg) translateY(-{r:.1f}px);animation-delay:{0.012 * (k % 4):.3f}s'></div>")
+    grow = min(0.18, duration / 3)
+    css = (f".mk{{position:absolute;width:{max(8, r * 0.08):.1f}px;margin-left:-{max(4, r * 0.04):.1f}px;"
+           f"background:{color};border-radius:40% 60% 50% 45%;transform-origin:50% 0;opacity:0;"
+           f"filter:url(#chalk);animation:bm {duration:.3f}s linear both}}"
+           f"@keyframes bm{{0%{{opacity:0;clip-path:inset(0 0 100% 0)}}{100 * grow / duration:.1f}%{{opacity:1;clip-path:inset(0)}}"
+           f"70%{{opacity:1}}100%{{opacity:0}}}}")
+    svg = ("<svg width='0' height='0' style='position:absolute'><filter id='chalk'>"
+           "<feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='2' seed='7'/>"
+           "<feDisplacementMap in='SourceGraphic' scale='6'/></filter></svg>")
+    return _page(svg + "".join(marks), css, width, height), duration
