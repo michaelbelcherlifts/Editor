@@ -22,6 +22,7 @@ What exists today:
 | Cut review | Timestamped notes on how your cut differs from a saved style | Tested |
 | Transcription | Runs a free local speech-to-text tool (mlx-whisper or whisper) | Plumbing tested with a stand-in. **Not yet run with the real tools** |
 | Virality score | Scores a short clip 0 to 100 on seven listed parts (hook, pacing, payoff, value, shareability, trend, craft). Weights are a starting proposal, not yet tuned on real analytics | Tested |
+| Learning | Turns clips into attributes, reads a YouTube Studio export, and fits a small local model that shows which attributes go with reach or retention and suggests score weights | Tested on made-up data with a planted signal. **No real result yet: it needs at least 12 clips with results, 30 to rely on** |
 | Resolve builder | Builds the edit in Resolve as a new timeline and checks it | Tested against a stand-in only. **Not yet run against real Resolve** |
 
 ## Why an edit list
