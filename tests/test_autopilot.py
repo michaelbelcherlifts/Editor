@@ -143,7 +143,10 @@ def test_commands_retakes_srt_and_review(project, capsys):
     assert "00:00:01,133 --> " in (project / "cut.srt").read_text()
     style.save("ref", {"source": "x", "pacing": style.pacing([1, 2, 3, 4, 5, 6, 7], 8.0)})
     main(["review", "ref", "--transcript", t])
-    assert "[long_shot]" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "[long_shot]" in out and out.index("hook") < out.index("[long_shot]")
+    main(["review", "--transcript", t])
+    assert "against" not in capsys.readouterr().out
 
 
 def test_phantom_speech_over_music_is_dropped():

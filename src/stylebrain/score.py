@@ -15,17 +15,26 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 
 from .edl import EditError
-from .transcript import Word, _norm
-
-FILLERS = {"so", "um", "uh", "er", "okay", "ok", "alright", "right", "hey", "hi", "hello", "guys", "well",
-           "yeah", "yo", "like", "now", "and", "whats", "what's", "up", "everyone", "everybody"}
+from .story import (  # noqa: F401
+    FILLERS,
+    average_sentence_words,
+    first_real_word,
+    first_useful_point,
+    longest_shot,
+)
+from .transcript import Word
 
 JUDGEMENTS = {
+    "story": ("Is there something to find out: a want, a doubt and an answer worth waiting for? 1 nothing, 5 gripping "
+              "(2 or less caps the total at 55)"),
     "promise": "Is it clear in the first line what the viewer will get? 1 no idea, 5 unmistakable",
     "payoff": "Is the opening promise answered on screen, and does the end land or loop? 1 never, 5 fully",
     "value": "Does the viewer learn a usable thing or feel something? 1 nothing, 5 strongly",
     "share": "Is there a clear reason to send this to someone or argue in comments? 1 none, 5 obvious",
     "trend": "Does the topic, format or sound match what is rising now? 1 stale, 5 on trend (3 if unknown)",
+}
+NUMBERS = {
+    "first_point": "Seconds until the first useful point, from your reading (default: the first sentence that says something)",
 }
 FLAGS = {
     "text_on_frame_1": "A text hook is on screen in the first frame",
@@ -49,10 +58,12 @@ class Part:
 class Score:
     parts: list[Part] = field(default_factory=list)
     penalties: list[tuple[str, float]] = field(default_factory=list)
+    cap: tuple[int, str] | None = None  # (most it can score, why): the story gate
 
     @property
     def total(self) -> int:
-        return max(0, min(100, round(sum(p.points for p in self.parts) - sum(v for _, v in self.penalties))))
+        top = self.cap[0] if self.cap else 100
+        return max(0, min(top, round(sum(p.points for p in self.parts) - sum(v for _, v in self.penalties))))
 
     @property
     def verdict(self) -> str:
@@ -68,6 +79,8 @@ class Score:
             lines.append(f"  {p.name:<13}{p.points:>5.1f} / {p.out_of:<3g} {p.why}" + ("" if p.judged else "  (not judged, neutral used)"))
         for why, v in self.penalties:
             lines.append(f"  penalty      -{v:g}  {why}")
+        if self.cap:
+            lines.append(f"  capped at {self.cap[0]}: {self.cap[1]}")
         w = self.weakest
         lines.append(f"  weakest part: {w.name}")
         unjudged = [p.name for p in self.parts if not p.judged]
@@ -78,7 +91,8 @@ class Score:
     def to_dict(self) -> dict:
         return {"total": self.total, "verdict": self.verdict, "weakest": self.weakest.name,
                 "parts": [asdict(p) for p in self.parts],
-                "penalties": [{"why": w, "points": v} for w, v in self.penalties]}
+                "penalties": [{"why": w, "points": v} for w, v in self.penalties],
+                "cap": {"at": self.cap[0], "why": self.cap[1]} if self.cap else None}
 
 
 def _ramp(value: float, full: float, zero: float) -> float:
@@ -86,13 +100,6 @@ def _ramp(value: float, full: float, zero: float) -> float:
     if full == zero:
         return 1.0 if value == full else 0.0
     return max(0.0, min(1.0, (value - zero) / (full - zero)))
-
-
-def first_real_word(words: list[Word]) -> Word | None:
-    for w in words:
-        if _norm(w.text) and _norm(w.text) not in FILLERS:
-            return w
-    return None
 
 
 def score(words: list[Word], duration: float, cuts: list[float] | None = None, frame: dict | None = None,
@@ -108,11 +115,13 @@ def score(words: list[Word], duration: float, cuts: list[float] | None = None, f
         raise EditError("the clip has no length")
     judge = dict(judge or {})
     for key in judge:
-        if key not in JUDGEMENTS and key not in FLAGS:
-            raise EditError(f"unknown judgement {key!r}; use {', '.join([*JUDGEMENTS, *FLAGS])}")
+        if key not in JUDGEMENTS and key not in FLAGS and key not in NUMBERS:
+            raise EditError(f"unknown judgement {key!r}; use {', '.join([*JUDGEMENTS, *NUMBERS, *FLAGS])}")
     for key in JUDGEMENTS:
         if key in judge and not 1 <= float(judge[key]) <= 5:
             raise EditError(f"{key} is scored from 1 to 5")
+    if "first_point" in judge and float(judge["first_point"]) < 0:
+        raise EditError("first_point is seconds from the start")
 
     def rated(key: str) -> tuple[float, bool]:
         if key in judge:
@@ -121,9 +130,10 @@ def score(words: list[Word], duration: float, cuts: list[float] | None = None, f
 
     out = Score()
 
-    # Hook, 25: first meaningful word (10), first visual change (5), text on frame 1 (5), clear promise (5)
+    # Hook, 25: first meaningful word (7), first useful point (3), first visual change (5),
+    # text on frame 1 (5), clear promise (5).
     # A clip with no speech (music and pictures only) is judged on its pictures: the 10 points
-    # for the first word go to how soon the picture changes instead.
+    # for the first word and first point go to how soon the picture changes instead.
     first = first_real_word(words)
     silent = not words
     judged = True
@@ -132,8 +142,11 @@ def score(words: list[Word], duration: float, cuts: list[float] | None = None, f
         word_pts = 0.0
     else:
         t = first.start if first else duration
-        word_pts = 10 * _ramp(t, 0.3, 3.0)
+        word_pts = 7 * _ramp(t, 0.3, 3.0)
         why = [f"first real word at {t:.1f}s"]
+        point = first_useful_point(words, judge.get("first_point"))
+        word_pts += 3 * (_ramp(point, 1.5, 6.0) if point is not None else 0.0)
+        why.append(f"first useful point at {point:.1f}s" if point is not None else "no useful point found")
     change_max = 15 if silent else 5
     if cuts is None:
         change_pts = change_max / 2
@@ -152,25 +165,34 @@ def score(words: list[Word], duration: float, cuts: list[float] | None = None, f
     judged &= ok
     out.parts.append(Part("Hook", round(word_pts + change_pts + text_pts + 5 * promise, 1), 25, "; ".join(why), judged))
 
-    # Pacing, 20: pauses (8), a change every 2 to 4 s (7), length 15 to 45 s (5)
+    # Pacing, 20: pauses (6), a change every 2 to 4 s (5), longest held shot (3), sentence length (2),
+    # length 15 to 45 s (4)
     judged = True
     if silent:
-        pause_pts, why = 8.0, ["no speech"]
+        pause_pts, why = 6.0, ["no speech"]
     else:
         gaps = [b.start - a.end for a, b in zip(words, words[1:])]
         worst = max(gaps, default=0.0)
-        pause_pts = 8 * _ramp(worst, 0.3, 1.5)
+        pause_pts = 6 * _ramp(worst, 0.3, 1.5)
         why = [f"longest pause {worst:.1f}s"]
     if cuts is None:
-        change_pts, judged = 3.5, False
+        change_pts, judged = 4.0, False
         why.append("visual changes not measured")
     else:
         every = duration / (len(cuts) + 1)
-        change_pts = 7 * (_ramp(every, 4.0, 10.0) if every > 4 else _ramp(every, 2.0, 0.5) if every < 2 else 1.0)
-        why.append(f"a change every {every:.1f}s")
-    length_pts = 5 * (1.0 if 15 <= duration <= 45 else _ramp(duration, 15, 5) if duration < 15 else _ramp(duration, 45, 90))
+        change_pts = 5 * (_ramp(every, 4.0, 10.0) if every > 4 else _ramp(every, 2.0, 0.5) if every < 2 else 1.0)
+        held, held_at = longest_shot(cuts, duration)
+        change_pts += 3 * _ramp(held, 4.0, 10.0)
+        why += [f"a change every {every:.1f}s", f"longest held shot {held:.1f}s at {held_at:.1f}s"]
+    if words:
+        avg = average_sentence_words(words)
+        sentence_pts = 2 * _ramp(avg, 12, 25)
+        why.append(f"sentences average {avg:g} words")
+    else:
+        sentence_pts = 2.0
+    length_pts = 4 * (1.0 if 15 <= duration <= 45 else _ramp(duration, 15, 5) if duration < 15 else _ramp(duration, 45, 90))
     why.append(f"{duration:.0f}s long")
-    out.parts.append(Part("Pacing", round(pause_pts + change_pts + length_pts, 1), 20, "; ".join(why), judged))
+    out.parts.append(Part("Pacing", round(pause_pts + change_pts + sentence_pts + length_pts, 1), 20, "; ".join(why), judged))
 
     for name, key, weight in (("Payoff", "payoff", 15), ("Value/emotion", "value", 15), ("Shareability", "share", 10),
                               ("Trend fit", "trend", 10)):
@@ -205,4 +227,8 @@ def score(words: list[Word], duration: float, cuts: list[float] | None = None, f
         late = [c for c in (cuts or []) if c > 30]
         if cuts is not None and not late:
             out.penalties.append(("Over 60 seconds with no new beat after 30 s", 5))
+    # Story gate: under 10 of 25 on story (judged 2 or less of 5) caps the total at 55
+    if "story" in judge and 25 * (float(judge["story"]) - 1) / 4 < 10:
+        out.cap = (55, f"story judged {float(judge['story']):g} of 5: nothing to find out, so the hook and the look "
+                       "cannot carry it")
     return out
