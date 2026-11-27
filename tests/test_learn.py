@@ -176,3 +176,50 @@ def test_pull_takes_records_from_a_shared_folder(tmp_path, monkeypatch, capsys):
     main(["clip-pull", str(shared)])
     assert "took 5 clip records" in capsys.readouterr().out
     assert learn.load_all()[0]["group"] == "creator 0"
+
+
+def test_a_clip_with_likes_but_no_views(tmp_path, monkeypatch, capsys):
+    """Signed out, Instagram gives likes and comments but no views: the clip is still kept, views left empty."""
+    monkeypatch.chdir(tmp_path)
+    main(["clip-add", "DgFq8WOxspq", "--likes", "4246", "--comments", "43", "--age-days", "4", "--mine"])
+    clip = learn.load_all()[0]
+    assert clip["outcome"] == {"likes": 4246, "comments": 43} and clip["attributes"]["age_days"] == 4
+    assert learn.target_value(clip["outcome"], "likes") is None
+    (tmp_path / "liked.csv").write_text("Permalink,Likes\nhttps://www.instagram.com/reel/DgBktJqRStj/,244\nhttps://www.instagram.com/reel/Dd5ZHd4x7hr/,\n")
+    main(["clip-import", "liked.csv"])
+    assert "1 clips read" in capsys.readouterr().out
+    assert {c["id"]: c["outcome"] for c in learn.load_all()}["DgBktJqRStj"] == {"likes": 244}
+
+
+def test_backtest_predicts_later_posts_only(tmp_path, monkeypatch, capsys):
+    """Posts in date order: a real signal survives the walk forward, a made-up one does not."""
+    import numpy as np
+    monkeypatch.chdir(tmp_path)
+    rng = np.random.default_rng(1)
+    for i in range(80):
+        pace, noise = float(rng.normal()), float(rng.normal())
+        reach = 10 ** (4 + 0.5 * pace + 0.15 * float(rng.normal()))
+        learn.add(f"clip{i:03d}", {"pace": pace, "noise": noise, "age_days": 80 - i},
+                  {"reach": reach, "views": reach * 1.4, "follows": 3, "posted": f"2026-{1 + i // 28:02d}-{1 + i % 28:02d}T09:00"},
+                  mine=True)
+    b = learn.backtest(learn.load_all(), "reached")
+    assert b["predicted"] == 48 and b["trained_on_first"] == 32 and b["rank"] > 0.8
+    assert b["pick_hit_rate"] > b["base_hit_rate"]
+    assert b["rules"][0]["attribute"] == "pace" and "age_days" not in [r["attribute"] for r in b["rules"]]
+    assert abs({r["attribute"]: r["rank"] for r in b["rules"]}["noise"]) < 0.4
+    main(["backtest"])
+    out = capsys.readouterr().out
+    assert "48 predictions" in out and "pace" in out
+    learn.add("results_only", {"age_days": 3}, {"reach": 5000, "posted": "2026-11-20T09:00"}, mine=True)
+    assert learn.unmeasured(learn.load_all()[-1]) and learn.backtest(learn.load_all(), "reached")["clips"] == 80
+
+
+def test_import_reads_publish_time_and_follows(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "ig.csv").write_text("Permalink,Post type,Publish time,Views,Reach,Follows\n"
+                                     "DgFq8WOxspq,IG reel,11/23/2026 07:12,121808,82150,23\n")
+    main(["clip-import", "ig.csv"])
+    clip = learn.load_all()[0]
+    assert clip["outcome"]["posted"] == "2026-11-23T07:12" and "age_days" in clip["attributes"] and learn.unmeasured(clip)
+    assert learn.target_value(clip["outcome"], "follows") == pytest.approx(0.28, abs=0.001)
+    assert learn.target_value(clip["outcome"], "reached") == pytest.approx(4.9146, abs=0.001)

@@ -17,6 +17,26 @@ undoable version:
 6. Builds the timeline in Resolve (`--no-build` to skip).
 7. Reviews the cut against the style and lists what stands out.
 
+## The three-question start
+
+When he gives a clip and says little else, ask these three and nothing more,
+in one message, each with its options. Skip any his house rules or his words
+already answer.
+
+1. **Style**: one of the presets from `uv run stylebrain presets` (one-word,
+   punchy, slam, talking-head, clean), or a style learned from a reference
+   (`--style`). If he has not seen them, run `uv run stylebrain preset-preview all`
+   and show him the files first.
+2. **Look**: leave the colour as it is, or one of his saved looks
+   (`uv run stylebrain look-list`).
+3. **Frame**: vertical 1080x1920 or wide 1920x1080, unless the house rule
+   for frame is set.
+
+Then run `uv run stylebrain auto NAME --source FILE --preset STYLE [--look LOOK]
+--width W --height H`. A preset sets the caption treatment and how tight the
+pauses are; his house rules still win where set. The caption font is the same
+for every preset for now.
+
 ## How to run it
 
 1. Ask only what is not already known: which clip, and whether he wants

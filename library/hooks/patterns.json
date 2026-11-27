@@ -1,0 +1,949 @@
+{
+ "updated": "2026-11-27",
+ "source": "YouTube search (Shorts by relevance and by views, long-form by views and by views this year) across 6 niches, about 1,600 videos; opening lines read from captions of the top 77. Views as of 2026-11-27. Openings are trimmed to the first line.",
+ "niches": [
+  "powerlifting",
+  "running",
+  "food",
+  "guns",
+  "lockpicking",
+  "fpv"
+ ],
+ "what_the_top_openings_share": [
+  "The first spoken line is the title, nearly word for word (Yee Yee Life, Tyler Vitelli, Isaiah Photo, Hormozi).",
+  "A number is in the first five words: a time, a price, a weight or a count.",
+  "The bar to clear is stated before the attempt, often with why it is hard (\"less than 1% of people can\").",
+  "Escalation formats say the ladder up front (\"higher and higher, all the way up to a .50 cal\"), so the end is promised.",
+  "Teaching clips that did best open on the wrong way first (\"this is not how you grip a pistol\").",
+  "Gym humour skits are the biggest bucket in powerlifting search and most have no voiceover: the caption sets the scene.",
+  "Lifters attempting a running bar (Larry Wheels 40 yd dash, Hamish James 5K, CBum sprinting) is a proven lane and it is Michael's.",
+  "Mocking the hybrid athlete already works (Hamish James 'How To Be A HYBRID ATHLETE', 2.0M)."
+ ],
+ "patterns": {
+  "challenge": {
+   "name": "Can I…?",
+   "why": "A bar the viewer can picture (a time, a weight, a count) and one attempt to clear it. The question is open until the last second, so people stay for the result.",
+   "opening": "Say the bar in the first sentence, with the number, and why it is hard (\"less than 1% can\"). Frame 1 is you at the start line or under the bar.",
+   "for_michael": [
+    "Can a [bodyweight] lb powerlifter run a sub [time] mile?",
+    "Can I squat [weight] after a 5K?",
+    "Can a powerlifter learn to fly FPV in one afternoon?"
+   ],
+   "fits": [
+    "running",
+    "powerlifting",
+    "fpv",
+    "lockpicking"
+   ],
+   "examples": [
+    {
+     "title": "Can I run a sub 5 minute mile?!",
+     "views": 21282138,
+     "creator": "Isaiah Photo",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/qWihFGj0edQ",
+     "opening": "I'm going to attempt to run a [sub 5] mile... less than 1% of the world's population can"
+    },
+    {
+     "title": "Can I run a 4:30 mile?",
+     "views": 1906481,
+     "creator": "Allie Ostrander",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/BNuuFvmjO5M",
+     "opening": "Today I'm racing my first mile in 5 years and my goal is to break my PR"
+    },
+    {
+     "title": "Bodybuilder Attempts 40 Yard Dash",
+     "views": 1253218,
+     "creator": "Larry Wheels",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/LivzaURWddE",
+     "opening": "The average time for the 40 yard dash is about 5 seconds. So the time to beat today is 5.5."
+    },
+    {
+     "title": "How Fast Can A Natural Bodybuilder RUN 5KM?",
+     "views": 1332412,
+     "creator": "Hamish James",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/_ZAINme795w",
+     "opening": "So I just went for my first run in four months and honestly it sucked"
+    },
+    {
+     "title": "Can a Noob Learn To Fly FPV Drones In 4 Hours?",
+     "views": 675361,
+     "creator": "andyescapes",
+     "niche": "fpv",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/4zkJxhQ4t44",
+     "opening": "This is how you can learn FPV in four hours and I'm going to prove it"
+    },
+    {
+     "title": "How Long Can I Lead an Elite Marathon?",
+     "views": 4354308,
+     "creator": "Tyler Speers",
+     "niche": "running",
+     "format": "long",
+     "url": "https://www.youtube.com/watch?v=9rLKbGhatlA",
+     "opening": "That is me leading 30,000 runners in one of the fastest marathons in the country"
+    },
+    {
+     "title": "Chasing a PR at the Chicago Marathon",
+     "views": 1479473,
+     "creator": "Noah Anderson",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/W9qwucSPz1E",
+     "opening": "My goal today is to break 3 hours and 30 minutes in the Chicago Marathon."
+    }
+   ]
+  },
+  "test": {
+   "name": "The bet / the test",
+   "why": "Someone else is put on the spot with money or a prize on the line. The viewer guesses before the attempt, which is what keeps them watching.",
+   "opening": "Open on the question to the stranger and the prize in the same breath. Needs a second person on camera.",
+   "for_michael": [
+    "If you can pause bench [weight] once, I'll buy your pre-workout.",
+    "Testing if runners can deadlift their bodyweight.",
+    "Testing if gym bros can run a 7 minute mile."
+   ],
+   "fits": [
+    "powerlifting",
+    "running"
+   ],
+   "examples": [
+    {
+     "title": "Testing if Gymbros Lie",
+     "views": 3927422,
+     "creator": "MekLuvin",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/B_UIeWKgmsk",
+     "opening": "How many pull-ups can you do? Like five. Okay, if you could do five pull-ups right now, I'll give you $100."
+    },
+    {
+     "title": "Paying Gymbros $200 to break their PR's",
+     "views": 962030,
+     "creator": "MekLuvin",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/_0COOleW_wE",
+     "opening": "Do you have any recent PRs recorded in your phone?"
+    },
+    {
+     "title": "How Strong Is The Average Man?",
+     "views": 663213,
+     "creator": "MekLuvin",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/G4zGtH0--Eg",
+     "opening": "I will fill your tank up with gas if you could bench 225 one time."
+    },
+    {
+     "title": "Locksmith Says My Videos Are BS... Loses $75 (Maybe)",
+     "views": 31262816,
+     "creator": "LockPickingLawyer",
+     "niche": "lockpicking",
+     "format": "long",
+     "url": "https://www.youtube.com/watch?v=NSuaUok-wTY",
+     "opening": "I just received a written challenge in the mail"
+    }
+   ]
+  },
+  "versus": {
+   "name": "X vs Y",
+   "why": "Two tribes or two people, one scoreboard. Everyone already has a side, so they watch to see theirs win and comment when it doesn't.",
+   "opening": "Name both sides in the first line and show both in frame 1 (split screen works).",
+   "for_michael": [
+    "Powerlifter vs marathoner: he picks the run, I pick the lift.",
+    "Powerlifters vs runners at the same 5K.",
+    "Me vs a Navy SEAL... on the deadlift."
+   ],
+   "fits": [
+    "powerlifting",
+    "running",
+    "guns",
+    "fpv"
+   ],
+   "examples": [
+    {
+     "title": "Powerlifters vs bodybuilders between sets",
+     "views": 21947100,
+     "creator": "Noel Deyzel",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/C7h0weE6M9o"
+    },
+    {
+     "title": "NAVY SEAL vs. HUNTERS - who's the fastest shot?",
+     "views": 44881863,
+     "creator": "Dude Life",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/6j1521LEBTo",
+     "opening": "How fast can a Navy Seal take out a bad guy? First up, Brock the beginner."
+    },
+    {
+     "title": "JANITOR vs THE BIGGEST GUY IN THE GYM",
+     "views": 40205110,
+     "creator": "ANATOLY",
+     "niche": "powerlifting",
+     "format": "long",
+     "url": "https://www.youtube.com/watch?v=D978wYD0u4Y",
+     "opening": "I just want to challenge you. You want to challenge me?"
+    },
+    {
+     "title": "Who Is The Strongest Fitness Youtuber? ($20,000 Competition)",
+     "views": 11118625,
+     "creator": "Jesse James West",
+     "niche": "powerlifting",
+     "format": "long",
+     "url": "https://www.youtube.com/watch?v=TWbA_Xw5BFM",
+     "opening": "These are the 20 biggest fitness YouTubers in the world... compete in six intense athletic challenges."
+    },
+    {
+     "title": "DJI Mavic 4 Pro vs. DJI Avata 2 | FPV vs. Cinematic Drone Footage",
+     "views": 2200000,
+     "creator": "",
+     "niche": "fpv",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/jdo9PMPg5Ak"
+    }
+   ]
+  },
+  "how-many": {
+   "name": "How many X does it take?",
+   "why": "An escalating test: each round is bigger than the last, so every few seconds there is a new small result and the viewer waits for the one that breaks.",
+   "opening": "Ask the question word for word as the first line, then say the ladder (\"higher and higher, all the way up to...\") so the viewer knows the ending is coming.",
+   "for_michael": [
+    "How many plates does it take to bend a cheap barbell?",
+    "How many bumper plates does it take to stop a bullet? (range, with a range officer)",
+    "How far can I run after every PR attempt?"
+   ],
+   "fits": [
+    "guns",
+    "powerlifting"
+   ],
+   "examples": [
+    {
+     "title": "How Many Frying Pans Does it Take to Stop a Bullet?",
+     "views": 268744461,
+     "creator": "Yee Yee Life",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/2BYK3q518wU",
+     "opening": "How many frying pans does it take to stop a bullet? ... higher and higher caliber bullets all the way up to a .50 cal"
+    },
+    {
+     "title": "Can Silly Putty Stop a 50 Cal?",
+     "views": 157212806,
+     "creator": "Yee Yee Life",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/oW-f6RYSwBI",
+     "opening": "Could 100 lbs of silly putty stop a bullet?"
+    },
+    {
+     "title": "Glock Buried, Frozen and Submerged for 100 Days",
+     "views": 45446487,
+     "creator": "War Veterans",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/oSj5wk-ngbE",
+     "opening": "I buried one Glock, froze another, and dropped the third in a lake for 100 days."
+    },
+    {
+     "title": "How Many Cast Iron Pans Would it Take to Stop a Bullet?",
+     "views": 215113789,
+     "creator": "",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/5hw6U47KslI"
+    },
+    {
+     "title": "How Many Tires Does it Take to Stop a Bullet?",
+     "views": 173347385,
+     "creator": "",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/5fwgEIT689g"
+    }
+   ]
+  },
+  "underdog": {
+   "name": "The underestimated one",
+   "why": "Someone looks like they will lose, then doesn't. The gap between what people expect and what happens is the payoff. Michael's version is the inverse: the big lifter in the runners' world.",
+   "opening": "Show the doubt first (a look, a comment, a line), then cut to the attempt. Don't fake it: use real reactions or play it as an obvious skit.",
+   "for_michael": [
+    "They thought the powerlifter would walk the 5K.",
+    "Runners at my track thought I was lost.",
+    "Sausage fingers vs a padlock."
+   ],
+   "fits": [
+    "powerlifting",
+    "running",
+    "lockpicking"
+   ],
+   "examples": [
+    {
+     "title": "Elite Powerlifter Pretends to Be a Cleaner...Then Shocks Everyone",
+     "views": 43341851,
+     "creator": "Funny Gym Diary",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/OM_eWobLj3g",
+     "opening": "If you can do this, I need to..."
+    },
+    {
+     "title": "Powerlifting at Commercial Gym",
+     "views": 18010478,
+     "creator": "FitFix",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/jefvIm0hqlc",
+     "opening": "This woman always leaves everyone in shock when she does powerlifting at her commercial gym"
+    },
+    {
+     "title": "BIG GUYS thought I was NOOBY, but...",
+     "views": 79000,
+     "creator": "",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/d5CblbsEUYg"
+    },
+    {
+     "title": "When CBUM Tried Sprinting..",
+     "views": 3386454,
+     "creator": "Mario Rios",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/hdhJEmlpCi8",
+     "opening": "This chunky bodybuilder tried sprinting"
+    }
+   ]
+  },
+  "ranking": {
+   "name": "Ranking",
+   "why": "A list with an order makes people wait for number one and argue with the order in the comments.",
+   "opening": "Say how many and that number one is last. A tier-list graphic on screen keeps the score visible.",
+   "for_michael": [
+    "Ranking every excuse for missing a lift.",
+    "Ranking hybrid athletes from mid to almost not mid.",
+    "Ranking gym equipment by how much it hates powerlifters."
+   ],
+   "fits": [
+    "powerlifting",
+    "guns",
+    "fpv"
+   ],
+   "examples": [
+    {
+     "title": "Ranking best gym fails moment",
+     "views": 60000000,
+     "creator": "",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/CNZxlwc3LL0"
+    },
+    {
+     "title": "Ranking top 5 funniest gym moments",
+     "views": 20000000,
+     "creator": "",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/w7VKqeOOux4"
+    },
+    {
+     "title": "6 Funny Deadlift Fails Ranked",
+     "views": 1200000,
+     "creator": "",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/OBZDuBgmTi4"
+    }
+   ]
+  },
+  "how-to": {
+   "name": "How to X (in N steps)",
+   "why": "A clear promise and a count. Saves and sends come from teaching clips, and a count tells the viewer how long they have to wait.",
+   "opening": "The best ones open on the wrong way first (\"this is not how you grip a pistol\"), then fix it.",
+   "for_michael": [
+    "How to deadlift: 3 cues in 30 seconds.",
+    "How to pick your meet openers in 3 steps.",
+    "How to hold a pistol (from a lifter's grip)."
+   ],
+   "fits": [
+    "powerlifting",
+    "guns",
+    "lockpicking",
+    "food"
+   ],
+   "examples": [
+    {
+     "title": "How to Deadlift: 5 Simple Steps",
+     "views": 16000000,
+     "creator": "",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/vfKwjT5-86k"
+    },
+    {
+     "title": "How To Bench Press With Perfect Technique (5 Steps)",
+     "views": 13000000,
+     "creator": "",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/hWbUlkb5Ms4"
+    },
+    {
+     "title": "How to hold a Pistol like a Pro - Guns Explained",
+     "views": 47136676,
+     "creator": "Spartan Defense",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/wiTNXC31h5s",
+     "opening": "This is not how you should grip a pistol"
+    },
+    {
+     "title": "How To Pick A Lock Open In Under 40 Seconds",
+     "views": 10245073,
+     "creator": "ArS",
+     "niche": "lockpicking",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/QpE9R0Vga2w",
+     "opening": "How to pick a lock in under 40 seconds. Inside the lock are several pins"
+    },
+    {
+     "title": "How To Unlock A Door With A Hairpin",
+     "views": 68735073,
+     "creator": "Zack D. Films",
+     "niche": "lockpicking",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/rS7HDvSKxZM",
+     "opening": "If you shove a bobby pin inside a lock the pin could snap"
+    }
+   ]
+  },
+  "tribe": {
+   "name": "Only lifters get this",
+   "why": "An in-joke for one group. The people in it send it to each other, which is the cheapest reach there is. Skits with no talking work here.",
+   "opening": "No setup. Start mid-situation; the caption carries the premise (\"Powerlifters at a commercial gym:\").",
+   "for_michael": [
+    "Powerlifters will genuinely defend this.",
+    "Things powerlifters say vs what they mean.",
+    "How to be a hybrid athlete (a guide by someone who hates the term)."
+   ],
+   "fits": [
+    "powerlifting",
+    "running"
+   ],
+   "examples": [
+    {
+     "title": "Powerlifters will genuinely defend this…",
+     "views": 6452564,
+     "creator": "Jacked Fitness Facts",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/J4PMNp5Hu8g"
+    },
+    {
+     "title": "POWERLIFTERS IN THE GYM",
+     "views": 13360543,
+     "creator": "Jay Kara",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/d7xz2roxl2E",
+     "opening": "All right mate, almost broke your window, sorry about that"
+    },
+    {
+     "title": "How To Be A HYBRID ATHLETE",
+     "views": 1968419,
+     "creator": "Hamish James",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/InRaDGstD68",
+     "opening": "How to become a hybrid athlete: be an oddly shaped child, look in the mirror and decide you want more"
+    },
+    {
+     "title": "When gym trainers are fat…",
+     "views": 21473606,
+     "creator": "Matt & Justus",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/LqODCxczM7Q",
+     "opening": "Bro, how'd you get in such good shape? All credit to my trainer."
+    },
+    {
+     "title": "i need to find a new gym…",
+     "views": 17270815,
+     "creator": "Adam Rose",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/z0rPAtJ06KY"
+    }
+   ]
+  },
+  "constraint": {
+   "name": "The hard limit",
+   "why": "A rule, a budget or a time limit turns an ordinary day into a game. The number in the first five words is the hook.",
+   "opening": "Lead with the number and the unit (\"$8 a day\", \"84 grams for under 7 bucks\"). One rule, stated once, then show it.",
+   "for_michael": [
+    "Every mile I run = 10 minutes of my phone. (He hates running.)",
+    "What I eat in a day for $[amount] at 182 lb.",
+    "Picking a lock between every set."
+   ],
+   "fits": [
+    "food",
+    "running",
+    "lockpicking"
+   ],
+   "examples": [
+    {
+     "title": "Every Mile I Run = 10 Minutes of Scrolling",
+     "views": 13275326,
+     "creator": "Tyler Vitelli",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/T5fIqtks48o",
+     "opening": "For every mile I run today, I get to doom scroll for 10 minutes."
+    },
+    {
+     "title": "How To Build Muscle For $8/Day (Budget Friendly Meal Prep)",
+     "views": 16190140,
+     "creator": "Jeff Nippard",
+     "niche": "food",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/RubpsN9VHM4",
+     "opening": "People think building muscle is expensive but I'll show you how to do it for $8 a day"
+    },
+    {
+     "title": "How to make 10 Tasty Meals on a budget",
+     "views": 18736551,
+     "creator": "Noel Deyzel",
+     "niche": "food",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/WJhZk6XCnTA",
+     "opening": "This is how to prep 10 meals that won't break the bank. All these meals are $23"
+    },
+    {
+     "title": "84 Grams of Protein for Cheap",
+     "views": 2239811,
+     "creator": "Alex Hormozi",
+     "niche": "food",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/oymX79-Ub1Q",
+     "opening": "84 grams of protein for under seven bucks"
+    },
+    {
+     "title": "45 grams of protein in 4.5 seconds",
+     "views": 1577271,
+     "creator": "Madelaine Rascan",
+     "niche": "food",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/NA3fwjg1YFA"
+    },
+    {
+     "title": "High protein lunches for $3 per lunch",
+     "views": 3784623,
+     "creator": "Amanda Rocchio",
+     "niche": "food",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/QKeX18l06Zk",
+     "opening": "Let's make $3 high protein lunches"
+    }
+   ]
+  },
+  "pov": {
+   "name": "POV / skit",
+   "why": "A situation the viewer has lived, acted out. Gym skits are the biggest single bucket in the powerlifting search; most have no voiceover at all.",
+   "opening": "Text on frame 1 sets the scene; the first action happens within a second. Keep it under 20 seconds so it loops.",
+   "for_michael": [
+    "POV: a powerlifter at a 5K start line.",
+    "POV: someone asks to work in mid-set.",
+    "POV: the range officer sees your deadlift belt."
+   ],
+   "fits": [
+    "powerlifting",
+    "running",
+    "guns"
+   ],
+   "examples": [
+    {
+     "title": "How to IMPRESS A GUY in the gym",
+     "views": 193848191,
+     "creator": "Kayla Nella",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/EtGugw_MrOs"
+    },
+    {
+     "title": "POV: Someone's 1st time at the gym",
+     "views": 16548670,
+     "creator": "Luke Elsman",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/QE73BCLGDLE"
+    },
+    {
+     "title": "Devastating AURA loss at the gym",
+     "views": 13632167,
+     "creator": "Dylan Kolak",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/WPdh0_pDBb4"
+    },
+    {
+     "title": "Ron Tried Running A Mile",
+     "views": 21348590,
+     "creator": "core_fx",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/Cbynxm3PCbY"
+    },
+    {
+     "title": "When the RANGE OFFICER Sneaks Up On Your Shooting Bench",
+     "views": 6466478,
+     "creator": "macabespeed",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/d_x0LP1zMJY"
+    }
+   ]
+  },
+  "mistake": {
+   "name": "Stop doing this",
+   "why": "Names something the viewer may be doing wrong. They watch to check themselves.",
+   "opening": "Show the wrong way in frame 1, then the fix. Name who it is for (\"if your shoulders hurt\").",
+   "for_michael": [
+    "Stop benching like this if your shoulders hurt.",
+    "Don't buy a lifting belt until you can do this.",
+    "This is why you don't start running with a 5K."
+   ],
+   "fits": [
+    "powerlifting",
+    "fpv",
+    "guns",
+    "lockpicking"
+   ],
+   "examples": [
+    {
+     "title": "This is why you don't start FPV with a drone…",
+     "views": 31102821,
+     "creator": "NickFPV",
+     "niche": "fpv",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/Ar_rR6wv-Xw",
+     "opening": "What most people don't realize is that when you start FPV the first thing you buy isn't a drone"
+    },
+    {
+     "title": "Don't buy an FPV drone yet. Practice on this first",
+     "views": 3018016,
+     "creator": "Fpv4_you",
+     "niche": "fpv",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/vHjHkYFTwpA"
+    },
+    {
+     "title": "You're Doing it Wrong... The REAL Double Wrench Method",
+     "views": 37273492,
+     "creator": "LockPickingLawyer",
+     "niche": "lockpicking",
+     "format": "long",
+     "url": "https://www.youtube.com/watch?v=dBSSA5ot0tA",
+     "opening": "I recently saw a YouTube video with over 60 million views showing how to break open a padlock"
+    },
+    {
+     "title": "John McPhee Reveals Why Most Shooters Hold a Pistol Wrong",
+     "views": 4221665,
+     "creator": "",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/C3VmIkteQLE"
+    },
+    {
+     "title": "How to Deadlift - Save your spine!",
+     "views": 18559742,
+     "creator": "Davis Diley",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/HrXR9MxcU8g"
+    }
+   ]
+  },
+  "question": {
+   "name": "A question they answer in their head",
+   "why": "The viewer answers before you do, then stays to see if they were right.",
+   "opening": "A yes/no question with a checklist answer; give the count up front.",
+   "for_michael": [
+    "Is your squat actually to depth? 5 checks.",
+    "Do you need to run if you powerlift?",
+    "Would you pass an Army fitness test right now?"
+   ],
+   "fits": [
+    "powerlifting",
+    "running",
+    "fpv"
+   ],
+   "examples": [
+    {
+     "title": "Do You Have A Perfect Squat? (Find Out)",
+     "views": 15321596,
+     "creator": "Jeff Nippard",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/PPmvh7gBTi0",
+     "opening": "Squat checklist: if you take all five, you have a perfect squat"
+    },
+    {
+     "title": "Does a drone simulator help learn tricks?",
+     "views": 9925629,
+     "creator": "NickFPV",
+     "niche": "fpv",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/-VSDd8gNCys"
+    },
+    {
+     "title": "What is the range of an FPV drone?",
+     "views": 1100000,
+     "creator": "",
+     "niche": "fpv",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/U2JEvMVv91E"
+    }
+   ]
+  },
+  "curiosity": {
+   "name": "Held-back answer",
+   "why": "Something is withheld and the viewer can't guess it, so they stay for it. Strongest with a forbidden or secret angle.",
+   "opening": "Say there is a thing and don't name it in the first line. Pay it off before the end, never withhold it entirely.",
+   "for_michael": [
+    "I'm not allowed to show you my meet-day [thing]...",
+    "The one cue that fixed my squat depth.",
+    "Why I'm 182 lb on purpose."
+   ],
+   "fits": [
+    "guns",
+    "lockpicking",
+    "powerlifting"
+   ],
+   "examples": [
+    {
+     "title": "I'm not allowed to talk about this gun…",
+     "views": 5687679,
+     "creator": "Lena Miculek",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/f-GWVEtMtzg",
+     "opening": "I've never seen anything like this. Can I make a video on it? You absolutely cannot talk about it on camera."
+    },
+    {
+     "title": "Schlage lock is no match for this lock pick.",
+     "views": 10999675,
+     "creator": "Captain Lock Pick",
+     "niche": "lockpicking",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/2qZG0C5xYkw",
+     "opening": "The FBI doesn't want you to know about these tools"
+    },
+    {
+     "title": "It's Weird, But It Re-Builds Your Tendons In 30 Days",
+     "views": 7326675,
+     "creator": "Jeremy Ethier",
+     "niche": "powerlifting",
+     "format": "long",
+     "url": "https://www.youtube.com/watch?v=GSwL3Lgw6zI",
+     "opening": "Squeaky-creaky joints are not just a normal part of training."
+    }
+   ]
+  },
+  "result": {
+   "name": "Result first",
+   "why": "The payoff opens the video, then you rewind to how it happened. Works for PRs and big numbers.",
+   "opening": "The number on screen in frame 1, the lift already moving.",
+   "for_michael": [
+    "[weight] for a single. Here's how the set actually went.",
+    "I ran a mile a day for a month as a powerlifter. Here's my squat."
+   ],
+   "fits": [
+    "powerlifting",
+    "running"
+   ],
+   "examples": [
+    {
+     "title": "900LB SQUAT IN KNEE SLEEVES",
+     "views": 21517793,
+     "creator": "Larry Wheels",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/h51v3Zp2d_I"
+    },
+    {
+     "title": "Ran a mile a day for a month... What happened?",
+     "views": 1902394,
+     "creator": "Olga Noskov",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/9LgN4-qlRss"
+    },
+    {
+     "title": "Crazy to think how much I've improved on one course",
+     "views": 1600000,
+     "creator": "",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/StxQj1fcAF8"
+    }
+   ]
+  },
+  "proof": {
+   "name": "Proof / authority",
+   "why": "Someone the viewer trusts (or the record itself) vouches for it. Military and expert framing does very well on the gun side.",
+   "opening": "Name the authority in the first five words. Michael's own proof is real: Army powerlifting team, All-American.",
+   "for_michael": [
+    "An Army powerlifter's deadlift setup.",
+    "I asked a Ranger to grade my shooting.",
+    "A locksmith tried to pick my gym locker."
+   ],
+   "fits": [
+    "guns",
+    "fpv",
+    "powerlifting"
+   ],
+   "examples": [
+    {
+     "title": "When a Former Navy SEAL Got Dead Serious on the Range",
+     "views": 45239442,
+     "creator": "Armed Sphere",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/qyqaL-ASJcA"
+    },
+    {
+     "title": "Ex Navy Seal Teaches How To Properly Shoot",
+     "views": 10572098,
+     "creator": "Daily Bullets",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/Fudbng-_pB0"
+    },
+    {
+     "title": "Elite Soldiers Rapid Fire Training",
+     "views": 260042332,
+     "creator": "",
+     "niche": "guns",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/mZe142vNQF0"
+    },
+    {
+     "title": "I Learned to Fly FPV with a DJI Pilot and It Was CRAZY!",
+     "views": 3762046,
+     "creator": "TheTomJon",
+     "niche": "fpv",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/fZnI4ADXFp0",
+     "opening": "Hey, are you that person flying the FPV drone? ... you think you could teach me"
+    }
+   ]
+  },
+  "contrarian": {
+   "name": "The common belief is wrong",
+   "why": "Disagrees with something the viewer believes. Drives comments.",
+   "opening": "State the belief and flip it in one line. Back it with a test on camera, not an opinion.",
+   "for_michael": [
+    "Running doesn't kill your squat. (I tested it.)",
+    "Sumo isn't cheating.",
+    "Hybrid athletes aren't fit. They're mid."
+   ],
+   "fits": [
+    "running",
+    "powerlifting"
+   ],
+   "examples": [
+    {
+     "title": "Why bodybuilders shouldn't run",
+     "views": 853001,
+     "creator": "Proteintok",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/kkfbgM5sTx0",
+     "opening": "Running is the worst sport you can do to retain muscle"
+    },
+    {
+     "title": "Every Man Should Be Able To Run A 1.5 Mile",
+     "views": 895541,
+     "creator": "Austin Dunham",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/MZTAkaZKeR8",
+     "opening": "Every man should be able to run a mile and a half"
+    }
+   ]
+  },
+  "stakes": {
+   "name": "Goal, deadline, cost",
+   "why": "A number, a deadline and a real chance of failing. Series live on this.",
+   "opening": "Goal plus deadline in the first line, and today's gap to it on screen.",
+   "for_michael": [
+    "[weeks] weeks to a [time] mile without losing my squat.",
+    "Day [n]: [weight] to go."
+   ],
+   "fits": [
+    "running",
+    "powerlifting"
+   ],
+   "examples": [
+    {
+     "title": "I'm dropping to 180lbs ASAP",
+     "views": 1257824,
+     "creator": "Solid Heaston",
+     "niche": "powerlifting",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/XxyDRPtZxGM",
+     "opening": "3 months ago I was living out of my car"
+    },
+    {
+     "title": "RUNNING A MILE EVERYDAY FOR A MONTH - WEEK 2 UPDATES",
+     "views": 1100000,
+     "creator": "",
+     "niche": "running",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/qsCltSkTkn8"
+    }
+   ]
+  },
+  "number": {
+   "name": "A specific count",
+   "why": "A count promises a finish line.",
+   "opening": "Number first, then the outcome.",
+   "for_michael": [
+    "The 3 accessories that actually moved my bench.",
+    "5 foods I eat every day at 182."
+   ],
+   "fits": [
+    "food",
+    "powerlifting"
+   ],
+   "examples": [
+    {
+     "title": "Finding the cheapest High Protein Foods that You Need to be Eating",
+     "views": 8402816,
+     "creator": "Healthy Tips",
+     "niche": "food",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/brmUF0MGvqM"
+    },
+    {
+     "title": "5 Best CHEAP High Protein Sources To LOSE FAT FAST!",
+     "views": 1800000,
+     "creator": "",
+     "niche": "food",
+     "format": "short",
+     "url": "https://www.youtube.com/shorts/MYfjNCnC_Vw"
+    }
+   ]
+  }
+ }
+}

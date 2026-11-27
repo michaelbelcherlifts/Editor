@@ -16,7 +16,7 @@ posts anything: Michael presses post himself, then tells you, and you record it.
   approved, posted, measured. An idea with `hold` set (a reason, such as "needs a
   runner friend") stays out of weekly plans.
 - **Post**: an idea on a date and platforms with a call to action. A reel goes to
-  Instagram, TikTok and YouTube Shorts by default; long-form to YouTube.
+  Instagram, TikTok, YouTube Shorts and Facebook by default; long-form to YouTube.
 - **Pillars** (weights in `plan-settings`): strength 0.5, run 0.2, humour 0.2,
   life 0.1. Life is the cool guy side (Army, range days, lock picking, FPV
   drones, food), always with a lifting angle in the hook.
@@ -51,9 +51,18 @@ uv run stylebrain post-result POST --url URL --views N --sends N --saves N --fol
 uv run stylebrain shoot-list [DATE|next-week]      # what to film, by location, with the recording guide
 uv run stylebrain week-report [DATE|this-week]     # planned versus posted, with results
 uv run stylebrain social-import library/social/NAME/package.json --reel POST   # carousels and stories
+uv run stylebrain crosspost POST [--video cut.mp4]          # captions, titles, hashtags per platform
+uv run stylebrain crosspost-week this-week [--make]        # which reels are ready for every app
 ```
 
 ## Feeding the backlog
+
+- `library/hooks/ideas.json` holds researched ideas, each built on a hook type
+  that has proven itself on YouTube (the videos are named in its `note`). Import
+  it once with `uv run stylebrain idea-import library/hooks/ideas.json --source trend`;
+  ideas with `[weight]`-style gaps wait for his real numbers before filming.
+  When the backlog runs short, write new ideas from `uv run stylebrain hooks
+  --examples --niche NICHE` and the `for_michael` lines in `library/hooks/patterns.json`.
 
 - Clip candidates (auto-clipping), trend reports and analytics ideas arrive as a
   JSON list: each item needs `title` and `pillar`; optional `format`, `hook`,
@@ -69,5 +78,8 @@ uv run stylebrain social-import library/social/NAME/package.json --reel POST   #
 2. `shoot-list next-week` and send it to him: grouped by gym, track, range,
    kitchen, with film-by dates (two days before posting by default).
 3. As he films and cuts, move statuses along (`recorded`, `edited`, `approved`).
-4. When he says he posted, `post-result POST --url ...`; add numbers later.
-5. End of the week: `week-report this-week`, and relay planned versus posted.
+4. When a reel is cut, `crosspost POST` (see the cross-post skill) and show him
+   each platform's text.
+5. When he says he posted, `post-result POST --platform NAME --url ...`; add
+   numbers later, per app.
+6. End of the week: `week-report this-week`, and relay planned versus posted.

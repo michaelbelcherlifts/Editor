@@ -387,15 +387,10 @@ def cmd_build(args) -> None:
         sys.exit(1)
 
 
-def _wh(size: str | None) -> tuple[int, int]:
-    if size is None:
-        from . import rules
-        size = rules.get("frame") or "1080x1920"
-    try:
-        w, h = (int(x) for x in size.lower().split("x"))
-    except ValueError:
-        raise EditError("size looks like 1080x1920") from None
-    return w, h
+def _wh(size: str | None, edit: EditList | None = None) -> tuple[int, int]:
+    """The asked size, else the edit's format, else the house rule for frame, else 1080x1920."""
+    from .formats import size_for
+    return size_for(edit, size)
 
 
 def _resolve_timeline(store, edit):
@@ -511,7 +506,7 @@ def cmd_rule_note(args) -> None:
 def cmd_reframe(args) -> None:
     from . import reframe
     store = _store(args); edit = store.load()
-    w, h = _wh(args.size)
+    w, h = _wh(args.size, edit)
     if args.auto:
         new, lines = reframe.plan(edit, w, h)
         print("\n".join(lines))
@@ -549,7 +544,7 @@ def cmd_speed(args) -> None:
 def cmd_export(args) -> None:
     from . import export
     store = _store(args); edit = store.load()
-    w, h = _wh(args.size)
+    w, h = _wh(args.size, edit)
     out = Path(args.out or Path("exports") / f"{store.project}-v{store.head()}.mp4")
     export.render(edit, out, w, h, args.fit, args.lufs, sounds=not args.no_sounds, music=not args.no_music)
     print(f"exported {out} ({format_time(edit.duration, edit.fps)})")
@@ -640,8 +635,21 @@ def cmd_look_use(args) -> None:
 
 def cmd_transcribe(args) -> None:
     from .transcribe import transcribe
-    path, words = transcribe(args.video, args.out, args.engine, args.model)
+    speech = None
+    if args.speech:
+        try:
+            speech = [tuple(float(x) for x in part.split("-")) for part in args.speech.split(",")]
+            assert all(len(r) == 2 and r[0] < r[1] for r in speech)
+        except (ValueError, AssertionError):
+            raise EditError("--speech takes ranges in seconds, such as 0-3.4 or 0-3.4,12-15") from None
+    path, words = transcribe(args.video, args.out, args.engine, args.model, speech)
     print(f"{len(words)} words, saved to {path}")
+    if speech is None and words:
+        said = " ".join(w.text.strip() for w in words[:12])
+        sung = "These look sung (the words are held long). " if tr.maybe_sung(words) else ""
+        print(f"It starts: \"{said}\". {sung}Check these are his words: a song's lyrics or a borrowed sound are "
+              "written down as speech too, and nothing here can tell them apart reliably. If so, run again with "
+              "--speech START-END for the parts where he talks (leave the transcript out if he never does).")
 
 
 def cmd_retakes(args) -> None:
@@ -693,6 +701,10 @@ def cmd_review(args) -> None:
         mine = review.profile_of_edit(edit, words)
         cuts = mine["cuts"] if len(edit.pieces()) > 1 else None
     hook = [f for f in story.hook_check(words, duration, cuts) if f.serious] if words else []
+    if not words and args.video:  # music and pictures only: the opening is judged on the picture alone
+        first = min(cuts) if cuts else duration
+        if first > 1.5:
+            hook = [story.Finding(first, "first_change", story.first_change_text(first))]
     found = review.compare(mine, target, args.limit) if target else []
     if args.markers:
         if args.video:
@@ -715,8 +727,10 @@ def cmd_review(args) -> None:
     elif words:
         print("No hook problems measured.")
     if not target:
-        if not words:
+        if not words and not args.video:
             raise EditError("give --transcript for the hook check, or a style to compare against")
+        if not words:
+            print("No transcript given, so only the picture was checked" + ("." if hook else ": no problems measured."))
         return
     if not found:
         print(f"nothing stands out against {args.style!r}")
@@ -730,8 +744,22 @@ def cmd_auto(args) -> None:
     from . import autopilot
     result = autopilot.run(args.name, args.source, args.transcript, args.style, args.look,
                            True if args.captions else None, False if args.keep_retakes else None,
-                           not args.no_build, args.width, args.height)
+                           not args.no_build, args.width, args.height, preset=args.preset)
     print(result.text(Store(args.name).load().fps))
+
+
+def cmd_presets(args) -> None:
+    from . import presets
+    print("Ready-made first-cut styles (auto NAME --source FILE --preset ...):")
+    print(presets.listing())
+
+
+def cmd_preset_preview(args) -> None:
+    from . import presets
+    names = list(presets.PRESETS) if args.name == "all" else [args.name]
+    for name in names:
+        out = presets.preview(name, args.out if len(names) == 1 else None, args.width, args.height)
+        print(f"  {name}: {out}" if out else f"  {name}: no captions on screen, nothing to preview")
 
 
 def cmd_score(args) -> None:
@@ -799,11 +827,37 @@ def cmd_beats(args) -> None:
 
 def cmd_hooks(args) -> None:
     from . import story
+    if args.examples is not None or args.niche:
+        kind = args.examples or None
+        try:
+            found = story.proven_examples(kind, args.niche, limit=args.limit)
+        except ValueError as e:
+            raise EditError(str(e)) from e
+        if not found:
+            print("no researched examples" + (f" of {kind}" if kind else "") + (f" in {args.niche}" if args.niche else "")
+                  + " (library/hooks/patterns.json)")
+            return
+        lib = story.hook_library().get("patterns", {})
+        if kind and lib.get(kind, {}).get("why"):
+            print(f"{kind}: {lib[kind]['why']}")
+            for t in lib[kind].get("for_michael", []):
+                print(f"  for you: {t}")
+        for e in found:
+            views = f"{e['views']:,}" if e.get("views") else "?"
+            print(f"  {views:>12} views  [{e['type']}] {e['title']}  ({e.get('creator', '')}, {e.get('niche', '')})")
+            if e.get("opening"):
+                print(f"               opens: \"{e['opening']}\"")
+        return
     if args.spoken is None:
         print("Hook types (write three options, each a different type):")
+        lib = story.hook_library().get("patterns", {})
         for key, (what, example) in story.HOOK_TYPES.items():
-            print(f"  {key:<11}{what}. e.g. \"{example}\"")
+            n = len(lib.get(key, {}).get("examples", []))
+            print(f"  {key:<11}{what}. e.g. \"{example}\"" + (f"  [{n} proven]" if n else ""))
+        print("Proven examples with views: stylebrain hooks --examples TYPE [--niche powerlifting]")
         return
+    kinds = story.classify_hook(args.spoken)
+    print("type: " + (", ".join(kinds) if kinds else "none of the hook types; it may not hook at all"))
     problems = story.check_hook_option(args.spoken, args.text or "")
     print("hook ok" if not problems else "\n".join(f"  {p}" for p in problems))
 
@@ -840,16 +894,18 @@ def cmd_clip_add(args) -> None:
         from . import style
         m = style.measure(args.video, None)
         cuts, frame, audio, colour, duration = m["cuts"], m["frame"], m["audio"], m["colour"], m["frame"]["seconds"]
-    outcome = {k: v for k, v in (("views", args.views), ("subscribers", args.subscribers),
-                                 ("retention", args.retention), ("swiped_away", args.swiped_away)) if v is not None}
+    outcome = {k: getattr(args, k) for k in ("views", "subscribers", "retention", "swiped_away", "reach", "likes",
+                                             "comments", "shares", "saves") if getattr(args, k) is not None}
     if duration is None and words:
         duration = words[-1].end
     if duration is None:
-        if not outcome:
-            raise EditError("give --video or --transcript to measure the clip, or results such as --views")
+        if not outcome and args.age_days is None:
+            raise EditError("give --video or --transcript to measure the clip, or results such as --views or --likes")
         attrs = {}  # results only: update what happened to a clip already in the set
     else:
         attrs = learn.attributes(words, duration, cuts, frame, audio, colour, judge)
+    if args.age_days is not None:
+        attrs["age_days"] = args.age_days
     path = learn.add(args.id, attrs, outcome, args.about or "", args.mine)
     print(f"saved {path}")
 
@@ -857,7 +913,7 @@ def cmd_clip_add(args) -> None:
 def cmd_clip_import(args) -> None:
     from . import learn
     ids = learn.import_analytics(args.csv, args.subscribers, reels_only=not args.all_posts)
-    need = [c["id"] for c in learn.load_all() if c["id"] in ids and not c["attributes"]]
+    need = [c["id"] for c in learn.load_all() if c["id"] in ids and learn.unmeasured(c)]
     print(f"{len(ids)} clips read from the analytics file; {len(need)} still need attributes (clip-add ID --video ...)")
 
 
@@ -881,6 +937,12 @@ def cmd_learn(args) -> None:
     within = True if args.within else False if args.mixed else None
     result = learn.fit(learn.load_all(), args.target, only_mine=args.mine, within=within)
     print(json.dumps(result, indent=2) if args.json else learn.report(result))
+
+
+def cmd_backtest(args) -> None:
+    from . import learn
+    b = learn.backtest(learn.load_all(), args.target, args.first, args.step, args.top, only_mine=not args.everyone)
+    print(json.dumps(b, indent=2) if args.json else learn.backtest_report(b))
 
 
 def cmd_sfx_basics(args) -> None:
@@ -1121,7 +1183,10 @@ def cmd_plan_settings(args) -> None:
             else:
                 st[group][key] = float(v)
         elif group in st and not key:
-            st[group] = float(v) if isinstance(st[group], float) else int(v)
+            if isinstance(st[group], bool):
+                st[group] = str(v).lower() in ("1", "true", "yes", "on")
+            else:
+                st[group] = float(v) if isinstance(st[group], float) else int(v)
         else:
             raise EditError(f"unknown setting {k!r} (try volume.reel=7, pillars.run=0.2, coaching_per_week=2)")
     plan.save()
@@ -1177,7 +1242,7 @@ def cmd_post_set(args) -> None:
 
 def cmd_post_result(args) -> None:
     plan = _plan()
-    p = plan.record_result(args.id, url=args.url, views=args.views, reach=args.reach, likes=args.likes,
+    p = plan.record_result(args.id, url=args.url, platform=args.platform, views=args.views, reach=args.reach, likes=args.likes,
                            comments=args.comments, saves=args.saves, sends=args.sends, follows=args.follows,
                            enquiries=args.enquiries)
     plan.save()
@@ -1192,6 +1257,81 @@ def cmd_social_import(args) -> None:
     for p in made:
         print(f"{p['id']}: {p['format']} on {p['date']} ({plan.idea(p['idea'])['title']}), cta {p['cta']}")
     print(f"placed {len(made)} posts around {args.reel}")
+
+
+def cmd_crosspost(args) -> None:
+    from . import crosspost
+    plan = _plan()
+    chapter_list = None
+    if args.chapters_from:
+        from . import longform
+        edit = Store(args.chapters_from).load()
+        report = longform.check_chapters(_chapter_items(edit), edit.duration / edit.fps)
+        if report.problems:
+            raise EditError("the chapters of " + args.chapters_from + " need fixing first: " + "; ".join(report.problems))
+        chapter_list = [{"at": line.split(" ", 1)[0], "label": line.split(" ", 1)[1]} for line in report.lines]
+    r = crosspost.make(plan, args.post, video=args.video, long_video=args.long_video, transcript=args.transcript,
+                       out_dir=args.out, chapter_list=chapter_list)
+    plan.save()
+    print(f"{r['post']} ({r['title']}, {r['date']}): {len(r['versions'])} versions in {r['dir']}")
+    for v in r["versions"]:
+        state = "ready" if not v["problems"] else f"{len(v['problems'])} to fix"
+        print(f"  {v['platform']:<15}{state:<10}{r['dir']}/{v['platform']}.txt")
+        for p in v["problems"]:
+            print(f"      fix: {p}")
+    print("drafts only: rewrite them in his voice before he sees them; nothing was posted")
+
+
+def cmd_crosspost_week(args) -> None:
+    from . import crosspost
+    plan = _plan()
+    rows = crosspost.week(plan, args.week, make_missing=args.make)
+    if args.make:
+        plan.save()
+    print(json.dumps(rows, indent=2) if args.json else crosspost.format_week(rows))
+
+
+def cmd_connect(args) -> None:
+    from . import publish as pub
+    if args.platform == "youtube":
+        if not args.client:
+            raise EditError("give --client client_secret.json (a Google Cloud 'Desktop app' OAuth client)")
+        pub.connect_youtube(args.client)
+        print("YouTube connected: library/accounts/youtube.json")
+    elif args.platform == "tiktok":
+        if not (args.key and args.secret):
+            raise EditError("give --key and --secret from your TikTok for Developers app")
+        pub.connect_tiktok(args.key, args.secret, audited=args.audited)
+        print("TikTok connected: library/accounts/tiktok.json"
+              + ("" if args.audited else " (posts go up private until TikTok audits the app)"))
+    else:
+        if not args.token:
+            raise EditError("give --token (a user token from Graph API Explorer), plus --app-id and --app-secret")
+        a = pub.connect_instagram(args.token, args.app_id, args.app_secret)
+        print(f"Instagram connected: @{a.get('username')} through the Page {a.get('page')!r}")
+
+
+def cmd_publish(args) -> None:
+    from . import publish as pub
+    plan = _plan()
+    post = args.post
+    if post in ("today", "tomorrow") or post[:1].isdigit():
+        import datetime as _dt
+        day = _dt.date.today() + _dt.timedelta(days=1) if post == "tomorrow" else post
+        post = pub.due_post(plan, day)
+    idea = plan.idea(plan.post(post)["idea"])
+    print(f"{'checking' if args.dry_run else 'posting'} {post}: {idea['title']}")
+    r = pub.publish(plan, post, only=args.only.split(",") if args.only else None, dry_run=args.dry_run)
+    plan.save()
+    print(pub.format_report(r))
+    if any(x.get("error") for x in r["results"].values()):
+        sys.exit(1)
+
+
+def cmd_publish_shortcut(args) -> None:
+    from . import publish as pub
+    path = pub.shortcut(args.where, ".")
+    print(f"double-click {path} to post today's reel (a Mac version sits beside it)")
 
 
 def cmd_shoot_list(args) -> None:
@@ -1276,6 +1416,87 @@ def cmd_clip_cut(args) -> None:
         print(f"      fix: {ac.fix_for(m)}")
         for line in m.cuts:
             print(f"      cut: {line}")
+
+
+def cmd_format(args) -> None:
+    from . import formats
+    store = _store(args); edit = store.load()
+    if not args.name:
+        f = formats.of(edit)
+        w, h = _wh(None, edit)
+        print(f"format: {f.name} ({f.about})" if f else f"no format set; frame {w}x{h} from the house rule or the default")
+        for name, x in formats.FORMATS.items():
+            print(f"  {name:<12} {x.size:<10} {x.about}")
+        return
+    f = formats.get(args.name)
+    _save(store, edit, edit.set_format(f.name), f"format {f.name} ({f.size})")
+    print(f"format {f.name}: {f.size}, {f.about}. Exports, builds and reframing now use {f.size}.")
+    if f.width > f.height and any(s.framing != (0.5, 0.5, 1.0) for s in edit.segments):
+        print("  note: clips were framed for another shape; run `stylebrain reframe --auto` again")
+
+
+def _chapter_items(edit: EditList) -> list[tuple[float | None, str]]:
+    return [(None if at is None else at / edit.fps, c.title) for at, c in edit.chapter_times()]
+
+
+def cmd_chapter(args) -> None:
+    store = _store(args); edit = store.load()
+    if args.remove:
+        _save(store, edit, edit.remove_chapter(args.title), f"remove chapter {args.title!r}")
+        return
+    if args.at is None:
+        raise EditError("give a time and a title, such as: stylebrain chapter 2:10 \"Why I tried it\"")
+    t = parse_time(args.at, edit.fps)
+    _save(store, edit, edit.add_chapter(args.title, t), f"chapter at {format_time(t, edit.fps)}: {args.title}")
+
+
+def cmd_chapters(args) -> None:
+    from . import longform
+    edit = _store(args).load()
+    report = longform.check_chapters(_chapter_items(edit), edit.duration / edit.fps)
+    if args.json:
+        print(json.dumps({"lines": report.lines, "problems": report.problems, "notes": report.notes}, indent=2))
+    else:
+        print(report.text())
+    if args.out:
+        Path(args.out).write_text("\n".join(report.lines) + "\n")
+        print(f"description block written to {args.out}")
+
+
+def cmd_longform_check(args) -> None:
+    from . import longform, style
+    from .autopilot import timeline_words
+    store = _store(args); edit = store.load()
+    words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
+    duration = edit.duration / edit.fps
+    cuts = style.cut_times(args.video) if args.video else None
+    chapters = [(at, t) for at, t in _chapter_items(edit) if at is not None]
+    payoff = _secs_on(args.payoff, edit) if args.payoff else None
+    cta = [_secs_on(c, edit) for c in args.cta] if args.cta else None
+    found = longform.structure_check(words, duration, chapters, cuts, payoff, cta)
+    if args.json:
+        print(json.dumps([f.__dict__ for f in found], indent=2))
+        return
+    serious = [f for f in found if f.serious]
+    print(f"long-form check, {longform.clock(duration)}, {len(chapters)} chapters: "
+          f"{len(serious)} to fix, {len(found) - len(serious)} to look at")
+    for f in found:
+        print(("  ! " if f.serious else "    ") + f.line())
+    if not found:
+        print("  nothing found")
+
+
+def _secs_on(text: str, edit: EditList) -> float:
+    return parse_time(text, edit.fps) / edit.fps
+
+
+def cmd_outline(args) -> None:
+    from . import longform
+    if args.kind is None:
+        for k, (about, _) in longform.OUTLINES.items():
+            print(f"  {k:<11} {about}")
+        return
+    print(longform.outline_text(args.kind, args.minutes))
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -1369,7 +1590,8 @@ def main(argv: list[str] | None = None) -> None:
     add("look-list", cmd_look_list, "list saved looks")
     add("look-use", cmd_look_use, "put a saved look on the edit ('none' removes it)", A("name"))
     add("transcribe", cmd_transcribe, "make a word-timing transcript with a local speech-to-text tool",
-        A("video"), A("--out"), A("--engine"), A("--model"))
+        A("video"), A("--out"), A("--engine"), A("--model"),
+        A("--speech", help="keep only words spoken in these seconds, such as 0-3.4,12-15 (drops song lyrics)"))
     add("retakes", cmd_retakes, "list likely failed attempts: repeats, restarts, lines said again, 'start over', stutters", *tx,
         A("--min-words", type=int, default=4), A("--cut", action="store_true", help="cut the sure ones"),
         A("--maybe", action="store_true", help="with --cut, also cut the ones marked maybe"))
@@ -1381,8 +1603,13 @@ def main(argv: list[str] | None = None) -> None:
     add("auto", cmd_auto, "first cut in one go: retakes, pauses, look, captions, build, review", A("name"),
         A("--source", required=True), A("--transcript"), A("--style"), A("--look"),
         A("--captions", action="store_true"), A("--keep-retakes", action="store_true"),
+        A("--preset", help="a ready-made style; see `presets`"),
         A("--no-build", action="store_true"),
         A("--width", type=int, help="default: the house rule for frame, else 1920"), A("--height", type=int))
+    add("presets", cmd_presets, "list the ready-made first-cut styles")
+    add("preset-preview", cmd_preset_preview, "render a few seconds of a preset's captions to pick by sight",
+        A("name", help="a preset name, or all"), A("--out"), A("--width", type=int, default=1080),
+        A("--height", type=int, default=1920))
     add("score", cmd_score, "score a short clip on the virality rubric, part by part",
         A("--transcript", help="word timings of the clip (leave out for a clip with no speech)"),
         A("--video", help="the clip, to measure cuts, frame and sound"),
@@ -1398,19 +1625,29 @@ def main(argv: list[str] | None = None) -> None:
         A("--questions", help="extra re-hook times you marked, as a JSON list of seconds"),
         A("--limit", type=float, default=60.0, help="longest stretch allowed with no new question"),
         A("--json", action="store_true"))
-    add("hooks", cmd_hooks, "list hook types, or check one written hook", A("spoken", nargs="?"),
-        A("--text", help="the on-screen text that goes with it"))
+    add("hooks", cmd_hooks, "list hook types, show proven examples, or check one written hook", A("spoken", nargs="?"),
+        A("--text", help="the on-screen text that goes with it"),
+        A("--examples", nargs="?", const="", help="researched examples with views, of one TYPE or all"),
+        A("--niche", help="powerlifting, running, food, guns, lockpicking or fpv"),
+        A("--limit", type=int, default=8))
     add("script-check", cmd_script_check, "measured checks on a written script (one spoken line per line)", A("script", nargs="?"),
         A("--questions", action="store_true", help="list the five story questions"),
         A("--story", help="your answers to the five story questions, JSON or @file"), A("--json", action="store_true"))
     add("clip-add", cmd_clip_add, "add a clip's attributes and results to the learning set", A("id"),
         A("--transcript"), A("--video"), A("--seconds", type=float), A("--judge"), A("--about"),
         A("--views", type=float), A("--subscribers", type=float), A("--retention", type=float),
-        A("--swiped-away", type=float), A("--mine", action="store_true", help="it is one of your own clips"))
+        A("--swiped-away", type=float), A("--reach", type=float), A("--likes", type=float),
+        A("--comments", type=float), A("--shares", type=float), A("--saves", type=float),
+        A("--age-days", type=float, help="days since it was posted, so older clips are compared fairly"),
+        A("--mine", action="store_true", help="it is one of your own clips"))
     add("clip-import", cmd_clip_import, "read results from an Instagram (Meta Business Suite) or YouTube Studio export (CSV)", A("csv"),
         A("--subscribers", "--followers", type=int, help="your follower or subscriber count, for the reach target"),
         A("--all-posts", action="store_true", help="include photos and carousels, not only reels"))
     add("clip-list", cmd_clip_list, "list clips in the learning set")
+    add("backtest", cmd_backtest, "test what the model learned on the posts that came next, in posting order",
+        A("--target", default="reached"), A("--first", type=int, help="clips to fit on before the first prediction"),
+        A("--step", type=int, default=10), A("--top", type=float, default=0.2, help="share counted as a hit"),
+        A("--everyone", action="store_true", help="include clips that are not yours"), A("--json", action="store_true"))
     add("learn", cmd_learn, "learn which attributes go with clips doing well", A("--target", default="reach"),
         A("--mine", action="store_true", help="use only your own clips"), A("--json", action="store_true"),
         A("--within", action="store_true", help="compare each clip with its own creator's usual (the default when there are several creators)"),
@@ -1494,10 +1731,28 @@ def main(argv: list[str] | None = None) -> None:
     add("post-set", cmd_post_set, "move, re-target or drop a post", A("id"), A("--date"),
         A("--cta", choices=list(CTAS)), A("--platforms"), A("--status"))
     add("post-result", cmd_post_result, "record that he posted it, and its numbers", A("id"), A("--url"),
+        A("--platform", help="instagram, tiktok, youtube-shorts or youtube: keep a link and numbers per app"),
         *[A(f"--{k}", type=float) for k in ("views", "reach", "likes", "comments", "saves", "sends", "follows",
                                             "enquiries")])
     add("social-import", cmd_social_import, "place a carousel/story package around a reel's post", A("package"),
         A("--reel", required=True, help="the reel's post id"))
+    add("crosspost", cmd_crosspost, "prepare a post's versions for each platform (captions, titles, hashtags, checks)",
+        A("post", help="the calendar post id"), A("--video", help="the exported cut; default the idea's draft"),
+        A("--long-video", help="a 16:9 export for YouTube long-form"),
+        A("--transcript", help="word timings; default a .json/.srt next to the video"), A("--out"),
+        A("--chapters-from", help="use the chapters set on this project's edit (stylebrain chapter) for YouTube"))
+    add("crosspost-week", cmd_crosspost_week, "which of a week's reels are ready for every platform", week,
+        A("--make", action="store_true", help="prepare every approved post that has a cut and no package yet"),
+        A("--json", action="store_true"))
+    add("connect", cmd_connect, "sign in to an account the poster uses (once per account)",
+        A("platform", choices=["youtube", "instagram", "tiktok"]), A("--client", help="YouTube: client_secret.json"),
+        A("--key"), A("--secret"), A("--audited", action="store_true", help="TikTok: the app passed TikTok's audit"),
+        A("--token", help="Instagram: user token"), A("--app-id"), A("--app-secret"))
+    add("publish", cmd_publish, "post a prepared reel to Instagram, TikTok and YouTube Shorts (only when he asks)",
+        A("post", help="post id, a date, today or tomorrow"), A("--only", help="comma-separated platforms"),
+        A("--dry-run", action="store_true", help="check everything, send nothing"))
+    add("publish-shortcut", cmd_publish_shortcut, "make the double-click 'Post today's reel' button",
+        A("where", nargs="?", default=".", help="folder for the shortcut, e.g. the Desktop"))
     add("shoot-list", cmd_shoot_list, "what to film for a week, by location", week, A("--json", action="store_true"))
     add("week-report", cmd_week_report, "planned versus posted for a week, with results", week,
         A("--json", action="store_true"))
@@ -1530,6 +1785,19 @@ def main(argv: list[str] | None = None) -> None:
         A("--x", type=float, help="0 is the left edge, 1 the right"), A("--y", type=float, help="0 is the top"),
         A("--zoom", type=float, help="1 is no punch-in"), A("--size", help="default: the house rule for frame, else 1080x1920"),
         A("--no-preview", action="store_true"))
+    add("format", cmd_format, "set where this video is posted (reel, short, longform): sets its frame and checks",
+        A("name", nargs="?"))
+    add("chapter", cmd_chapter, "start a YouTube chapter at a time, or --remove one", A("at", nargs="?"), A("title"),
+        A("--remove", action="store_true"))
+    add("chapters", cmd_chapters, "the chapter list for the YouTube description, checked against YouTube's rules",
+        A("--out", help="also write the description block to this file"), A("--json", action="store_true"))
+    add("longform-check", cmd_longform_check, "check a long-form cut: opening, chapters, re-hooks, pace, payoff",
+        *tx, A("--video", help="the rendered cut, to find long shots"),
+        A("--payoff", help="when the main question is answered"),
+        A("--cta", action="append", help="when a pitch runs (repeatable); found in the words if not given"),
+        A("--json", action="store_true"))
+    add("outline", cmd_outline, "a chapter plan for a long-form video (experiment, list, challenge, day, explainer)",
+        A("kind", nargs="?"), A("--minutes", type=float, default=14.0))
     add("speed", cmd_speed, "slow motion or speed-up on part of the timeline, with optional ramps in and out",
         A("--from", dest="start", required=True), A("--to", dest="end", required=True),
         A("--speed", type=float, required=True, help="0.5 is half speed, 2 is double"),

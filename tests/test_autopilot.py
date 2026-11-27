@@ -177,3 +177,27 @@ def test_transcribe_uses_the_first_tool_found(tmp_path, monkeypatch):
     if not shutil.which("mlx_whisper") and not shutil.which("whisper"):
         with pytest.raises(EditError, match="no speech-to-text tool"):
             transcribe(str(clip))
+
+
+def test_autopilot_with_a_preset_uses_its_captions_and_pause(project):
+    from stylebrain import presets
+    calls = []
+
+    def render(template, params, out, fps, width, height, label):
+        calls.append((template, params))
+        return FakeRender(str(project / f"{label}.mov"))
+
+    r = autopilot.run("one", str(project / "raw.mov"), preset="one-word", build=False, render=render)
+    assert calls and calls[0][0] == "mid_captions" and calls[0][1]["max_words"] == 1 and calls[0][1]["words"]
+    assert "preset 'one-word'" in r.text() and "(one-word)" in r.text() and "pauses of 0.35s" in r.text()
+    calls.clear()
+    r = autopilot.run("bare", str(project / "raw.mov"), preset="clean", build=False, render=render)
+    assert not calls and "place captions" not in r.text()
+    with pytest.raises(EditError):
+        autopilot.run("bad", str(project / "raw.mov"), preset="nope", build=False, render=render)
+    for name, p in presets.PRESETS.items():                      # every preset's captions build as a page
+        if p["template"]:
+            from stylebrain.templates import build
+            html, seconds = build(p["template"], {**p["params"], "words": presets.sample_words(), "width": 1080, "height": 1920})
+            assert "<" in html and seconds > 2
+    assert "one-word" in presets.listing() and presets.preview("clean") is None

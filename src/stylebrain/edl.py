@@ -80,6 +80,19 @@ class Sound:
 
 
 @dataclass(frozen=True)
+class Chapter:
+    """A YouTube chapter, pinned to a frame of a source clip so it follows that moment through cuts and moves."""
+
+    title: str
+    source: str
+    src_at: int
+
+    def __post_init__(self) -> None:
+        if not self.title.strip() or self.src_at < 0:
+            raise EditError("a chapter needs a title and a time")
+
+
+@dataclass(frozen=True)
 class Music:
     """One music track under the whole edit. It plays through cuts; it does not move with them."""
 
@@ -102,6 +115,8 @@ class EditList:
     sounds: tuple[Sound, ...] = field(default=())
     fill: bool = False  # main-track clips are scaled to cover the frame, placed by each clip's framing
     music: Music | None = None
+    format: str = ""  # a name from formats.py ("reel", "longform"); "" follows the house rule for frame
+    chapters: tuple[Chapter, ...] = field(default=())
 
     # ---- construction -------------------------------------------------
 
@@ -120,6 +135,8 @@ class EditList:
             sounds=tuple(Sound(**x) for x in data.get("sounds", [])),
             fill=bool(data.get("fill", False)),
             music=Music(**data["music"]) if data.get("music") else None,
+            format=data.get("format", ""),
+            chapters=tuple(Chapter(**c) for c in data.get("chapters", [])),
         )
 
     def to_dict(self) -> dict:
@@ -131,6 +148,8 @@ class EditList:
             "sounds": [asdict(x) for x in self.sounds],
             "fill": self.fill,
             "music": asdict(self.music) if self.music else None,
+            "format": self.format,
+            "chapters": [asdict(c) for c in self.chapters],
         }
 
     # ---- reading ------------------------------------------------------
@@ -290,6 +309,39 @@ class EditList:
         if t0 >= t1:
             raise EditError("empty range: the start must be before the end, inside the edit")
         return t0, t1
+
+    # ---- chapters -----------------------------------------------------
+
+    def source_at(self, t: int) -> tuple[str, int]:
+        """The source clip and source frame shown at timeline frame t."""
+        for start, seg in self.pieces():
+            if start <= t < start + seg.duration:
+                return seg.source, seg.src_in + (t - start)
+        raise EditError(f"frame {t} is past the end of the edit")
+
+    def chapter_times(self) -> list[tuple[int | None, Chapter]]:
+        """Each chapter with its timeline frame now (None if its moment was cut), in timeline order."""
+        out = []
+        for c in self.chapters:
+            hits = self.timeline_ranges_for_source(c.source, c.src_at, c.src_at + 1)
+            out.append((hits[0][0] if hits else None, c))
+        return sorted(out, key=lambda p: (p[0] is None, p[0] or 0))
+
+    def add_chapter(self, title: str, t: int) -> "EditList":
+        """Start a chapter at timeline frame t. A chapter already at that moment is renamed."""
+        source, at = self.source_at(t)
+        keep = tuple(c for c in self.chapters if (c.source, c.src_at) != (source, at)
+                     and c.title.strip().lower() != title.strip().lower())
+        return replace(self, chapters=keep + (Chapter(title.strip(), source, at),))
+
+    def remove_chapter(self, title: str) -> "EditList":
+        keep = tuple(c for c in self.chapters if c.title.strip().lower() != title.strip().lower())
+        if len(keep) == len(self.chapters):
+            raise EditError(f"no chapter called {title!r}")
+        return replace(self, chapters=keep)
+
+    def set_format(self, name: str) -> "EditList":
+        return replace(self, format=name)
 
     def _reassemble(self, order: list[tuple[int, Segment]]) -> "EditList":
         """Build a new edit from this edit's pieces in a new order.

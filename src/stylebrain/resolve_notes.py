@@ -54,7 +54,7 @@ def read_markers(timeline, fps: float) -> list[dict]:
         frame = int(round(float(frame)))
         out.append({"frame": frame, "seconds": round(frame / fps, 3), "colour": m.get("color", ""),
                     "name": m.get("name", ""), "note": m.get("note", ""),
-                    "frames": int(m.get("duration", 1) or 1), "ours": m.get("customData", "") == OURS})
+                    "frames": int(m.get("duration", 1) or 1), "ours": str(m.get("customData", "")).startswith(OURS)})
     return out
 
 
@@ -112,7 +112,7 @@ def snapshot(timeline) -> dict:
                 rows.append(row)
             out[kind][str(index)] = rows
     marks = timeline.GetMarkers() or {}
-    out["markers"] = sorted(int(round(float(f))) for f, m in marks.items() if m.get("customData", "") != OURS)
+    out["markers"] = sorted(int(round(float(f))) for f, m in marks.items() if not str(m.get("customData", "")).startswith(OURS))
     return out
 
 

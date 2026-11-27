@@ -60,7 +60,7 @@ def test_week_plan_follows_volume_mix_and_cta_rules(tmp_path):
     assert "Ready first" in titles and "On hold" not in titles
     ctas = [p["cta"] for p in posts]
     assert ctas.count("coaching") <= 2 and ctas.count("none") >= 3
-    assert all(p["platforms"] == ["instagram", "tiktok", "youtube-shorts"] for p in posts)
+    assert all(p["platforms"] == ["instagram", "tiktok", "youtube-shorts", "facebook"] for p in posts)
     # Proposing again replaces the proposal instead of doubling it.
     plan.propose_week(MON)
     assert len([p for p in plan.posts if p["status"] == "proposed"]) == 7

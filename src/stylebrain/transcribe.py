@@ -17,7 +17,9 @@ from pathlib import Path
 
 from .edl import EditError
 from .media import run
-from .transcript import Word, drop_phantom_speech, load_words
+import json
+
+from .transcript import Word, drop_phantom_speech, keep_speech, load_words
 
 ENGINES = {
     "mlx_whisper": lambda audio, out, model: [
@@ -34,10 +36,13 @@ def available() -> list[str]:
 
 
 def transcribe(video: str, out: str | Path | None = None, engine: str | None = None,
-               model: str | None = None) -> tuple[Path, list[Word]]:
+               model: str | None = None, speech: list[tuple[float, float]] | None = None) -> tuple[Path, list[Word]]:
     """Transcribe `video` to `<video>.words.json` (or `out`). Returns the path and the words.
 
     A clip with no speech (music only) gives no words; that is a result, not an error.
+    Speech tools write a song's lyrics down as if they were spoken. `speech` is
+    the list of (start, end) seconds where someone really talks; with it, only
+    those words are kept and the saved file holds just them.
     """
     found = available()
     if engine and engine not in ENGINES:
@@ -58,5 +63,9 @@ def transcribe(video: str, out: str | Path | None = None, engine: str | None = N
             raise EditError(f"{engine} finished but wrote no transcript")
         words = drop_phantom_speech(load_words(result))
         out.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(result, out)
+        if speech is not None:
+            words = keep_speech(words, speech)
+            out.write_text(json.dumps([{"word": w.text, "start": w.start, "end": w.end} for w in words], indent=2) + "\n")
+        else:
+            shutil.copyfile(result, out)
     return out, words

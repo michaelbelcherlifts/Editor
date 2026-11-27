@@ -12,8 +12,10 @@ Nothing here changes the edit. Every finding carries the second it happens.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import asdict, dataclass
+from pathlib import Path
 
 from .transcript import Word, _norm
 
@@ -136,11 +138,19 @@ def _overlap(a: str, b: str) -> float:
     return len(ta & tb) / max(1, min(len(ta), len(tb)))
 
 
+def first_change_text(c: float) -> str:
+    return (f"The first cut is at {c:.1f}s. Only cuts are measured: a picture-in-picture, graphic or caption that "
+            "appears sooner is not seen, so look at the frame sheet before acting on this (pass `first_change` in "
+            "seconds if something changes earlier). Aim for a change in under 1 second: a punch-in, a text pop or "
+            "starting mid-movement.")
+
+
 def hook_check(words: list[Word], duration: float, cuts: list[float] | None = None,
                judge: dict | None = None) -> list[Finding]:
     """Problems in the first seconds of a short, each with the second it happens.
 
-    judge may hold `text_on_frame_1` (bool), `undelivered` (bool, the promise is
+    judge may hold `first_change` (seconds, when the picture first changes
+    counting overlays and captions), `text_on_frame_1` (bool), `undelivered` (bool, the promise is
     never paid off) and `first_point` (seconds, Claude's reading of when the
     first useful point lands). Missing judgements are named, not guessed.
     """
@@ -168,11 +178,15 @@ def hook_check(words: list[Word], duration: float, cuts: list[float] | None = No
     elif point > 3.0:
         out.append(Finding(point, "first_point", f"The first useful point lands at {point:.1f}s. In a short it "
                            "should land inside 3 seconds; move it to the front as a cold open."))
-    if cuts is not None:
-        c = min(cuts) if cuts else duration
+    if "first_change" in judge:  # Claude's reading of the frame sheet, which sees overlays and captions too
+        c = float(judge["first_change"])
         if c > 1.5:
             out.append(Finding(c, "first_change", f"The picture first changes at {c:.1f}s. Aim for under 1 second: "
                                "a punch-in, a text pop or starting mid-movement."))
+    elif cuts is not None:
+        c = min(cuts) if cuts else duration
+        if c > 1.5:
+            out.append(Finding(c, "first_change", first_change_text(c)))
     if "text_on_frame_1" not in judge:
         out.append(Finding(0.0, "text", "Not checked: is there a 3 to 8 word text hook on frame 1? Look at frame 1.",
                            serious=False))
@@ -330,7 +344,76 @@ HOOK_TYPES = {
     "pov": ("A situation the viewer has lived", "POV: someone takes your bench mid-set."),
     "proof": ("Someone with authority, or proof on screen", "I asked a powerlifting coach to fix my deadlift."),
     "question": ("A question the viewer answers in their head", "Are you actually training to failure?"),
+    "challenge": ("Can I do X? A bar to clear, live", "Can a 182 lb powerlifter run a sub 6 mile?"),
+    "test": ("A bet or a test on someone else", "If you can bench 225 once, I'll pay your gym fee."),
+    "versus": ("Two tribes or two people head to head", "Powerlifter vs marathoner: who wins the 400?"),
+    "how-many": ("How many X does it take: escalate until it breaks", "How many plates can a cheap barbell hold?"),
+    "underdog": ("Someone underestimated, then the reveal", "They thought the big guy would walk the 5K."),
+    "ranking": ("Rank a set of things, worst to best", "Ranking every powerlifting excuse."),
+    "how-to": ("How to X in a few steps", "How to deadlift: 3 cues, 30 seconds."),
+    "tribe": ("An in-joke only one group gets", "Powerlifters will genuinely defend this."),
+    "constraint": ("A hard limit: money, time, calories, a rule", "Every mile I run buys 10 minutes of my phone."),
 }
+
+# Words and shapes that mark each hook type, for sorting a written or spoken
+# opening. A hook can be more than one type; a weak hook matches none.
+HOOK_MARKS = {
+    "mistake": r"^stop\b|\bstop (doing|\w+ing)\b|\b(don'?t|never|wrong|mistakes?)\b",
+    "contrarian": r"\b(isn'?t|aren'?t|not why|myth|overrated|lie|lying|actually|truth)\b",
+    "result": r"\b(ago|went from|used to|couldn'?t|before and after)\b",
+    "number": r"\b\d+ (things|ways|exercises|tips|mistakes|foods|steps|reasons|rules|cues|meals|accessories)\b",
+    "stakes": r"\b\d+ (days|weeks|hours|months) to\b|\bor (i|else)\b|\bdeadline\b",
+    "curiosity": r"\b(this one|the one|secret|nobody|not allowed|here'?s why|what happened|the reason)\b",
+    "pov": r"^pov\b|\bwhen (you|someone|your|the)\b",
+    "proof": r"\b(coach|seal|ranger|expert|doctor|asked an?|olympian|world record|record)\b",
+    "question": r"\?[!.]*\s*$|^(are|do|does|is|have|would|should) (you|your)\b",
+    "challenge": r"^(can|could|will|how fast can|how far can|how heavy can) (i|a|an|my)\b|\b(attempt|trying to|try to)\b",
+    "test": r"\bif you (can|could)\b|\bi('?ll| will) (give|pay|fill|buy)\b|\btest(ing)? (if|whether)\b|\bbet\b",
+    "versus": r"\bvs\.?\b|\bversus\b|\bhead to head\b",
+    "how-many": r"\bhow many\b|\bhow (much|far|fast|long|heavy) (can|does|will)\b",
+    "underdog": r"\b(pretend|disguis|undercover|thought i was|underestimat|didn'?t expect|nobody expected)",
+    "ranking": r"\b(rank|ranking|ranked|tier list|best to worst|worst to best)\b",
+    "how-to": r"^how to\b|\b\d+ (simple )?steps\b",
+    "tribe": r"\bonly \w+ (understand|know|get)\b|\bwill (genuinely )?defend\b|\b\w+ers be like\b|\bevery \w+er\b",
+    "constraint": r"\$\d|\bon a budget\b|\bcheap\b|\bfor \d+ (days|hours)\b|=\s*\d|\bonly (eat|ate|eating|use|using)\b",
+}
+
+HOOK_LIBRARY = Path("library/hooks")
+
+
+def classify_hook(text: str) -> list[str]:
+    """Hook types a line fits, most specific first. Empty when it fits none."""
+    low = _low(text).strip()
+    order = ["test", "how-many", "underdog", "versus", "challenge", "ranking", "how-to", "tribe", "constraint",
+             "stakes", "result", "number", "mistake", "contrarian", "curiosity", "proof", "pov", "question"]
+    return [k for k in order if re.search(HOOK_MARKS[k], low)]
+
+
+def hook_library(path: str | Path = HOOK_LIBRARY) -> dict:
+    """The researched hook patterns (library/hooks/patterns.json): each type with why it works,
+    templates for Michael, and proven examples with their views."""
+    f = Path(path) / "patterns.json" if Path(path).is_dir() or not str(path).endswith(".json") else Path(path)
+    if not f.exists():
+        return {"patterns": {}}
+    return json.loads(f.read_text())
+
+
+def proven_examples(kind: str | None = None, niche: str | None = None, path: str | Path = HOOK_LIBRARY,
+                    limit: int = 5) -> list[dict]:
+    """Researched examples, most viewed first, filtered by hook type and niche."""
+    lib = hook_library(path).get("patterns", {})
+    if kind and kind not in HOOK_TYPES:
+        raise ValueError(f"unknown hook type {kind!r}; use {', '.join(HOOK_TYPES)}")
+    out = []
+    for k, pat in lib.items():
+        if kind and k != kind:
+            continue
+        for ex in pat.get("examples", []):
+            if niche and ex.get("niche") != niche:
+                continue
+            out.append({"type": k, **ex})
+    out.sort(key=lambda e: -(e.get("views") or 0))
+    return out[:limit] if limit else out
 
 STORY_QUESTIONS = {
     "want": "Is there a clear want or goal, with a number or a deadline? 1 none, 5 unmistakable",
