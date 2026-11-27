@@ -49,8 +49,8 @@ sound, music, reframing, export, house rules, the content calendar, social posts
 - `src/stylebrain/presets.py`: ready-made first-cut styles (caption treatment and pause length under one name) and their previews
 - `src/stylebrain/autoclip.py`: auto-clipping a long recording into scored 9:16 reel candidates (`clip-find`, then judging, then `clip-cut` with a review sheet); read `.claude/skills/auto-clip/SKILL.md` first
 - `src/stylebrain/review.py`: timestamped suggestions from comparing a cut with a style
-- `src/stylebrain/story.py`: hook check, beat map, "and then" pass, hook types (sorting a line into a type, the researched examples in `library/hooks/`), script checks
-- `library/hooks/`: researched hook patterns with proven YouTube examples and views, and video ideas ready for `idea-import`; `data/hook-research/youtube_hooks.js` refreshes them in the browser pane
+- `src/stylebrain/story.py`: hook check, beat map, "and then" pass, hook types (sorting a line into a type, its hook layers, the researched examples in `library/hooks/`), reading a retention curve, script checks
+- `library/hooks/`: researched hook patterns with proven YouTube examples and views, video ideas ready for `idea-import`, and creator playbooks in `library/hooks/playbooks/` (Robert McKeaveney's reel rules); `data/hook-research/youtube_hooks.js` refreshes them in the browser pane
 - `src/stylebrain/score.py`: the virality rubric: a 0 to 100 score for a short clip, part by part
 - `src/stylebrain/learn.py`: clip attributes, the private clip dataset (`library/clips/`, not committed) and the model that finds what goes with performance
 - `src/stylebrain/sfx.py`: the sound library (`library/sfx/`, not committed), automatic placement with a cap per minute, and the mixes that go on audio tracks from A2 up

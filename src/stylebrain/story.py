@@ -415,6 +415,75 @@ def proven_examples(kind: str | None = None, niche: str | None = None, path: str
     out.sort(key=lambda e: -(e.get("views") or 0))
     return out[:limit] if limit else out
 
+
+# Hook layers (Robert McKeaveney's ladder, library/hooks/playbooks/mckeaveney.json): a plain value
+# hook gets stronger with each layer added, e.g. "How to make a good hook" -> "I tested 30 hooks and
+# these are the 3 things that make a hook impossible to scroll past."
+HOOK_LAYERS = {
+    "value": ("names what the viewer gets or the topic", r"\b(how to|how i|why|what|the way|guide|secret|best way|fix|build|make|get|learn)\b"),
+    "claim": ("a bold claim: best, only, never, impossible, the one", r"\b(best|only|never|impossible|always|nobody|everyone|the one|guaranteed?|actually|perfect|worst|most)\b"),
+    "payoff": ("the result they will have after watching", r"\b(so (that|you)|that (makes?|gets?|got|fixed|added|will)|to (get|hit|add|stop|never)|without|in \d+ (seconds|days|weeks|minutes))\b"),
+    "number": ("a specific number", r"\d"),
+    "credibility": ("proof you can say it: a result you got or a test you ran", r"\b(i tested|i tried|after \d+|i've|i have|got me|made me|i went from|i hit|i ran|i lifted|i coach|my clients|all-american|record|\d+ (followers|views|clients|years|meets))\b"),
+}
+
+
+def hook_layers(text: str) -> dict:
+    """Which layers a hook line has and which it could add: value, claim, payoff, number, credibility."""
+    low = _low(text)
+    have = [k for k, (_, pat) in HOOK_LAYERS.items() if re.search(pat, low)]
+    missing = [k for k in HOOK_LAYERS if k not in have]
+    return {"have": have, "missing": missing, "layers": len(have),
+            "asks_question": bool(classify_hook(text)) or "?" in text,
+            "add": [f"{k}: {HOOK_LAYERS[k][0]}" for k in missing]}
+
+
+RETENTION_PARTS = ("hook", "buildup", "payoff")
+
+
+def retention_diagnosis(points: list[tuple[float, float]], duration: float | None = None,
+                        hook_seconds: float = 3.0, payoff_share: float = 0.2, normal_hook_loss: float = 0.3) -> dict:
+    """Where a retention curve loses people, read the way McKeaveney reads it.
+
+    points: (seconds, share still watching 0..1 or percent). The steepest loss per second
+    marks the part to fix: in the first `hook_seconds` the hook did not make them ask a
+    question; in the last `payoff_share` of the video the payoff did not answer it; in
+    between the buildup did not keep the question alive. Every reel loses people in its first
+    seconds, so up to `normal_hook_loss` lost in the hook window counts as normal.
+    """
+    pts = sorted((float(t), float(v)) for t, v in points)
+    if len(pts) < 2:
+        raise ValueError("give at least two retention points")
+    if max(v for _, v in pts) > 1.5:
+        pts = [(t, v / 100) for t, v in pts]
+    duration = duration or pts[-1][0]
+    if duration <= hook_seconds:
+        raise ValueError("the video is shorter than the hook window")
+    pay_from = duration * (1 - payoff_share)
+    def part(t):
+        return "hook" if t < hook_seconds else "payoff" if t >= pay_from else "buildup"
+    lost = {k: 0.0 for k in RETENTION_PARTS}
+    span = {"hook": hook_seconds, "buildup": max(pay_from - hook_seconds, 0.1), "payoff": duration - pay_from}
+    for (t0, v0), (t1, v1) in zip(pts, pts[1:]):
+        if t1 <= t0:
+            continue
+        # split the drop across parts in proportion to time
+        cuts = sorted({t0, t1, *[x for x in (hook_seconds, pay_from) if t0 < x < t1]})
+        for a, b in zip(cuts, cuts[1:]):
+            lost[part((a + b) / 2)] += max(0.0, v0 - v1) * (b - a) / (t1 - t0)
+    excess = dict(lost, hook=max(0.0, lost["hook"] - normal_hook_loss))
+    rate = {k: excess[k] / span[k] for k in RETENTION_PARTS}
+    worst = max(rate, key=rate.get)
+    fixes = {
+        "hook": "the hook: make it ask a question in the first line, and add a layer (claim, number, credibility)",
+        "buildup": "the buildup: each beat should strengthen the question, not wander; cut what does not",
+        "payoff": "the payoff: answer the question the hook asked, on screen, and stop",
+    }
+    flat = all(r < 0.02 for r in rate.values())
+    return {"lost": {k: round(v, 3) for k, v in lost.items()}, "per_second": {k: round(v, 4) for k, v in rate.items()},
+            "worst": None if flat else worst, "fix": "nothing stands out: the curve is flat" if flat else fixes[worst],
+            "kept_to_end": round(pts[-1][1], 3)}
+
 STORY_QUESTIONS = {
     "want": "Is there a clear want or goal, with a number or a deadline? 1 none, 5 unmistakable",
     "stakes": "Is there a reason it might fail, or a cost if it does? 1 none, 5 real doubt",

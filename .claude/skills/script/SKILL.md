@@ -46,6 +46,15 @@ copy the shape of their first line, never their words. What the top openings
 share: the first spoken line is the title nearly word for word, a number is in
 the first five words, and the bar to clear is said before the attempt.
 
+Then climb the hook ladder (Robert McKeaveney's method, in
+`library/hooks/playbooks/mckeaveney.json`). Start from the plain value line
+("How to bench more"), then add layers one at a time: a bold claim, the payoff
+they'll get, a number, then credibility. Credibility for Michael means his real
+proof (All-American, Army powerlifting team, his actual lifts), never invented
+numbers. `uv run stylebrain hooks "LINE"` shows which layers a line has and
+which it could add. Every hook must make the viewer ask a question the video
+answers.
+
 Offer **three** hooks, each a different type, each with:
 
 - the spoken line (under 15 words, the first word means something, no
@@ -67,6 +76,18 @@ the clip actually shows. Each rewrite can be cut from words he already said
 
 ## 3. Write the lines
 
+Shape it as hook, buildup, payoff. The hook asks the question, the buildup keeps
+them watching by strengthening that question (every beat raises the stakes or
+adds a doubt), and the payoff answers it. When a posted reel has a retention
+graph, `uv run stylebrain retention '[[0,100],[3,70],...]'` names which of the
+three lost people.
+
+A borrowed format is fine and often best: take one that has already gone viral,
+add his topic or a twist, and make it his. For a reel that should lead somewhere
+(coaching), open on the entertaining clip and transition into the lift or the
+offer. A rewatch reason (a challenge they can just miss, like "pause when the bar
+hits depth") makes average watch time longer than the reel.
+
 One spoken line per line of text. Rules for each line:
 
 - It earns the next one. If a line could be cut without the next line making
@@ -80,6 +101,8 @@ One spoken line per line of text. Rules for each line:
   works because...", say it and answer it on the next line.
 - A new question about two thirds through, before the first one is fully
   closed, so the viewer stays for the end.
+- A call to action only comes after the value, and it asks for more of the same
+  ("for more cues like this, follow").
 - The end pays off the hook on screen, then stops. For a short, the last line
   can lead back into the first so the replay feels seamless. No "so yeah".
 - For long-form, a re-hook (a question, a reveal or a change of scene) at

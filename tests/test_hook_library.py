@@ -85,3 +85,38 @@ def test_committed_library_is_valid():
         assert i["title"] and i["pillar"] in PILLARS and i.get("format", "reel") in FORMATS
         assert i["hook_type"] in story.HOOK_TYPES
         assert "worlds" not in json.dumps(i).lower()
+
+
+def test_hook_layers_climb_the_ladder():
+    ladder = ["How to make a good hook",
+              "This is the best way to make a good hook",
+              "I tested 30 hooks and these are the 3 things that make a hook impossible to scroll past"]
+    counts = [story.hook_layers(x)["layers"] for x in ladder]
+    assert counts == sorted(counts) and counts[0] < counts[-1]
+    top = story.hook_layers(ladder[-1])
+    assert {"claim", "number", "credibility"} <= set(top["have"])
+    assert story.hook_layers("So today I want to talk")["layers"] == 0
+
+
+def test_retention_names_the_part_to_fix():
+    assert story.retention_diagnosis([(0, 100), (3, 40), (15, 36), (20, 33)])["worst"] == "hook"
+    assert story.retention_diagnosis([(0, 1), (3, .8), (8, .4), (20, .35)])["worst"] == "buildup"
+    assert story.retention_diagnosis([(0, 1), (3, .95), (15, .9), (17, .4), (20, .38)])["worst"] == "payoff"
+    assert story.retention_diagnosis([(0, 100), (3, 75), (15, 70), (20, 69)])["worst"] is None
+    with pytest.raises(ValueError):
+        story.retention_diagnosis([(0, 1)])
+
+
+def test_retention_and_layers_commands(capsys):
+    main(["retention", "[[0,100],[3,40],[15,36],[20,33]]"])
+    out = capsys.readouterr().out
+    assert "fix the hook" in out and "kept to the end: 33%" in out
+    main(["hooks", "How to make a good hook", "--text", "how to make a hook"])
+    out = capsys.readouterr().out
+    assert "layers: 1 of 5" in out and "could add credibility" in out
+
+
+def test_playbook_is_valid():
+    pb = json.loads((REPO / "library/hooks/playbooks/mckeaveney.json").read_text())
+    assert pb["rules"] and all(r["rule"] and r["part"] for r in pb["rules"])
+    assert "worlds" not in json.dumps(pb["fits_michael"]).lower().replace("never framed around worlds", "")

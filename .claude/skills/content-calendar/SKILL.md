@@ -25,6 +25,14 @@ posts anything: Michael presses post himself, then tells you, and you record it.
 
 ## Rules
 
+- Protect the baseline (McKeaveney): each reel is judged against his recent
+  average, and three weak reels in a row drag it down. Post the strongest
+  finished reels, and when one looks weak say so and suggest holding it, or
+  running it as a trial reel, rather than posting it to fill a slot. Trial reels
+  are also the place to A/B test two hooks for the same video.
+- Posting time, hashtags and posting every single day matter little; quality
+  reels per week matter. Never suggest the promote / boost button for organic
+  growth.
 - Never frame anything around competing at worlds. Never invent his numbers in
   a hook: leave `[weight]`-style placeholders until he gives the real figure.
 - Creative choices are his. Propose; he approves (`plan-approve`) or changes.
