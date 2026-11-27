@@ -28,6 +28,8 @@ results:
 - [ ] After `look-use NAME` and `build`, the clips show the LUT on their first node on the Color page.
 - [ ] `uv run stylebrain transcribe <clip>` writes `<clip>.words.json` (install `mlx-whisper` first: `uv tool install mlx-whisper`).
 - [ ] `uv run stylebrain auto test2 --source <clip>` runs through and builds a timeline.
+- [ ] After `sfx-basics`, `sfx-auto` and `build`, the sound effects clip sits on audio track 2 and sounds right.
+- [ ] `uv run stylebrain sfx-fetch whoosh` downloads sounds from Openverse.
 - [ ] Audio comes along with the video on the main track.
 
 If `build` reports problems, paste its output to Claude. The builder reads every

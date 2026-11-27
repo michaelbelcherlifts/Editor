@@ -25,13 +25,16 @@ def _store(args) -> Store:
 
 def _summary(edit: EditList) -> str:
     lines = [f"{len(edit.segments)} clips, {format_time(edit.duration, edit.fps)} long, "
-             f"{len(edit.overlays)} overlays, {edit.fps:g} fps" + (f", look {Path(edit.look).stem}" if edit.look else "")]
+             f"{len(edit.overlays)} overlays, {edit.fps:g} fps" + (f", look {Path(edit.look).stem}" if edit.look else "")
+             + (f", {len(edit.sounds)} sounds" if edit.sounds else "")]
     for start, seg in edit.pieces():
         lines.append(f"  {format_time(start, edit.fps):>10}  {Path(seg.source).name}  "
                      f"[{seg.src_in}-{seg.src_out})" + (f"  {seg.note}" if seg.note else ""))
     for o in sorted(edit.overlays, key=lambda o: o.at):
         lines.append(f"  {format_time(o.at, edit.fps):>10}  overlay {o.name!r} on V{o.track}, "
                      f"{format_time(o.duration, edit.fps)}  {Path(o.source).name}")
+    for x in sorted(edit.sounds, key=lambda x: x.at):
+        lines.append(f"  {format_time(x.at, edit.fps):>10}  sound {x.name!r}  {Path(x.source).name}  {x.gain_db:+g} dB")
     return "\n".join(lines)
 
 
@@ -293,7 +296,11 @@ def cmd_build(args) -> None:
     from .resolve_builder import build_timeline, connect
     store = _store(args); edit = store.load()
     name = args.name or f"{store.project} v{store.head()}"
-    report = build_timeline(connect(), edit, name)
+    mixed = None
+    if edit.sounds:
+        from . import sfx
+        mixed = str(sfx.mix(edit, Path(".stylebrain") / "renders" / f"{store.project}-v{store.head()}-sfx.wav").resolve())
+    report = build_timeline(connect(), edit, name, sound_mix=mixed)
     print(report.text())
     if not report.ok:
         sys.exit(1)
@@ -487,6 +494,67 @@ def cmd_learn(args) -> None:
     print(json.dumps(result, indent=2) if args.json else learn.report(result))
 
 
+def cmd_sfx_basics(args) -> None:
+    from . import sfx
+    for i in sfx.make_basics():
+        print(f"  {i['file']}: {', '.join(i['tags'])}")
+
+
+def cmd_sfx_add(args) -> None:
+    from . import sfx
+    i = sfx.add(args.file, args.tags.split(","), args.licence, args.source or "", args.credit or "")
+    print(f"added {i['file']} ({i['seconds']:g}s): {', '.join(i['tags'])}")
+
+
+def cmd_sfx_list(args) -> None:
+    from . import sfx
+    for i in sfx.load():
+        print(f"  {i['file']:<40}{i['seconds']:>6g}s  {i['licence']:<10}{', '.join(i['tags'])}")
+
+
+def cmd_sfx_fetch(args) -> None:
+    from . import sfx
+    added, skipped = sfx.fetch(args.query, (args.tags or args.query).split(","), args.count, args.max_seconds,
+                                licence=args.licence)
+    for i in added:
+        print(f"  added {i['file']} ({i['seconds']:g}s, licence {i['licence']}) from {i['source']}")
+    for line in skipped:
+        print(f"  skipped {line}")
+    print(f"{len(added)} added, {len(skipped)} skipped")
+
+
+def cmd_sfx_place(args) -> None:
+    from . import sfx
+    store = _store(args); edit = store.load()
+    at = parse_time(args.at, edit.fps)
+    sound = sfx.sound_for(edit, args.tag, at, args.name or f"{args.tag}@{args.at}", args.gain, safe_only=args.ad)
+    _save(store, edit, edit.add_sound(sound), f"place sound {args.tag!r} at {args.at}")
+
+
+def cmd_sfx_auto(args) -> None:
+    from . import sfx
+    store = _store(args); edit = store.load()
+    words = None
+    if args.transcript:
+        from .autopilot import timeline_words
+        words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
+    new, lines = sfx.auto_place(edit, words, tuple(args.on.split(",")), args.gain, args.duck, args.min_cut_gap,
+                                 safe_only=args.ad)
+    if not lines:
+        print("nothing to place sounds on")
+        return
+    _save(store, edit, new, f"place {len(lines)} sounds automatically")
+    for line in lines:
+        print("  " + line)
+
+
+def cmd_sfx_remove(args) -> None:
+    store = _store(args); edit = store.load()
+    prefix = "" if args.name == "all" else "auto:" if args.name == "auto" else args.name
+    new = edit.remove_sounds(prefix)
+    _save(store, edit, new, f"remove {len(edit.sounds) - len(new.sounds)} sounds")
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -588,6 +656,21 @@ def main(argv: list[str] | None = None) -> None:
     add("clip-list", cmd_clip_list, "list clips in the learning set")
     add("learn", cmd_learn, "learn which attributes go with clips doing well", A("--target", default="reach"),
         A("--mine", action="store_true", help="use only your own clips"), A("--json", action="store_true"))
+    add("sfx-basics", cmd_sfx_basics, "make a starter set of sounds (pop, click, whoosh, thud, riser)")
+    add("sfx-add", cmd_sfx_add, "add a sound file to the library", A("file"), A("--tags", required=True),
+        A("--licence", required=True, help="recorded, not enforced: own, cc0, by, unknown ..."), A("--source"), A("--credit"))
+    add("sfx-list", cmd_sfx_list, "list the sound library")
+    add("sfx-fetch", cmd_sfx_fetch, "download sounds from Openverse into the library (CC0 unless told otherwise)", A("query"),
+        A("--licence", default="cc0", help="cc0 (default), a list such as cc0,by, or any"),
+        A("--tags", help="tags to file them under (default: the query)"), A("--count", type=int, default=5),
+        A("--max-seconds", type=float, default=4.0))
+    add("sfx-place", cmd_sfx_place, "place one sound by tag", A("tag"), A("--at", required=True),
+        A("--gain", type=float, default=-12.0), A("--name"), A("--ad", action="store_true", help="paid ad: use only your own, made-here, CC0 or public-domain sounds"))
+    add("sfx-auto", cmd_sfx_auto, "place sounds on cuts, graphics and zooms, lowered under speech",
+        A("--transcript", help="word timings, to lower sounds under speech"), A("--source"),
+        A("--on", default="cuts,overlays,zooms"), A("--gain", type=float, default=-14.0),
+        A("--duck", type=float, default=6.0), A("--min-cut-gap", type=float, default=2.5), A("--ad", action="store_true", help="paid ad: use only your own, made-here, CC0 or public-domain sounds"))
+    add("sfx-remove", cmd_sfx_remove, "remove a sound by name, or 'auto' or 'all'", A("name"))
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")

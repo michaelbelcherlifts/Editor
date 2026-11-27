@@ -53,11 +53,28 @@ class Overlay:
 
 
 @dataclass(frozen=True)
+class Sound:
+    """A sound effect placed at a timeline position, on its own audio layer."""
+
+    name: str
+    source: str
+    at: int
+    duration: int
+    gain_db: float = 0.0
+    tag: str = ""
+
+    def __post_init__(self) -> None:
+        if self.at < 0 or self.duration <= 0:
+            raise EditError(f"bad sound {self.name!r}")
+
+
+@dataclass(frozen=True)
 class EditList:
     fps: float
     segments: tuple[Segment, ...] = ()
     overlays: tuple[Overlay, ...] = field(default=())
     look: str = ""  # path of a .cube LUT applied to every main-track clip
+    sounds: tuple[Sound, ...] = field(default=())
 
     # ---- construction -------------------------------------------------
 
@@ -73,6 +90,7 @@ class EditList:
             segments=tuple(Segment(**s) for s in data.get("segments", [])),
             overlays=tuple(Overlay(**o) for o in data.get("overlays", [])),
             look=data.get("look", ""),
+            sounds=tuple(Sound(**x) for x in data.get("sounds", [])),
         )
 
     def to_dict(self) -> dict:
@@ -81,6 +99,7 @@ class EditList:
             "segments": [asdict(s) for s in self.segments],
             "overlays": [asdict(o) for o in self.overlays],
             "look": self.look,
+            "sounds": [asdict(x) for x in self.sounds],
         }
 
     # ---- reading ------------------------------------------------------
@@ -175,6 +194,20 @@ class EditList:
             raise EditError("that position is past the end of the edit")
         return replace(self, overlays=self.overlays + (overlay,))
 
+    def add_sound(self, sound: Sound) -> "EditList":
+        if any(x.name == sound.name for x in self.sounds):
+            raise EditError(f"a sound named {sound.name!r} already exists")
+        if sound.at >= self.duration:
+            raise EditError("that position is past the end of the edit")
+        return replace(self, sounds=self.sounds + (sound,))
+
+    def remove_sounds(self, prefix: str = "") -> "EditList":
+        """Remove the sound with this name, or every sound whose name starts with it ("" for all)."""
+        keep = tuple(x for x in self.sounds if not x.name.startswith(prefix))
+        if len(keep) == len(self.sounds):
+            raise EditError(f"no sound named {prefix!r}" if prefix else "there are no sounds")
+        return replace(self, sounds=keep)
+
     def set_look(self, path: str) -> "EditList":
         """Use a LUT file on the main track, or "" for none."""
         return replace(self, look=path)
@@ -195,8 +228,8 @@ class EditList:
     def _reassemble(self, order: list[tuple[int, Segment]]) -> "EditList":
         """Build a new edit from this edit's pieces in a new order.
 
-        Overlays follow the piece they started on, keeping their offset into
-        it. An overlay whose piece was removed is removed with it.
+        Overlays and sounds follow the piece they started on, keeping their
+        offset into it. One whose piece was removed is removed with it.
         """
         new_start, t = {}, 0
         for old_start, seg in order:
@@ -209,7 +242,14 @@ class EditList:
                 if old <= o.at < old + durations[old]:
                     overlays.append(replace(o, at=new + (o.at - old)))
                     break
-        return replace(self, segments=_join([seg for _, seg in order]), overlays=tuple(overlays))
+        sounds = []
+        for x in self.sounds:
+            for old, new in new_start.items():
+                if old <= x.at < old + durations[old]:
+                    sounds.append(replace(x, at=new + (x.at - old)))
+                    break
+        return replace(self, segments=_join([seg for _, seg in order]), overlays=tuple(overlays),
+                       sounds=tuple(sounds))
 
 
 def _join(segments: list[Segment]) -> tuple[Segment, ...]:

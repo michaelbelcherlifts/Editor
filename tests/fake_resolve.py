@@ -42,7 +42,7 @@ class Item:
 
 class Timeline:
     def __init__(self, name, start=86400):
-        self.name, self.start, self.tracks = name, start, {1: []}
+        self.name, self.start, self.tracks, self.audio = name, start, {1: []}, {1: []}
 
     def GetName(self):
         return self.name
@@ -50,15 +50,18 @@ class Timeline:
     def GetStartFrame(self):
         return self.start
 
+    def _kind(self, kind):
+        return self.audio if kind == "audio" else self.tracks
+
     def GetTrackCount(self, kind):
-        return len(self.tracks)
+        return len(self._kind(kind))
 
     def AddTrack(self, kind):
-        self.tracks[len(self.tracks) + 1] = []
+        self._kind(kind)[len(self._kind(kind)) + 1] = []
         return True
 
     def GetItemListInTrack(self, kind, index):
-        return self.tracks.get(index, [])
+        return self._kind(kind).get(index, [])
 
 
 class MediaPool:
@@ -89,7 +92,7 @@ class MediaPool:
         for i in infos:
             length = i["endFrame"] - i["startFrame"] + (1 if self.end_inclusive else 0)
             item = Item(i["recordFrame"], length)
-            t.tracks[i["trackIndex"]].append(item)
+            (t.audio if i.get("mediaType") == 2 else t.tracks)[i["trackIndex"]].append(item)
             out.append(item)
         return out
 

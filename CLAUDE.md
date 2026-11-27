@@ -39,6 +39,7 @@ screenshots. Other skills in `.claude/skills/` cover styles, colour, autopilot a
 - `src/stylebrain/review.py`: timestamped suggestions from comparing a cut with a style
 - `src/stylebrain/score.py`: the virality rubric: a 0 to 100 score for a short clip, part by part
 - `src/stylebrain/learn.py`: clip attributes, the private clip dataset (`library/clips/`, not committed) and the model that finds what goes with performance
+- `src/stylebrain/sfx.py`: the sound library (`library/sfx/`, not committed), automatic placement, and the mix that goes on audio track 2
 - `src/stylebrain/bake.py`: ffmpeg zooms and speed changes
 - `src/stylebrain/cli.py`: the `stylebrain` command
 

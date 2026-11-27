@@ -48,6 +48,7 @@ class BuildReport:
     overlays: int = 0
     problems: list[str] = field(default_factory=list)
     look: str = ""
+    sounds: int = 0
 
     @property
     def ok(self) -> bool:
@@ -57,6 +58,8 @@ class BuildReport:
         head = f"timeline {self.timeline!r}: {self.clips} clips, {self.overlays} overlays"
         if self.look:
             head += f", look {self.look.rsplit('/', 1)[-1]}"
+        if self.sounds:
+            head += f", {self.sounds} sound effects"
         if self.ok:
             return head + ", all checked"
         return head + "\n" + "\n".join(f"  problem: {p}" for p in self.problems)
@@ -165,7 +168,23 @@ def _apply_look(project, items, path: str) -> list[str]:
     return []
 
 
-def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | None = None) -> BuildReport:
+def _place_sound_mix(media_pool, timeline, origin: int, path: str, frames: int, end_inclusive: bool) -> list[str]:
+    """Put the mixed sound effects file on audio track 2, from the start of the timeline."""
+    items = _media_items(media_pool, {path})
+    while timeline.GetTrackCount("audio") < 2:
+        if not timeline.AddTrack("audio"):
+            return ["Resolve would not add an audio track for the sound effects"]
+    info = {"mediaPoolItem": items[path], "startFrame": 0, "endFrame": frames - (1 if end_inclusive else 0),
+            "trackIndex": 2, "recordFrame": origin, "mediaType": 2}
+    placed = media_pool.AppendToTimeline([info]) or []
+    on_track = timeline.GetItemListInTrack("audio", 2) or []
+    if not placed or not any(i.GetStart() == origin for i in on_track):
+        return ["the sound effects did not land on audio track 2"]
+    return []
+
+
+def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | None = None,
+                   sound_mix: str | None = None) -> BuildReport:
     """Create a new timeline from the edit and verify it.
 
     end_inclusive: whether a clipInfo's endFrame is the last frame used (True)
@@ -194,5 +213,8 @@ def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | Non
             continue
         if edit.look:
             problems += _apply_look(project, main, edit.look)
-        return BuildReport(final, len(main), len(over), warn + problems, look=edit.look)
+        if sound_mix:
+            problems += _place_sound_mix(media_pool, timeline, origin, sound_mix, edit.duration, mode)
+        return BuildReport(final, len(main), len(over), warn + problems, look=edit.look,
+                           sounds=len(edit.sounds) if sound_mix else 0)
     raise AssertionError("unreachable")
