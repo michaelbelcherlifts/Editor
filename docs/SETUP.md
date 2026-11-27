@@ -9,7 +9,8 @@
 4. **Tools.** Install [uv](https://docs.astral.sh/uv/) and ffmpeg (for example
    `brew install uv ffmpeg`). Claude Code can do this for you if you ask.
 5. **This folder.** Clone the repository, open the folder in Claude Code, and say
-   "set up Style Brain". Claude runs `uv sync` and `uv run pytest`.
+   "set up Style Brain". Claude runs `uv sync --all-extras`,
+   `uv run playwright install chromium` and `uv run pytest`.
 
 ## First run checklist
 
@@ -21,6 +22,8 @@ results:
       named "test v2" in the open Resolve project, and reports "all checked".
 - [ ] The cut lands on the right frame when you look at it in Resolve.
 - [ ] `overlay-add` puts a clip on V2 at the right place.
+- [ ] A rendered animation (`stylebrain render caption_pop ...`) imports into Resolve
+      with its transparency intact.
 - [ ] Audio comes along with the video on the main track.
 
 If `build` reports problems, paste its output to Claude. The builder reads every
