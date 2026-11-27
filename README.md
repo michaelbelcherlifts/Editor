@@ -4,6 +4,9 @@ Talk through an edit in DaVinci Resolve Studio with Claude Code. You say "cut th
 retake" or "swap these two sections"; Claude changes the edit and a new timeline
 version appears in Resolve.
 
+Where the project is going, and what is built versus planned, is in
+[docs/PRD.md](docs/PRD.md).
+
 What exists today:
 
 | Piece | What it does | State |
