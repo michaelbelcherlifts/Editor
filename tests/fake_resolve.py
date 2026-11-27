@@ -54,6 +54,14 @@ class Timeline:
     def __init__(self, name, start=86400):
         self.name, self.start, self.tracks, self.audio = name, start, {1: []}, {1: []}
         self.markers, self.timecode = {}, "01:00:00:00"
+        self.settings = {}
+
+    def SetSetting(self, key, value):
+        self.settings[key] = value
+        return True
+
+    def GetSetting(self, key):
+        return self.settings.get(key, "")
 
     def GetMarkers(self):
         return dict(self.markers)

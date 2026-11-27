@@ -312,8 +312,11 @@ def video_facts(path: str | Path | None) -> dict | None:
 def build(idea: dict, platforms: list[str], cta: str, *, words: list[Word] | None = None,
           video: str | None = None, long_video: str | None = None, brand: dict | None = None,
           series_name: str | None = None, facts: dict | None = None, long_facts: dict | None = None,
-          duration: float | None = None) -> list[Version]:
-    """The text and checks for each platform. Pure: reads no files, so it is easy to test."""
+          duration: float | None = None, chapter_list: list[dict] | None = None) -> list[Version]:
+    """The text and checks for each platform. Pure: reads no files, so it is easy to test.
+
+    chapter_list: chapters set by hand on the edit (`stylebrain chapter`), as
+    [{"at", "seconds", "label"}]; used instead of drafting them from the transcript."""
     brand = brand or {}
     hook = _first(idea.get("hook")) or _first(idea.get("title"))
     spoken = " ".join(w.text for w in words or [])
@@ -344,7 +347,7 @@ def build(idea: dict, platforms: list[str], cta: str, *, words: list[Word] | Non
                 desc.append(" ".join(middle))
             if ask:
                 desc.append(ask)
-            chaps = chapters(words, duration) if p == "youtube" else []
+            chaps = (chapter_list or chapters(words, duration)) if p == "youtube" else []
             if chaps:
                 desc.append("\n".join(f"{c['at']} {c['label']}" for c in chaps))
             desc.append(" ".join(tags))
@@ -378,7 +381,7 @@ def build(idea: dict, platforms: list[str], cta: str, *, words: list[Word] | Non
 
 def make(plan, post_id: str, *, video: str | None = None, long_video: str | None = None,
          transcript: str | None = None, out_dir: str | Path | None = None, base: str | Path = ".",
-         attach: bool = True) -> dict:
+         attach: bool = True, chapter_list: list[dict] | None = None) -> dict:
     """Write the cross-post package for one calendar post, and note it on the post.
 
     The video defaults to the idea's draft (the cut file), and the transcript to a
@@ -406,7 +409,7 @@ def make(plan, post_id: str, *, video: str | None = None, long_video: str | None
     duration = (long_facts or facts or {}).get("seconds")
     versions = build(idea, platforms, post["cta"], words=words, video=video if vertical else None,
                      long_video=long_video, brand=load_brand(base), series_name=series_name,
-                     facts=facts, long_facts=long_facts, duration=duration)
+                     facts=facts, long_facts=long_facts, duration=duration, chapter_list=chapter_list)
 
     out = Path(out_dir) if out_dir else Path(base) / "library" / "crosspost" / f"{post['id']}-{slug(idea['title'])}"
     out.mkdir(parents=True, exist_ok=True)

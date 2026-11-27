@@ -88,6 +88,17 @@ def test_long_form_chapters_and_tags():
     assert not v.problems
 
 
+def test_hand_set_chapters_win_over_drafted_ones():
+    text = " ".join(f"Point number {k} is about the squat and it matters a lot." for k in range(60))
+    mine = [{"at": "0:00", "label": "Intro"}, {"at": "1:10", "label": "Why"}, {"at": "4:00", "label": "Results"}]
+    v = crosspost.build(idea(title="How I squat 300 kg", hook="Clean hook", format="long-form"), ["youtube"], "coaching",
+                        words=words_from(text, step=0.5), brand={"site": "nospotter.com"},
+                        long_facts={"width": 1920, "height": 1080, "seconds": 330}, long_video="a.mp4",
+                        chapter_list=mine)[0]
+    assert v.text["chapters"] == mine
+    assert "0:00 Intro\n1:10 Why\n4:00 Results" in v.text["description"]
+
+
 def test_titles_are_cut_at_a_word():
     long = "word " * 40
     assert len(crosspost._fit_title(long, 100)) <= 100
