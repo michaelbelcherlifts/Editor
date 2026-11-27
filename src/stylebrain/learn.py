@@ -465,8 +465,8 @@ def propose_weights(rows, y) -> dict | None:
     cors = {}
     for part in PARTS:
         col = [c["attributes"].get(f"score_{part}") for c, _ in rows]
-        if any(v is None for v in col):
-            return None
+        if any(v is None for v in col) or np.std(np.array(col, float)) < 1e-9:
+            return None                      # a part never judged (the same value on every clip) says nothing
         cors[part] = max(_corr(np.array(col, float), y), 0.0)
     total = sum(cors.values())
     if total <= 0:
@@ -496,7 +496,9 @@ def report(result: dict, top: int = 10) -> str:
     for e in result["effects"]:
         if e.get("control"):
             lines.append(f"  held steady: {e['attribute']} (effect {e['effect']:+.2f})")
-    if result["weights"]:
+    if result["weights"] and "guessing" in result["trust"]:
+        lines.append("No score weights suggested: the model does no better than guessing on these clips.")
+    elif result["weights"]:
         lines.append("Suggested virality score weights (now -> suggested):")
         lines += [f"  {p:<14}{PARTS[p]:>4} -> {v:g}" for p, v in result["weights"].items()]
     lines.append("This shows what goes together in these clips, not what causes what.")
