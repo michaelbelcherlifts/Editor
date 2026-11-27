@@ -23,7 +23,7 @@ import json
 from html import escape
 
 from .edl import EditError
-from .pagekit import CAPTION_BAND, HEAVY, _page, _stage, keep_clear_box
+from .pagekit import CAPTION_BAND, HEAVY, _page, _stage, font_faces, keep_clear_box
 
 _PUNCT = ".,!?;:\"'"
 
@@ -374,7 +374,8 @@ def spaced_title(words: list[dict] | None = None, text: str | None = None, durat
         divs.append(f"<div class='st' style='{_window(start, end)}'>"
                     f"<div class='in' style='animation-delay:{start:.3f}s'>{label}</div></div>")
     grain = ("filter:url(#rough);" if rough else "")
-    css = (f".st{{position:absolute;left:3%;right:3%;top:{y * 100:.1f}%;transform:translateY(-50%);"
+    css = (font_faces("bebas") +   # bundled, so the spaced title looks the same on every computer
+           f".st{{position:absolute;left:3%;right:3%;top:{y * 100:.1f}%;transform:translateY(-50%);"
            f"text-align:center;white-space:nowrap}}"
            f".in{{display:inline-block;font-family:{CONDENSED};font-weight:700;font-size:{size}px;line-height:1;"
            f"letter-spacing:{spacing:.3f}em;margin-right:-{spacing:.3f}em;color:{color};{grain}"

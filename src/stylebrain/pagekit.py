@@ -22,11 +22,12 @@ FONTS = {
 # Fonts that ship inside the editor (SIL Open Font License, see fonts/OFL-*.txt), so a page looks the same
 # on any computer. Inter is named by many templates but is rarely installed; without it pages fell back to
 # Arial Black, which is much of what made captions look auto-generated.
-EMBEDDED = {"montserrat": ("Montserrat", "Montserrat.ttf"), "anton": ("Anton", "Anton.ttf"), "inter": ("Inter", "Inter.ttf")}
+EMBEDDED = {"montserrat": ("Montserrat", "Montserrat.ttf"), "anton": ("Anton", "Anton.ttf"), "inter": ("Inter", "Inter.ttf"),
+            "bebas": ("Bebas Neue", "BebasNeue.ttf")}
 
 
 def font_faces(*names: str) -> str:
-    """@font-face rules (the font file inlined) for embedded fonts, by key: montserrat, anton, inter."""
+    """@font-face rules (the font file inlined) for embedded fonts, by key: montserrat, anton, inter, bebas."""
     import base64
     from pathlib import Path
     out = []
