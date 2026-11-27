@@ -427,6 +427,15 @@ def cmd_look_preview(args) -> None:
     print(f"{out}: before, after" + (", reference" if args.reference else ""))
 
 
+def cmd_look_from_style(args) -> None:
+    from . import look, style
+    src = Path(args.style)
+    profile = json.loads(src.read_text()) if src.suffix == ".json" and src.exists() else style.load(args.style)
+    path = look.from_profile(args.name, profile, args.footage, args.strength)
+    basis = f"measured from {args.footage}" if args.footage else "assuming a typical phone clip"
+    print(f"saved look {args.name!r} to {path} ({basis})")
+
+
 def cmd_look_list(args) -> None:
     from . import look
     for name in look.list_looks():
@@ -476,27 +485,39 @@ def cmd_srt(args) -> None:
 
 
 def cmd_review(args) -> None:
-    from . import review, style
-    target = style.load(args.style)
-    fps = 30.0
+    from . import review, story, style
+    target = style.load(args.style) if args.style else None
+    fps, cuts, words, mine = 30.0, None, None, None
     if args.video:
         words = tr.load_words(args.transcript) if args.transcript else None
         mine = style.measure(args.video, words)
         if words:
             mine["words"] = [[w.text, w.start, w.end] for w in words]
-        fps = mine["frame"]["fps"]
+        fps, cuts, duration = mine["frame"]["fps"], mine["cuts"], mine["frame"]["seconds"]
     else:
         from .autopilot import timeline_words
         store = _store(args); edit = store.load()
-        fps = edit.fps
-        words = None
+        fps, duration = edit.fps, edit.duration / edit.fps
         if args.transcript:
             words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
         mine = review.profile_of_edit(edit, words)
-    found = review.compare(mine, target, args.limit)
+        cuts = mine["cuts"] if len(edit.pieces()) > 1 else None
+    hook = [f for f in story.hook_check(words, duration, cuts) if f.serious] if words else []
+    found = review.compare(mine, target, args.limit) if target else []
     if args.json:
-        print(json.dumps(review.to_json(found), indent=2))
-    elif not found:
+        print(json.dumps({"hook": story.to_json(hook), "style": review.to_json(found)}, indent=2))
+        return
+    if hook:
+        print(f"Story and hook first, {len(hook)} to fix:")
+        for f in hook:
+            print(f.line())
+    elif words:
+        print("No hook problems measured.")
+    if not target:
+        if not words:
+            raise EditError("give --transcript for the hook check, or a style to compare against")
+        return
+    if not found:
         print(f"nothing stands out against {args.style!r}")
     else:
         print(f"{len(found)} things to look at, measured against {args.style!r}:")
@@ -514,7 +535,7 @@ def cmd_auto(args) -> None:
 def cmd_score(args) -> None:
     from . import score as sc
     if args.questions:
-        for key, text in {**sc.JUDGEMENTS, **sc.FLAGS}.items():
+        for key, text in {**sc.JUDGEMENTS, **sc.NUMBERS, **sc.FLAGS}.items():
             print(f"  {key}: {text}")
         return
     if not args.transcript and not args.video:
@@ -531,6 +552,80 @@ def cmd_score(args) -> None:
         duration = words[-1].end if words else 0.0
     result = sc.score(words, duration, cuts, frame, audio, judge)
     print(json.dumps(result.to_dict(), indent=2) if args.json else result.text())
+
+
+def _json_arg(text: str | None, default):
+    if not text:
+        return default
+    return json.loads(Path(text[1:]).read_text() if text.startswith("@") else text)
+
+
+def _clip_inputs(args) -> tuple[list, float, list | None]:
+    words = tr.drop_phantom_speech(tr.load_words(args.transcript))
+    cuts, duration = None, getattr(args, "seconds", None)
+    if getattr(args, "video", None):
+        from . import style
+        m = style.measure(args.video, None)
+        cuts, duration = m["cuts"], m["frame"]["seconds"]
+    if duration is None:
+        duration = words[-1].end if words else 0.0
+    return words, duration, cuts
+
+
+def cmd_hook_check(args) -> None:
+    from . import story
+    words, duration, cuts = _clip_inputs(args)
+    found = story.hook_check(words, duration, cuts, _json_arg(args.judge, {}))
+    if args.json:
+        print(json.dumps(story.to_json(found), indent=2))
+        return
+    serious = [f for f in found if f.serious]
+    print(f"{len(serious)} hook problems" + (f", {len(found) - len(serious)} things to check by eye" if len(found) > len(serious) else "") + ":")
+    for f in found:
+        print(f.line())
+
+
+def cmd_beats(args) -> None:
+    from . import story
+    words, duration, _ = _clip_inputs(args)
+    try:
+        bm = story.beat_map(words, duration, _json_arg(args.beats, None), _json_arg(args.questions, None), args.limit)
+    except ValueError as e:
+        raise EditError(str(e)) from e
+    print(json.dumps(bm.to_dict(), indent=2) if args.json else bm.text())
+
+
+def cmd_hooks(args) -> None:
+    from . import story
+    if args.spoken is None:
+        print("Hook types (write three options, each a different type):")
+        for key, (what, example) in story.HOOK_TYPES.items():
+            print(f"  {key:<11}{what}. e.g. \"{example}\"")
+        return
+    problems = story.check_hook_option(args.spoken, args.text or "")
+    print("hook ok" if not problems else "\n".join(f"  {p}" for p in problems))
+
+
+def cmd_script_check(args) -> None:
+    from . import story
+    if args.questions or not args.script:
+        for key, text in story.STORY_QUESTIONS.items():
+            print(f"  {key}: {text}")
+        return
+    text = Path(args.script).read_text()
+    out = story.check_script(text)
+    if args.story:
+        try:
+            out["story_points"] = story.story_points(_json_arg(args.story, {}))
+        except ValueError as e:
+            raise EditError(str(e)) from e
+    if args.json:
+        print(json.dumps(out, indent=2))
+        return
+    print(f"{out['lines']} lines, about {out['seconds']:.0f}s spoken, sentences average {out['average_sentence_words']} words")
+    if "story_points" in out:
+        print(f"story {out['story_points']:g} / 25" + ("" if out["story_points"] >= 20 else ": under 20, rework the story before the lines"))
+    print("\n".join(f"  {n}" for n in out["notes"]) if out["notes"] else "  no problems measured")
 
 
 def cmd_clip_add(args) -> None:
@@ -641,6 +736,262 @@ def cmd_sfx_remove(args) -> None:
     _save(store, edit, new, f"remove {len(edit.sounds) - len(new.sounds)} sounds")
 
 
+def _focus(text: str | None) -> tuple[float, float]:
+    if not text:
+        return (0.5, 0.5)
+    try:
+        x, y = (float(v) for v in text.split(","))
+    except ValueError:
+        raise EditError("--focus is two fractions, like 0.5,0.3") from None
+    return x, y
+
+
+def _report(stills, what: str) -> None:
+    print(f"{len(stills)} {what}:")
+    for s in stills:
+        print(f"  {s.path}  {s.width}x{s.height}")
+        for problem in s.problems:
+            print(f"    problem: {problem}")
+
+
+def cmd_social_sizes(args) -> None:
+    from . import social
+    for sz in social.SIZES.values():
+        x, y, w, h = sz.safe
+        print(f"  {sz.name:10} {sz.width}x{sz.height}  text inside x {x}-{x + w}, y {y}-{y + h}  ({sz.about})")
+
+
+def cmd_social_photo(args) -> None:
+    from . import social
+    s = social.photo(args.source, args.out, args.size, args.look, args.text or "", args.place, _focus(args.focus))
+    _report([s], "image")
+
+
+def cmd_social_carousel_draft(args) -> None:
+    from . import social
+    words = tr.load_words(args.transcript)
+    slides = social.carousel_draft(words, args.video, args.hook, args.cta, args.max_words, args.max_ideas,
+                                   social.brand())
+    social.save_plan(args.out, slides, look=args.look or "", size="portrait")
+    print(f"{len(slides)} slides drafted from what was said, saved to {args.out}. Rewrite the text, then render:")
+    for n, s in enumerate(slides, 1):
+        print(f"  {n:2}. [{s.kind}] {s.text}")
+    for problem in social.check_carousel(slides):
+        print(f"  problem: {problem}")
+
+
+def cmd_social_carousel(args) -> None:
+    from . import social
+    slides, data = social.load_plan(args.plan)
+    for problem in social.check_carousel(slides):
+        print(f"problem: {problem}")
+    stills = social.render_carousel(slides, args.out, args.look or data.get("look") or None,
+                                    data.get("size", "portrait"))
+    social.contact([s.path for s in stills], Path(args.out) / "overview.jpg")
+    _report(stills, "slides")
+
+
+def cmd_social_covers(args) -> None:
+    from . import social
+    times = [_secs(t) for t in args.at.split(",")] if args.at else None
+    stills = social.covers(args.video, args.title, args.out, args.count, args.look, args.thumbnail, times)
+    _report(stills, "covers (each cover_N.jpg has a cover_N_grid.jpg showing the profile grid crop)")
+
+
+def cmd_social_stories(args) -> None:
+    from . import social
+    stories = social.story_suggestions(args.hook, args.video, args.topic or "", args.cta, social.brand())
+    Path(args.out).mkdir(parents=True, exist_ok=True)
+    (Path(args.out) / "stories.json").write_text(json.dumps([s.to_dict() for s in stories], indent=2) + "\n")
+    stills = social.render_stories(stories, args.out, args.look)
+    for s, st in zip(stories, stills):
+        print(f"  day +{s.day:g} {s.kind}: \"{social.plain(s.text)}\"  sticker: {s.sticker}")
+        print(f"     {st.path}" + "".join(f"\n     problem: {p}" for p in st.problems))
+
+
+def cmd_social_package(args) -> None:
+    from . import social
+    words = tr.load_words(args.transcript)
+    out = args.out or str(Path("library") / "social" / args.name)
+    r = social.package(args.video, words, args.title, out, args.hook, args.look, args.topic or "", args.cta,
+                       args.caption or "", args.thumbnail)
+    count = lambda f: sum(len(p["files"]) if f == "cover" else 1 for p in r["posts"] if p["format"] == f)  # noqa: E731
+    print(f"package {r['name']!r} in {out}: {count('cover')} cover options, a carousel of {count('carousel') and len(next(p for p in r['posts'] if p['format'] == 'carousel')['files'])} slides, {count('story')} stories")
+    for problem in r["problems"]:
+        print(f"  problem: {problem}")
+    print(f"  look at {out}/carousel_overview.jpg, covers_overview.jpg and stories_overview.jpg")
+
+# ----- content plan: ideas, series, calendar, weekly plans, shoot lists (nothing ever posts)
+
+def _plan():
+    from .content import Plan
+    return Plan()
+
+
+def _kv(pairs) -> dict:
+    out = {}
+    for item in pairs or []:
+        if "=" not in item:
+            raise EditError(f"expected KEY=VALUE, got {item!r}")
+        k, v = item.split("=", 1)
+        out[k.strip()] = None if v.strip().lower() in ("", "none", "null") else v.strip()
+    return out
+
+
+def cmd_idea_add(args) -> None:
+    plan = _plan()
+    i = plan.add_idea(args.title, args.pillar, format=args.format, hook=args.hook, series=args.series,
+                      cta=args.cta, source=args.source, location=args.location,
+                      shots=[s.strip() for s in (args.shots or "").split(";") if s.strip()],
+                      note=args.note, score=args.score, draft=args.draft, hold=args.hold)
+    plan.save()
+    ep = f", episode {i['episode']} of {i['series']}" if i["series"] else ""
+    print(f"{i['id']}: {i['title']} ({i['format']}, {i['pillar']}{ep})")
+
+
+def cmd_idea_import(args) -> None:
+    plan = _plan()
+    items = json.loads(Path(args.file).read_text())
+    made = plan.import_ideas(items if isinstance(items, list) else items.get("ideas", []), source=args.source)
+    plan.save()
+    print(f"added {len(made)} ideas ({made[0]['id']} to {made[-1]['id']})" if made else "no ideas in the file")
+
+
+def cmd_idea_list(args) -> None:
+    plan = _plan()
+    ideas = [i for i in plan.ideas if (not args.status or i["status"] == args.status)
+             and (not args.pillar or i["pillar"] == args.pillar) and (not args.format or i["format"] == args.format)]
+    if args.json:
+        print(json.dumps(ideas, indent=2)); return
+    for i in ideas:
+        when = plan._first_date(i["id"]) or "-"
+        print(f"{i['id']:<5}{i['status']:<10}{i['format']:<10}{i['pillar']:<9}{when:<11}{i['title']}"
+              + (f"  [{i['series']} #{i['episode']}]" if i["series"] else "")
+              + (f"  score {i['score']:g}" if i["score"] is not None else "")
+              + (f"  on hold: {i['hold']}" if i.get("hold") else ""))
+    print(f"{len(ideas)} ideas")
+
+
+def cmd_idea_set(args) -> None:
+    plan = _plan()
+    fields = _kv(args.set)
+    if args.status:
+        fields["status"] = args.status
+    i = plan.set_idea(args.id, **fields)
+    plan.save()
+    print(f"{i['id']}: " + ", ".join(f"{k} = {i[k]}" for k in fields))
+
+
+def cmd_series_add(args) -> None:
+    plan = _plan()
+    plan.add_series(args.key, args.name, args.premise)
+    plan.save()
+    print(f"series {args.key!r}: {args.name}")
+
+
+def cmd_series_list(args) -> None:
+    for s in _plan().series_view():
+        print(f"{s['key']}: {s['name']} ({len(s['episodes'])} episodes)\n  {s['premise']}")
+        for e in s["episodes"]:
+            print(f"  #{e['episode']} {e['id']} {e['status']:<9}{e['date'] or '-':<11}{e['title']}")
+
+
+def cmd_plan_settings(args) -> None:
+    plan = _plan()
+    st = plan.settings
+    for k, v in _kv(args.set).items():
+        group, _, key = k.partition(".")
+        if group in ("volume", "pillars") and key:
+            if v is None:
+                st[group].pop(key, None)
+            else:
+                st[group][key] = float(v)
+        elif group in st and not key:
+            st[group] = float(v) if isinstance(st[group], float) else int(v)
+        else:
+            raise EditError(f"unknown setting {k!r} (try volume.reel=7, pillars.run=0.2, coaching_per_week=2)")
+    plan.save()
+    print(json.dumps(st, indent=2))
+
+
+def cmd_plan_week(args) -> None:
+    from .content import format_rows
+    plan = _plan()
+    result = plan.propose_week(args.week)
+    plan.save()
+    print(f"Proposed {len(result['posts'])} posts for the week of {result['week']}. Nothing is final until "
+          f"`plan-approve {result['week']}`, and nothing posts by itself.")
+    print(format_rows(plan.rows(result["week"], 7)))
+    for s in result["shortfalls"]:
+        print(f"backlog short: {s}")
+
+
+def cmd_plan_approve(args) -> None:
+    plan = _plan()
+    done = plan.approve_week(args.week)
+    plan.save()
+    print(f"approved {len(done)} posts")
+
+
+def cmd_calendar(args) -> None:
+    from .content import format_rows, to_html
+    plan = _plan()
+    if args.html:
+        Path(args.html).write_text(to_html(plan, args.start, args.days))
+        print(f"wrote {args.html}")
+    elif args.json:
+        print(json.dumps(plan.rows(args.start, args.days), indent=2))
+    else:
+        print(format_rows(plan.rows(args.start, args.days)))
+
+
+def cmd_post_add(args) -> None:
+    plan = _plan()
+    p = plan.schedule(args.idea, args.date, cta=args.cta,
+                      platforms=args.platforms.split(",") if args.platforms else None)
+    plan.save()
+    print(f"{p['id']}: {args.idea} on {p['date']} to {', '.join(p['platforms'])}, cta {p['cta']}")
+
+
+def cmd_post_set(args) -> None:
+    plan = _plan()
+    p = plan.set_post(args.id, date=args.date, cta=args.cta, status=args.status,
+                      platforms=args.platforms.split(",") if args.platforms else None)
+    plan.save()
+    print(f"{p['id']}: {p['date']}, {', '.join(p['platforms'])}, cta {p['cta']}, {p['status']}")
+
+
+def cmd_post_result(args) -> None:
+    plan = _plan()
+    p = plan.record_result(args.id, url=args.url, views=args.views, reach=args.reach, likes=args.likes,
+                           comments=args.comments, saves=args.saves, sends=args.sends, follows=args.follows,
+                           enquiries=args.enquiries)
+    plan.save()
+    print(f"{p['id']}: {p['status']}" + (f", {p['url']}" if p["url"] else "")
+          + "".join(f", {k} {v:g}" for k, v in p["results"].items()))
+
+
+def cmd_social_import(args) -> None:
+    plan = _plan()
+    made = plan.import_social(json.loads(Path(args.package).read_text()), args.reel)
+    plan.save()
+    for p in made:
+        print(f"{p['id']}: {p['format']} on {p['date']} ({plan.idea(p['idea'])['title']}), cta {p['cta']}")
+    print(f"placed {len(made)} posts around {args.reel}")
+
+
+def cmd_shoot_list(args) -> None:
+    from .content import format_shoot_list
+    sl = _plan().shoot_list(args.week)
+    print(json.dumps(sl, indent=2) if args.json else format_shoot_list(sl))
+
+
+def cmd_week_report(args) -> None:
+    from .content import format_week_report
+    rep = _plan().week_report(args.week)
+    print(json.dumps(rep, indent=2) if args.json else format_week_report(rep))
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -719,6 +1070,10 @@ def main(argv: list[str] | None = None) -> None:
     add("look-make", cmd_look_make, "make a colour look (LUT) that moves your footage toward a reference",
         A("name"), A("--reference", required=True), A("--footage", required=True, help="your own clip"),
         A("--strength", type=float, default=1.0, help="0 to 1"))
+    add("look-from-style", cmd_look_from_style, "make a colour look from a measured style (no reference video)",
+        A("name"), A("--style", required=True, help="saved style name, or a profile .json file"),
+        A("--footage", help="your own clip, measured so the look starts from it"),
+        A("--strength", type=float, default=0.8, help="0 to 1"))
     add("look-preview", cmd_look_preview, "before / after / reference image for a look", A("name"),
         A("--video", required=True), A("--at", default="0"), A("--out", required=True),
         A("--reference"), A("--ref-at", default="0"))
@@ -729,7 +1084,7 @@ def main(argv: list[str] | None = None) -> None:
     add("retakes", cmd_retakes, "list likely false starts (a phrase said again straight after)", *tx,
         A("--min-words", type=int, default=4), A("--cut", action="store_true", help="cut them"))
     add("srt", cmd_srt, "write subtitles for the current cut", *tx, A("--out", required=True))
-    add("review", cmd_review, "compare the current cut (or a video file) with a saved style", A("style"),
+    add("review", cmd_review, "hook check, then compare the current cut (or a video file) with a saved style", A("style", nargs="?"),
         A("--video", help="a finished video file to review, not the current edit"),
         A("--transcript"), A("--source"), A("--limit", type=int, default=8), A("--json", action="store_true"))
     add("auto", cmd_auto, "first cut in one go: retakes, pauses, look, captions, build, review", A("name"),
@@ -742,6 +1097,20 @@ def main(argv: list[str] | None = None) -> None:
         A("--seconds", type=float, help="clip length when no video is given"),
         A("--judge", help="Claude's judgements as JSON or @file (see --questions)"),
         A("--questions", action="store_true", help="list the judgements and flags"), A("--json", action="store_true"))
+    clip = [A("--transcript", required=True, help="word timings of the clip"),
+            A("--video", help="the clip, to measure cuts"), A("--seconds", type=float, help="length when no video is given")]
+    add("hook-check", cmd_hook_check, "what holds the first seconds back, with the second it happens", *clip,
+        A("--judge", help="JSON or @file: text_on_frame_1, undelivered, first_point"), A("--json", action="store_true"))
+    add("beats", cmd_beats, "beat map of a long-form transcript: dead stretches and \"and then\" runs", *clip,
+        A("--beats", help='your labels as JSON or @file: [{"label": "hook", "start": 0}, ...]'),
+        A("--questions", help="extra re-hook times you marked, as a JSON list of seconds"),
+        A("--limit", type=float, default=60.0, help="longest stretch allowed with no new question"),
+        A("--json", action="store_true"))
+    add("hooks", cmd_hooks, "list hook types, or check one written hook", A("spoken", nargs="?"),
+        A("--text", help="the on-screen text that goes with it"))
+    add("script-check", cmd_script_check, "measured checks on a written script (one spoken line per line)", A("script", nargs="?"),
+        A("--questions", action="store_true", help="list the five story questions"),
+        A("--story", help="your answers to the five story questions, JSON or @file"), A("--json", action="store_true"))
     add("clip-add", cmd_clip_add, "add a clip's attributes and results to the learning set", A("id"),
         A("--transcript"), A("--video"), A("--seconds", type=float), A("--judge"), A("--about"),
         A("--views", type=float), A("--subscribers", type=float), A("--retention", type=float),
@@ -767,6 +1136,73 @@ def main(argv: list[str] | None = None) -> None:
         A("--on", default="cuts,overlays,zooms"), A("--gain", type=float, default=-14.0),
         A("--duck", type=float, default=6.0), A("--min-cut-gap", type=float, default=2.5), A("--ad", action="store_true", help="paid ad: use only your own, made-here, CC0 or public-domain sounds"))
     add("sfx-remove", cmd_sfx_remove, "remove a sound by name, or 'auto' or 'all'", A("name"))
+
+    soc = sub.add_parser("social", help="photos, carousels, covers and stories for Instagram and YouTube")
+    ssub = soc.add_subparsers(dest="social_command", required=True)
+
+    def sadd(name, fn, help, *arguments):
+        s = ssub.add_parser(name, help=help)
+        for flags, kw in arguments:
+            s.add_argument(*flags, **kw)
+        s.set_defaults(fn=fn)
+
+    lk = A("--look", help="a saved colour look, or a .cube file")
+    ctas = A("--cta", default="follow", choices=["follow", "save", "send", "comment", "coaching", "none"])
+    sadd("sizes", cmd_social_sizes, "list sizes and where text must stay")
+    sadd("photo", cmd_social_photo, "crop a photo or video frame (video.mp4@12.5) to a size, with a look and text",
+         A("source"), A("--out", required=True), A("--size", default="portrait"), lk, A("--text"),
+         A("--place", default="bottom", choices=["top", "middle", "bottom"]),
+         A("--focus", help="point to keep in view when cropping, as x,y fractions"))
+    sadd("carousel-draft", cmd_social_carousel_draft, "draft carousel slides from what was said in a reel",
+         A("--transcript", required=True), A("--video", help="the reel, for each slide's picture"),
+         A("--hook", help="slide 1 text (default: the first sentence)"), ctas, lk,
+         A("--max-words", type=int, default=22), A("--max-ideas", type=int, default=8), A("--out", required=True))
+    sadd("carousel", cmd_social_carousel, "render a carousel plan (JSON) to slides", A("plan"),
+         A("--out", required=True), lk)
+    sadd("covers", cmd_social_covers, "reel cover options (and YouTube thumbnails) from a video and its title",
+         A("video"), A("--title", required=True), A("--out", required=True), A("--count", type=int, default=3),
+         A("--at", help="cover moments, comma separated (default: sharpest frames)"), lk,
+         A("--thumbnail", action="store_true", help="also make 1280x720 YouTube thumbnails"))
+    sadd("stories", cmd_social_stories, "three story suggestions with drafts, to post around a reel",
+         A("--hook", required=True), A("--video"), A("--topic"), ctas, lk, A("--out", required=True))
+    sadd("package", cmd_social_package, "one reel in: carousel, covers and three stories out, with package.json",
+         A("video"), A("--transcript", required=True), A("--title", required=True), A("--name", required=True),
+         A("--hook"), A("--topic"), ctas, lk, A("--caption"), A("--thumbnail", action="store_true"), A("--out"))
+
+    from .content import CTAS, FORMATS
+    pillar = A("--pillar", required=True, help="strength, run, humour or life")
+    add("idea-add", cmd_idea_add, "add an idea to the backlog", A("title"), pillar,
+        A("--format", default="reel", choices=list(FORMATS)), A("--hook"), A("--series"),
+        A("--cta", choices=list(CTAS)), A("--source", default="own", help="own, trend, clip, analytics ..."),
+        A("--location", help="where it is filmed: gym, track, range, kitchen ..."),
+        A("--shots", help="shots to film, separated by ;"), A("--note"), A("--score", type=float), A("--draft"),
+        A("--hold", help="keep it out of weekly plans until ready, with the reason"))
+    add("idea-import", cmd_idea_import, "add ideas from a JSON list (trend report, clip candidates, notes)",
+        A("file"), A("--source"))
+    add("idea-list", cmd_idea_list, "list the idea backlog", A("--status"), A("--pillar"), A("--format"),
+        A("--json", action="store_true"))
+    add("idea-set", cmd_idea_set, "change an idea (status, hook, score, draft ...)", A("id"), A("--status"), sets)
+    add("series-add", cmd_series_add, "start a series", A("key"), A("--name", required=True),
+        A("--premise", required=True))
+    add("series-list", cmd_series_list, "list series and their episodes")
+    add("plan-settings", cmd_plan_settings, "show or change weekly volume, pillar mix and call-to-action rules", sets)
+    week = A("week", nargs="?", default="next-week", help="any date in the week, this-week or next-week")
+    add("plan-week", cmd_plan_week, "propose a week's posts from the backlog (for approval)", week)
+    add("plan-approve", cmd_plan_approve, "approve a proposed week onto the calendar", week)
+    add("calendar", cmd_calendar, "show the calendar (two weeks by default)", A("--start", default="today"),
+        A("--days", type=int, default=14), A("--html", help="write a page instead"), A("--json", action="store_true"))
+    add("post-add", cmd_post_add, "put an idea on a date", A("idea"), A("date"), A("--cta", choices=list(CTAS)),
+        A("--platforms", help="comma-separated, default by format"))
+    add("post-set", cmd_post_set, "move, re-target or drop a post", A("id"), A("--date"),
+        A("--cta", choices=list(CTAS)), A("--platforms"), A("--status"))
+    add("post-result", cmd_post_result, "record that he posted it, and its numbers", A("id"), A("--url"),
+        *[A(f"--{k}", type=float) for k in ("views", "reach", "likes", "comments", "saves", "sends", "follows",
+                                            "enquiries")])
+    add("social-import", cmd_social_import, "place a carousel/story package around a reel's post", A("package"),
+        A("--reel", required=True, help="the reel's post id"))
+    add("shoot-list", cmd_shoot_list, "what to film for a week, by location", week, A("--json", action="store_true"))
+    add("week-report", cmd_week_report, "planned versus posted for a week, with results", week,
+        A("--json", action="store_true"))
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")

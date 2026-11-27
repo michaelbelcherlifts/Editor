@@ -1,0 +1,50 @@
+"""Shared page setup for animation templates: the design stage and the caption safe zone."""
+
+from __future__ import annotations
+
+from .edl import EditError
+
+FONT = "'Inter','SF Pro Display','Helvetica Neue','Segoe UI',Arial,sans-serif"
+HEAVY = "'Inter Display','Inter','Arial Black','Segoe UI Black','Helvetica Neue',Arial,sans-serif"
+
+# Running captions sit in this band of the frame (fractions of its height). Cards and
+# panels keep out of it so they never cover the words being spoken.
+CAPTION_BAND = (0.70, 0.92)
+
+
+def _stage(width: int, height: int) -> tuple[float, float, float]:
+    """Templates are designed for a frame whose short side is 1080. Returns the
+    design-space width and height, and the scale that maps it onto the real frame."""
+    scale = min(width, height) / 1080
+    return width / scale, height / scale, scale
+
+
+def _page(body: str, css: str, width: int = 1920, height: int = 1080, script: str = "") -> str:
+    sw, sh, scale = _stage(width, height)
+    js = f"<script>{script}</script>" if script else ""
+    return (f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>"
+            f"html,body{{margin:0;background:transparent;overflow:hidden}}"
+            f"#stage{{width:{sw:.2f}px;height:{sh:.2f}px;zoom:{scale:.5f};position:relative;"
+            f"overflow:hidden;font-family:{FONT}}}"
+            f"{css}</style></head><body><div id='stage'>{body}</div>{js}</body></html>")
+
+
+def keep_clear_box(height_px: float, want: float, keep_clear, margin: float = 0.04) -> tuple[float, float]:
+    """Top and height (design pixels) for a centred card that stays above `keep_clear`.
+
+    keep_clear is a [top, bottom] band as fractions of the frame height (the caption
+    zone by default), or None to centre the card with no limit. The card shrinks to fit.
+    """
+    if keep_clear is None:
+        h = min(want, height_px * (1 - 2 * margin))
+        return (height_px - h) / 2, h
+    if len(keep_clear) != 2 or not 0 <= keep_clear[0] < keep_clear[1] <= 1:
+        raise EditError("keep_clear is [top, bottom] as fractions of the frame height")
+    top_room = keep_clear[0] - 0.02 - margin
+    bottom_room = 1 - keep_clear[1] - 0.02 - margin
+    if top_room >= bottom_room:   # card goes above the band
+        space_top, space = margin * height_px, top_room * height_px
+    else:                         # band is high on the frame: card goes below it
+        space_top, space = (keep_clear[1] + 0.02) * height_px, bottom_room * height_px
+    h = min(want, space)
+    return space_top + (space - h) / 2, h

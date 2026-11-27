@@ -452,6 +452,8 @@ There are fourteen workstreams. Three are needed before a real video can go thro
 
 **Dependencies.** The render engine (exists). W11 for scheduling. His photo library on a linked machine.
 
+**Status (27 November 2026).** W12.1 to W12.6 built in `social.py` and the `social-posts` skill: `stylebrain social package` turns a reel into a carousel draft, three covers (with the profile-grid crop) and three story suggestions, and writes `package.json` for the calendar's `social-import` (W11). Text is fitted and checked against each size's safe zone at render time. Not yet tried on his own photos or reels.
+
 **Owner.** New thread.
 
 ### W13. Cross-poster and platform packaging (P3)
