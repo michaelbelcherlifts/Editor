@@ -57,6 +57,7 @@ class EditList:
     fps: float
     segments: tuple[Segment, ...] = ()
     overlays: tuple[Overlay, ...] = field(default=())
+    look: str = ""  # path of a .cube LUT applied to every main-track clip
 
     # ---- construction -------------------------------------------------
 
@@ -71,6 +72,7 @@ class EditList:
             fps=float(data["fps"]),
             segments=tuple(Segment(**s) for s in data.get("segments", [])),
             overlays=tuple(Overlay(**o) for o in data.get("overlays", [])),
+            look=data.get("look", ""),
         )
 
     def to_dict(self) -> dict:
@@ -78,6 +80,7 @@ class EditList:
             "fps": self.fps,
             "segments": [asdict(s) for s in self.segments],
             "overlays": [asdict(o) for o in self.overlays],
+            "look": self.look,
         }
 
     # ---- reading ------------------------------------------------------
@@ -172,6 +175,10 @@ class EditList:
             raise EditError("that position is past the end of the edit")
         return replace(self, overlays=self.overlays + (overlay,))
 
+    def set_look(self, path: str) -> "EditList":
+        """Use a LUT file on the main track, or "" for none."""
+        return replace(self, look=path)
+
     def remove_overlay(self, name: str) -> "EditList":
         if not any(o.name == name for o in self.overlays):
             raise EditError(f"no overlay named {name!r}")
@@ -202,7 +209,7 @@ class EditList:
                 if old <= o.at < old + durations[old]:
                     overlays.append(replace(o, at=new + (o.at - old)))
                     break
-        return EditList(self.fps, _join([seg for _, seg in order]), tuple(overlays))
+        return replace(self, segments=_join([seg for _, seg in order]), overlays=tuple(overlays))
 
 
 def _join(segments: list[Segment]) -> tuple[Segment, ...]:

@@ -32,6 +32,7 @@ screenshots. Other skills in `.claude/skills/` cover styles, colour, autopilot a
 - `src/stylebrain/effects.py`: the saved effect library (`library/effects/`)
 - `src/stylebrain/reference.py`: studying a reference video (frame sheets, motion timing, colours, side-by-side check)
 - `src/stylebrain/style.py`: measuring a video's style (cuts, opening, speech pace, picture, sound) into `library/styles/`
+- `src/stylebrain/look.py`: colour looks: a LUT made from a reference, saved in `library/looks/`
 - `src/stylebrain/bake.py`: ffmpeg zooms and speed changes
 - `src/stylebrain/cli.py`: the `stylebrain` command
 
