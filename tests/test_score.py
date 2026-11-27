@@ -67,3 +67,20 @@ def test_score_command(tmp_path, capsys):
     assert data["parts"][0]["name"] == "Hook" and data["total"] > 80
     main(["score", "--questions"])
     assert "promise:" in capsys.readouterr().out
+
+
+def test_a_clip_with_no_speech_is_judged_on_its_pictures():
+    judge = {**BEST, "text_on_frame_1": False, "captions": False}
+    cuts = [0.4, 1.6, 2.8, 4.0, 5.2, 6.4, 7.6, 8.8, 10.0]
+    s = sc.score([], 16.0, cuts=cuts, frame={"width": 1080, "height": 1920}, audio={"loudness_lufs": -14.0}, judge=judge)
+    by = {p.name: p for p in s.parts}
+    assert by["Hook"].points == 20.0 and "no speech" in by["Hook"].why      # 15 for the fast first cut, 5 for the promise
+    assert by["Pacing"].points > 18 and "no speech" in by["Pacing"].why
+    slow = sc.score([], 16.0, cuts=[6.0], frame={"width": 1080, "height": 1920}, judge=judge)
+    assert slow.parts[0].points == 5.0
+
+
+def test_score_command_works_without_a_transcript(tmp_path, capsys):
+    with pytest.raises(SystemExit):
+        main(["score"])
+    assert "--video, --transcript, or both" in capsys.readouterr().err
