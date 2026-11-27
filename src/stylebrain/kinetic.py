@@ -105,6 +105,66 @@ def kinetic_type(words: list[dict] | None = None, text: str | None = None, durat
     return _page("".join(blocks), css, width, height), total
 
 
+# Where words land within one set, as frame fractions (centre of each word), in order.
+_SLOTS = [(0.24, 0.20), (0.76, 0.20), (0.50, 0.44), (0.28, 0.62), (0.72, 0.80), (0.50, 0.88)]
+
+
+def kinetic_scatter(words: list[dict] | None = None, text: str | None = None, duration: float | None = None,
+                    accent_words: list[str] | None = None, accent: str = "#0729fd", color: str = "#ffffff",
+                    per_set: int = 5, breaks: list[int] | None = None, tilt_words: list[str] | None = None,
+                    tilt: float = 35.0, size: float = 0.10, positions: list[list[float]] | None = None,
+                    layer: str = "all", pop: float = 0.0, width: int = 1920, height: int = 1080):
+    """TOGI's kinetic titles as measured from his video: words snap on one by one around the
+    frame in time with speech, a set builds up and is then swapped all at once.
+
+    White words sit behind the person and accent (blue) words in front. An overlay cannot go
+    behind someone, so render twice with layer="back" (white words) and layer="front"
+    (accent words), and stack: footage, back layer, a cut-out of the person (Magic Mask in
+    Resolve), front layer. layer="all" draws both in one clip.
+    breaks: word numbers (from 0) where a new set starts; otherwise every `per_set` words.
+    positions: one [x, y] (or [x, y, scale]) per word, as frame fractions, to place words by hand.
+    tilt_words get a big tilt (about 35 degrees). size is the letter height as a fraction
+    of the frame height. pop > 0 adds a scale-in of that many seconds (TOGI uses none).
+    """
+    if layer not in ("all", "back", "front"):
+        raise EditError("layer is all, back or front")
+    ws = timed_words(words, text, duration)
+    hot = {_key(w) for w in (accent_words or [])}
+    tilted = {_key(w) for w in (tilt_words or [])}
+    sw, sh, _ = _stage(width, height)
+    starts = sorted({0, *(int(b) for b in breaks)}) if breaks else list(range(0, len(ws), max(1, per_set)))
+    sets = [ws[a:b] for a, b in zip(starts, starts[1:] + [len(ws)]) if ws[a:b]]
+    total = max(duration or 0, ws[-1][2] + 0.5)
+    blocks, n = [], 0
+    for si, group in enumerate(sets):
+        end = sets[si + 1][0][1] if si + 1 < len(sets) else total
+        for k, (t, start, _e) in enumerate(group):
+            is_hot = _key(t) in hot
+            pos = positions[n] if positions and n < len(positions) else _SLOTS[k % len(_SLOTS)]
+            n += 1
+            if (layer == "back" and is_hot) or (layer == "front" and not is_hot):
+                continue
+            word = t.upper()
+            px = size * sh * (1.15 if is_hot else 1.0) / 0.72      # cap height is about 0.72 em
+            if len(pos) > 2:                                       # [x, y, scale]
+                px *= float(pos[2])
+            px = min(px, 0.86 * sw / max(0.78 * len(word), 1))
+            rot = (-tilt if _key(t) in tilted else 0.0)
+            style = ("text-shadow:0 0 0 transparent" if is_hot
+                     else "text-shadow:0 6px 22px rgba(0,0,0,.28),0 2px 4px rgba(0,0,0,.18)")
+            anim = f";animation:vis {end - start:.3f}s linear {start:.3f}s"
+            inner = (f"<span class='p' style='animation-delay:{start:.3f}s'>{escape(word)}</span>"
+                     if pop > 0 else escape(word))
+            blocks.append(f"<div class='w' style='left:{pos[0] * 100:.1f}%;top:{pos[1] * 100:.1f}%;"
+                          f"font-size:{px:.0f}px;color:{accent if is_hot else color};--r:{rot:.1f}deg;{style};"
+                          f"visibility:hidden{anim}'>{inner}</div>")
+    css = (f".w{{position:absolute;transform:translate(-50%,-50%) rotate(var(--r));white-space:nowrap;"
+           f"font-family:{HEAVY};font-weight:900;line-height:1;letter-spacing:-0.01em;font-stretch:expanded}}"
+           f".p{{display:inline-block;animation:sp {max(pop, 0.01):.3f}s ease-out both}}"
+           "@keyframes sp{from{transform:scale(1.3)}to{transform:none}}" + _SHOW)
+    return _page("".join(blocks), css, width, height), total
+
+
 def mid_captions(words: list[dict] | None = None, text: str | None = None, duration: float | None = None,
                  max_words: int = 3, size: int = 104, color: str = "#ffffff", accent: str = "#ffe14a",
                  accent_words: list[str] | None = None, y: float = 0.50, uppercase: bool = False,

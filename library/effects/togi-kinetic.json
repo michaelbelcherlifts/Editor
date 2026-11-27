@@ -1,0 +1,14 @@
+{
+  "name": "togi-kinetic",
+  "template": "kinetic_scatter",
+  "params": {
+    "accent": "#0729fd",
+    "color": "#ffffff",
+    "per_set": 5,
+    "tilt": 35.0,
+    "size": 0.10,
+    "pop": 0.0
+  },
+  "about": "TOGI's word-by-word titles, measured from his video (4.0 to 6.0 s): words snap on with no tween, one every 0.1 to 0.2 s with speech, white words behind him with a soft shadow, blue #0729FD words in front, one word tilted 35 degrees, then the whole set swaps at once. Give words, accent_words, tilt_words and breaks. Render layer=back and layer=front and put a Magic Mask cut-out of Michael between them.",
+  "reference": "https://www.youtube.com/watch?v=cC9rAKlm-0k at 4.0-6.0 s"
+}

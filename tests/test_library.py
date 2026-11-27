@@ -129,3 +129,17 @@ def test_counter_shows_the_rep_number_on_each_tick(tmp_path):
         return np.frombuffer(raw, np.uint8).reshape(180, 320, 4)[..., 3]
 
     assert alpha(0.2).max() < 10 and alpha(0.8).max() > 200
+
+
+def test_kinetic_scatter_splits_layers_and_snaps():
+    words = [{"word": w, "start": i * 0.2, "end": i * 0.2 + 0.15} for i, w in enumerate("one of my big things".split())]
+    p = {"words": words, "accent_words": ["big"], "tilt_words": ["things"]}
+    back, _ = build("kinetic_scatter", {**p, "layer": "back"})
+    front, _ = build("kinetic_scatter", {**p, "layer": "front"})
+    assert "THINGS" in back and "BIG" not in back and "--r:-35.0deg" in back
+    assert "BIG" in front and "ONE" not in front
+    assert "@keyframes sp" in back and "class='p'" not in back      # no pop by default: words snap on
+    html, _ = build("kinetic_scatter", {**p, "breaks": [0, 3], "positions": [[0.5, 0.5, 2]]})
+    assert html.count("animation:vis") == 5
+    with pytest.raises(EditError):
+        build("kinetic_scatter", {**p, "layer": "middle"})
