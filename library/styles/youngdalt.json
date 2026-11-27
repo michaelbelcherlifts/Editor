@@ -1,0 +1,128 @@
+{
+  "name": "youngdalt",
+  "about": "youngdalt: medians over 8 measured short clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "vertical",
+    "width": 360,
+    "height": 640,
+    "fps": 30,
+    "seconds": 60.0
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 7,
+    "cuts_per_minute": 7.25,
+    "median_shot": 7.095,
+    "mean_shot": 6.925,
+    "short_shot": 4.23,
+    "long_shot": 9.325,
+    "longest_shot": 13.685,
+    "cuts_per_minute_by_quarter": [
+      6.1,
+      8.0,
+      10.15,
+      6.0
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 2,
+      "median_shot": 7.21,
+      "first_cut": 7.045
+    }
+  },
+  "colour": {
+    "brightness": 0.512,
+    "contrast": 0.712,
+    "saturation": 0.344,
+    "warmth": 0.032,
+    "green_magenta": 0.06,
+    "black_point": 0.035,
+    "white_point": 0.919,
+    "shadow_rgb": [
+      32,
+      37,
+      28
+    ],
+    "highlight_rgb": [
+      193,
+      207,
+      218
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 8,
+    "format": "short",
+    "thin": false,
+    "subscribers": 4970.0,
+    "views_median": 3484.0,
+    "views_range": [
+      1989,
+      105281
+    ],
+    "cuts_per_minute_iqr": [
+      5.0,
+      10.25
+    ],
+    "cuts_in_first_3s": 0.0,
+    "text_share": 0.041,
+    "text_changes_per_10s": 0.6,
+    "captions_share": 0.12,
+    "text_on_frame_1_share": 0.38,
+    "text_position": 0.31,
+    "zoom_events_per_minute": 0.0,
+    "letterbox_share": 0.0,
+    "talking_share": 0.5,
+    "hook_types": {
+      "question": 0.12,
+      "number": 0.12,
+      "you": 0.12,
+      "me": 0.0,
+      "money": 0.0,
+      "warning": 0.0
+    },
+    "top": [
+      {
+        "id": "lIftdb7W6gM",
+        "title": "1v1 against my good buddy, Chance Taylor.",
+        "views": 105281
+      },
+      {
+        "id": "Wdyw2gfXpvc",
+        "title": "INSANE start to our match.",
+        "views": 83799
+      },
+      {
+        "id": "bMYINYDDzIA",
+        "title": "This hole is nuts \ud83e\udeea #golf #ygt #vegas #wynn #youtubegolf",
+        "views": 5430
+      }
+    ],
+    "bottom": [
+      {
+        "id": "xbSK-uPsgCk",
+        "title": "$1000 round in Vegas. Worth it. #golf #sphere #youtubegolf #vegas #wynnlasvegas",
+        "views": 2604
+      },
+      {
+        "id": "pbthbpTJ5K4",
+        "title": "\ud83e\udd76\ud83e\udd76\ud83e\udd76 #golf #snow #golfer",
+        "views": 2384
+      },
+      {
+        "id": "8TZuIWyr1Lg",
+        "title": "About a week out, dialing it in. New YT video is live. #golf #houston #texas #texasgolf #youngdalt",
+        "views": 1989
+      }
+    ]
+  },
+  "speech": {
+    "words_per_minute": 124,
+    "words_per_minute_while_talking": 130,
+    "longest_pause": 3.36,
+    "first_word_at": 2.12,
+    "hook_text": "How are you? >> How we doing? >> Good to have you.",
+    "clips": 4
+  }
+}

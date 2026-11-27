@@ -1,0 +1,128 @@
+{
+  "name": "alex",
+  "about": "alex: medians over 24 measured short clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "vertical",
+    "width": 360,
+    "height": 640,
+    "fps": 30,
+    "seconds": 22.0
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 4,
+    "cuts_per_minute": 13.1,
+    "median_shot": 3.115,
+    "mean_shot": 3.51,
+    "short_shot": 2.05,
+    "long_shot": 5.33,
+    "longest_shot": 6.71,
+    "cuts_per_minute_by_quarter": [
+      8.3,
+      16.65,
+      13.35,
+      12.6
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 2,
+      "median_shot": 3.335,
+      "first_cut": 3.17
+    }
+  },
+  "colour": {
+    "brightness": 0.355,
+    "contrast": 0.724,
+    "saturation": 0.263,
+    "warmth": 0.046,
+    "green_magenta": -0.003,
+    "black_point": 0.013,
+    "white_point": 0.929,
+    "shadow_rgb": [
+      36,
+      30,
+      27
+    ],
+    "highlight_rgb": [
+      222,
+      209,
+      212
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 24,
+    "format": "short",
+    "thin": false,
+    "subscribers": 1340000.0,
+    "views_median": 22599.5,
+    "views_range": [
+      1873,
+      388170
+    ],
+    "cuts_per_minute_iqr": [
+      2.45,
+      23.775
+    ],
+    "cuts_in_first_3s": 0.0,
+    "text_share": 0.349,
+    "text_changes_per_10s": 1.42,
+    "captions_share": 0.17,
+    "text_on_frame_1_share": 0.54,
+    "text_position": 0.369,
+    "zoom_events_per_minute": 0.0,
+    "letterbox_share": 0.0,
+    "talking_share": 0.79,
+    "hook_types": {
+      "question": 0.17,
+      "number": 0.08,
+      "you": 0.25,
+      "me": 0.46,
+      "money": 0.0,
+      "warning": 0.12
+    },
+    "top": [
+      {
+        "id": "Y2a9gjIT8EQ",
+        "title": "Morning routine once you make it",
+        "views": 388170
+      },
+      {
+        "id": "HMAl_bKcv8Y",
+        "title": "Body dysmorphia",
+        "views": 153082
+      },
+      {
+        "id": "edzyJxaPB40",
+        "title": "Fiancee tries crabs for the first time",
+        "views": 112561
+      }
+    ],
+    "bottom": [
+      {
+        "id": "snwPL0r2Irk",
+        "title": "I Thought I Was Sick. It Was Anxiety.",
+        "views": 3266
+      },
+      {
+        "id": "XYquUZeR-HU",
+        "title": "How to fix your anxiety",
+        "views": 2219
+      },
+      {
+        "id": "LWZ4dYtavKg",
+        "title": "Mikey inspirational fr",
+        "views": 1873
+      }
+    ]
+  },
+  "speech": {
+    "words_per_minute": 93,
+    "words_per_minute_while_talking": 0,
+    "longest_pause": null,
+    "first_word_at": 0.2,
+    "hook_text": "You've gotten bigger, since we met. >> Since we met?",
+    "clips": 14
+  }
+}

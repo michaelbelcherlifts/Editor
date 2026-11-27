@@ -1,0 +1,120 @@
+{
+  "name": "luka",
+  "about": "luka: medians over 15 measured short clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "vertical",
+    "width": 360,
+    "height": 640,
+    "fps": 30,
+    "seconds": 59
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 2,
+    "cuts_per_minute": 1.2,
+    "median_shot": 17.13,
+    "mean_shot": 14.92,
+    "short_shot": 8.25,
+    "long_shot": 19.46,
+    "longest_shot": 26.0,
+    "cuts_per_minute_by_quarter": [
+      0.0,
+      0.0,
+      0.0,
+      4.0
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 0,
+      "median_shot": 15.0,
+      "first_cut": 9.165
+    }
+  },
+  "colour": {
+    "brightness": 0.387,
+    "contrast": 0.737,
+    "saturation": 0.228,
+    "warmth": 0.06,
+    "green_magenta": -0.004,
+    "black_point": 0.017,
+    "white_point": 0.917,
+    "shadow_rgb": [
+      35,
+      31,
+      31
+    ],
+    "highlight_rgb": [
+      220,
+      207,
+      189
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 15,
+    "format": "short",
+    "thin": false,
+    "subscribers": 618000.0,
+    "views_median": 1139,
+    "views_range": [
+      348,
+      4416
+    ],
+    "cuts_per_minute_iqr": [
+      0.0,
+      7.0
+    ],
+    "cuts_in_first_3s": 0,
+    "text_share": 0.535,
+    "text_changes_per_10s": 13.81,
+    "captions_share": 0.47,
+    "text_on_frame_1_share": 0.47,
+    "text_position": 0.631,
+    "zoom_events_per_minute": 0,
+    "letterbox_share": 0,
+    "talking_share": 0.67,
+    "hook_types": {
+      "question": 0.2,
+      "number": 0.07,
+      "you": 0.33,
+      "me": 0.13,
+      "money": 0.0,
+      "warning": 0.13
+    },
+    "top": [
+      {
+        "id": "Kqj2oQf6Ol0",
+        "title": "Y-T-W Exercise To Build Your Upper Back",
+        "views": 4416
+      },
+      {
+        "id": "VjO_YwGdlmQ",
+        "title": "50 lb Added Weight Rope Climb For Relative Upper Body Strength",
+        "views": 3433
+      },
+      {
+        "id": "AwfmAFyRiX4",
+        "title": "Women's Athlete For Life Training at Vigor Ground Fitness",
+        "views": 2183
+      }
+    ],
+    "bottom": [
+      {
+        "id": "roS8-7AYxyE",
+        "title": "360 Degrees Coaching To Improve Your Personal Training",
+        "views": 538
+      },
+      {
+        "id": "R0YAnFnxrmY",
+        "title": "4 Factors When Programming For Longevity",
+        "views": 455
+      },
+      {
+        "id": "n9duFx5oZUQ",
+        "title": "Gym Marketing Language To Improve Results",
+        "views": 348
+      }
+    ]
+  }
+}

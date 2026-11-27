@@ -1,0 +1,128 @@
+{
+  "name": "noah",
+  "about": "noah: medians over 20 measured short clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "vertical",
+    "width": 360,
+    "height": 640,
+    "fps": 30,
+    "seconds": 123.0
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 11,
+    "cuts_per_minute": 10.5,
+    "median_shot": 3.87,
+    "mean_shot": 5.22,
+    "short_shot": 1.59,
+    "long_shot": 8.835,
+    "longest_shot": 16.81,
+    "cuts_per_minute_by_quarter": [
+      6.4,
+      8.0,
+      8.85,
+      10.85
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 2,
+      "median_shot": 6.46,
+      "first_cut": 2.54
+    }
+  },
+  "colour": {
+    "brightness": 0.464,
+    "contrast": 0.708,
+    "saturation": 0.286,
+    "warmth": 0.013,
+    "green_magenta": -0.001,
+    "black_point": 0.036,
+    "white_point": 0.922,
+    "shadow_rgb": [
+      40,
+      36,
+      36
+    ],
+    "highlight_rgb": [
+      207,
+      208,
+      211
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 20,
+    "format": "short",
+    "thin": false,
+    "subscribers": 559000.0,
+    "views_median": 128811.0,
+    "views_range": [
+      39850,
+      1479473
+    ],
+    "cuts_per_minute_iqr": [
+      0.0,
+      18.5
+    ],
+    "cuts_in_first_3s": 0.0,
+    "text_share": 0.76,
+    "text_changes_per_10s": 21.535,
+    "captions_share": 0.9,
+    "text_on_frame_1_share": 0.2,
+    "text_position": 0.535,
+    "zoom_events_per_minute": 0.0,
+    "letterbox_share": 0.0,
+    "talking_share": 0.95,
+    "hook_types": {
+      "question": 0.0,
+      "number": 0.6,
+      "you": 0.0,
+      "me": 0.95,
+      "money": 0.0,
+      "warning": 0.1
+    },
+    "top": [
+      {
+        "id": "W9qwucSPz1E",
+        "title": "Chasing a PR at the Chicago Marathon",
+        "views": 1479473
+      },
+      {
+        "id": "3qCPTWAtbBs",
+        "title": "Can I Break 2:20 in My First Olympic Triathlon?",
+        "views": 1429944
+      },
+      {
+        "id": "MOHjcm46oeo",
+        "title": "My first Olympic triathlon",
+        "views": 446212
+      }
+    ],
+    "bottom": [
+      {
+        "id": "Qe2CGHJQvcs",
+        "title": "Run 10k with me in Portugal",
+        "views": 58714
+      },
+      {
+        "id": "PLXSOPcM2pM",
+        "title": "Be your weird",
+        "views": 53541
+      },
+      {
+        "id": "kkczHKzkltw",
+        "title": "You're Only Limiting Your Own Potential",
+        "views": 39850
+      }
+    ]
+  },
+  "speech": {
+    "words_per_minute": 233,
+    "words_per_minute_while_talking": 232,
+    "longest_pause": 0,
+    "first_word_at": 0,
+    "hook_text": "My goal today is to break 3 hours and 30 minutes in the Chicago Marathon. Let's",
+    "clips": 19
+  }
+}

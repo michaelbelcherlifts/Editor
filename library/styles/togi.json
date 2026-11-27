@@ -1,0 +1,120 @@
+{
+  "name": "togi",
+  "about": "togi: medians over 9 measured long-form opening clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "wide",
+    "width": 854,
+    "height": 480,
+    "fps": 30,
+    "seconds": 59.92
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 8,
+    "cuts_per_minute": 7.0,
+    "median_shot": 5.03,
+    "mean_shot": 7.49,
+    "short_shot": 3.11,
+    "long_shot": 17.45,
+    "longest_shot": 23.0,
+    "cuts_per_minute_by_quarter": [
+      8.0,
+      12.0,
+      4.0,
+      4.0
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 2,
+      "median_shot": 5.42,
+      "first_cut": 5.42
+    }
+  },
+  "colour": {
+    "brightness": 0.429,
+    "contrast": 0.687,
+    "saturation": 0.217,
+    "warmth": 0.058,
+    "green_magenta": -0.006,
+    "black_point": 0.03,
+    "white_point": 0.896,
+    "shadow_rgb": [
+      26,
+      22,
+      22
+    ],
+    "highlight_rgb": [
+      220,
+      208,
+      205
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 9,
+    "format": "long-form opening",
+    "thin": false,
+    "subscribers": 1460000.0,
+    "views_median": 3188026,
+    "views_range": [
+      1615813,
+      5712096
+    ],
+    "cuts_per_minute_iqr": [
+      2.0,
+      12.0
+    ],
+    "cuts_in_first_3s": 0,
+    "text_share": 0.113,
+    "text_changes_per_10s": 1.67,
+    "captions_share": 0.22,
+    "text_on_frame_1_share": 0.33,
+    "text_position": 0.547,
+    "zoom_events_per_minute": 0,
+    "letterbox_share": 0.031,
+    "talking_share": 0.89,
+    "hook_types": {
+      "question": 0.11,
+      "number": 0.33,
+      "you": 0.11,
+      "me": 0.44,
+      "money": 0.11,
+      "warning": 0.0
+    },
+    "top": [
+      {
+        "id": "Sf3tZ3vuzss",
+        "title": "$1,000 TO $242,000 IN VEGAS (easy mode)",
+        "views": 5712096
+      },
+      {
+        "id": "b2uBhbQI1B8",
+        "title": "CATCHING A $3,000,000 TUNA",
+        "views": 5660672
+      },
+      {
+        "id": "cC9rAKlm-0k",
+        "title": "DO ST*ROIDS ACTUALLY WORK ?!?!?",
+        "views": 3869362
+      }
+    ],
+    "bottom": [
+      {
+        "id": "ku4Qv3oag5k",
+        "title": "WE OPENED A RESTAURANT",
+        "views": 2342832
+      },
+      {
+        "id": "HsT_uVz2q38",
+        "title": "WHY NOT YOU????",
+        "views": 1925535
+      },
+      {
+        "id": "tCqtti73nt4",
+        "title": "DR. TOGI",
+        "views": 1615813
+      }
+    ]
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "name": "japes",
+  "about": "japes: medians over 20 measured short clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "vertical",
+    "width": 360,
+    "height": 640,
+    "fps": 30,
+    "seconds": 60.0
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 7,
+    "cuts_per_minute": 7.45,
+    "median_shot": 5.97,
+    "mean_shot": 6.675,
+    "short_shot": 3.375,
+    "long_shot": 10.12,
+    "longest_shot": 12.045,
+    "cuts_per_minute_by_quarter": [
+      6.2,
+      8.55,
+      8.0,
+      9.05
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 2,
+      "median_shot": 5.645,
+      "first_cut": 6.915
+    }
+  },
+  "colour": {
+    "brightness": 0.571,
+    "contrast": 0.649,
+    "saturation": 0.426,
+    "warmth": 0.059,
+    "green_magenta": 0.104,
+    "black_point": 0.119,
+    "white_point": 0.935,
+    "shadow_rgb": [
+      39,
+      47,
+      23
+    ],
+    "highlight_rgb": [
+      197,
+      213,
+      213
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 20,
+    "format": "short",
+    "thin": false,
+    "subscribers": 19500.0,
+    "views_median": 67809.5,
+    "views_range": [
+      1289,
+      436492
+    ],
+    "cuts_per_minute_iqr": [
+      6.275,
+      9.95
+    ],
+    "cuts_in_first_3s": 0.0,
+    "text_share": 0.108,
+    "text_changes_per_10s": 1.435,
+    "captions_share": 0.0,
+    "text_on_frame_1_share": 0.25,
+    "text_position": 0.635,
+    "zoom_events_per_minute": 0.5,
+    "letterbox_share": 0.0,
+    "talking_share": 0.7,
+    "hook_types": {
+      "question": 0.0,
+      "number": 0.1,
+      "you": 0.0,
+      "me": 0.1,
+      "money": 0.0,
+      "warning": 0.05
+    },
+    "top": [
+      {
+        "id": "4_9t8vVyh6c",
+        "title": "Is This The BEST Golf Resort\ud83d\ude33 (WYNN Las Vegas)",
+        "views": 436492
+      },
+      {
+        "id": "GCJmugZTcqg",
+        "title": "Worst Ball Birdie!?!\ud83d\ude33 (INSANE)",
+        "views": 244812
+      },
+      {
+        "id": "rrsozIRwaP0",
+        "title": "THE LONGEST PAR 4 IN FLORIDA \ud83d\ude33",
+        "views": 190932
+      }
+    ],
+    "bottom": [
+      {
+        "id": "4Q-7xHIn_Rs",
+        "title": "JAPES VS TY (CHANCE TAYLOR COMMENTARY)\ud83d\ude02",
+        "views": 26114
+      },
+      {
+        "id": "6GfZ7karmlQ",
+        "title": "JP & George YGT (ALT SHOT) 1 of 3 birdies in 4 holes \ud83d\ude33",
+        "views": 18995
+      },
+      {
+        "id": "obh4FZr6Dp4",
+        "title": "The #1 Golf Resort In Utah \ud83d\ude33\ud83d\ude33\ud83d\ude33",
+        "views": 1289
+      }
+    ]
+  },
+  "speech": {
+    "words_per_minute": 95,
+    "words_per_minute_while_talking": 106,
+    "longest_pause": 4.18,
+    "first_word_at": 3.7,
+    "hook_text": "Come spend a day in the life with me at the Wynn in Las Vegas. I woke up at",
+    "clips": 14
+  }
+}

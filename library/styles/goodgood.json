@@ -1,0 +1,128 @@
+{
+  "name": "goodgood",
+  "about": "goodgood: medians over 20 measured short clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "vertical",
+    "width": 360,
+    "height": 640,
+    "fps": 30,
+    "seconds": 39.5
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 6,
+    "cuts_per_minute": 8.1,
+    "median_shot": 5.135,
+    "mean_shot": 5.68,
+    "short_shot": 2.775,
+    "long_shot": 9.41,
+    "longest_shot": 13.67,
+    "cuts_per_minute_by_quarter": [
+      7.45,
+      11.2,
+      8.0,
+      0.0
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 2,
+      "median_shot": 4.98,
+      "first_cut": 5.98
+    }
+  },
+  "colour": {
+    "brightness": 0.433,
+    "contrast": 0.645,
+    "saturation": 0.351,
+    "warmth": 0.076,
+    "green_magenta": 0.048,
+    "black_point": 0.086,
+    "white_point": 0.907,
+    "shadow_rgb": [
+      39,
+      41,
+      38
+    ],
+    "highlight_rgb": [
+      208,
+      214,
+      218
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 20,
+    "format": "short",
+    "thin": false,
+    "subscribers": 2180000.0,
+    "views_median": 61872.0,
+    "views_range": [
+      13916,
+      1106427
+    ],
+    "cuts_per_minute_iqr": [
+      4.375,
+      13.675
+    ],
+    "cuts_in_first_3s": 0.0,
+    "text_share": 0.264,
+    "text_changes_per_10s": 1.4,
+    "captions_share": 0.1,
+    "text_on_frame_1_share": 1.0,
+    "text_position": 0.423,
+    "zoom_events_per_minute": 3.495,
+    "letterbox_share": 0.0,
+    "talking_share": 1.0,
+    "hook_types": {
+      "question": 0.1,
+      "number": 0.15,
+      "you": 0.0,
+      "me": 0.4,
+      "money": 0.0,
+      "warning": 0.1
+    },
+    "top": [
+      {
+        "id": "_ZfLcTvSDV8",
+        "title": "Grant Horvat reacts to this swing.. \ud83d\ude02",
+        "views": 1106427
+      },
+      {
+        "id": "fe06EE5eNb0",
+        "title": "Oh no Matt Scharff \ud83d\ude02",
+        "views": 324646
+      },
+      {
+        "id": "-yu3wevr-00",
+        "title": "Worst thing that can happen.. happened",
+        "views": 240308
+      }
+    ],
+    "bottom": [
+      {
+        "id": "Q2Q9IB8IpmA",
+        "title": "Bubbie Golf makes it look easy..",
+        "views": 23859
+      },
+      {
+        "id": "HwBwLNmWtnw",
+        "title": "Another Good Good debate..",
+        "views": 19382
+      },
+      {
+        "id": "DuqOcpTvFus",
+        "title": "Good Good game gone wrong \ud83d\ude02",
+        "views": 13916
+      }
+    ]
+  },
+  "speech": {
+    "words_per_minute": 156,
+    "words_per_minute_while_talking": 158,
+    "longest_pause": 2.19,
+    "first_word_at": 0.05,
+    "hook_text": "What's his actual name? >> Gabe Shooter. >> Uh Shooter. His name is Shooter.",
+    "clips": 20
+  }
+}

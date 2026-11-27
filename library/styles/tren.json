@@ -1,0 +1,128 @@
+{
+  "name": "tren",
+  "about": "tren: medians over 6 measured short clips",
+  "source": "data/creator-study",
+  "frame": {
+    "shape": "vertical",
+    "width": 480,
+    "height": 854,
+    "fps": 30,
+    "seconds": 23.0
+  },
+  "cuts": [],
+  "pacing": {
+    "shots": 3,
+    "cuts_per_minute": 8.15,
+    "median_shot": 3.55,
+    "mean_shot": 5.91,
+    "short_shot": 1.7,
+    "long_shot": 9.275,
+    "longest_shot": 9.565,
+    "cuts_per_minute_by_quarter": [
+      10.45,
+      13.7,
+      6.95,
+      2.55
+    ],
+    "hook": {
+      "seconds": 15.0,
+      "cuts": 2,
+      "median_shot": 3.55,
+      "first_cut": 4.29
+    }
+  },
+  "colour": {
+    "brightness": 0.199,
+    "contrast": 0.579,
+    "saturation": 0.366,
+    "warmth": 0.053,
+    "green_magenta": -0.013,
+    "black_point": 0.009,
+    "white_point": 0.835,
+    "shadow_rgb": [
+      28,
+      17,
+      17
+    ],
+    "highlight_rgb": [
+      231,
+      226,
+      225
+    ]
+  },
+  "audio": null,
+  "study": {
+    "clips": 6,
+    "format": "short",
+    "thin": true,
+    "subscribers": 2230000.0,
+    "views_median": 507543.5,
+    "views_range": [
+      73053,
+      6577394
+    ],
+    "cuts_per_minute_iqr": [
+      3.3,
+      20.0
+    ],
+    "cuts_in_first_3s": 0.0,
+    "text_share": 0.775,
+    "text_changes_per_10s": 5.105,
+    "captions_share": 0.17,
+    "text_on_frame_1_share": 0.67,
+    "text_position": 0.406,
+    "zoom_events_per_minute": 0.0,
+    "letterbox_share": 0.138,
+    "talking_share": 0.83,
+    "hook_types": {
+      "question": 0.17,
+      "number": 0.33,
+      "you": 0.67,
+      "me": 0.5,
+      "money": 0.0,
+      "warning": 0.0
+    },
+    "top": [
+      {
+        "id": "8IctMS6njg0",
+        "title": "Natty days",
+        "views": 6577394
+      },
+      {
+        "id": "rTq4jw24fHo",
+        "title": "When someone asks who\u2019s the stronger twin",
+        "views": 2131997
+      },
+      {
+        "id": "tcD0nj6cfv4",
+        "title": "Insta-trenbrahhh - in demon playlist highlight #recommended #gym #twins #anime #fitnessmotivation",
+        "views": 705572
+      }
+    ],
+    "bottom": [
+      {
+        "id": "Mwo1C4VVeUE",
+        "title": "Manic mike Protein hack",
+        "views": 309515
+      },
+      {
+        "id": "lHsRzZfMz7Q",
+        "title": "If you want a sick ass pump get you sum feral supps @ feralsupplements.com",
+        "views": 136451
+      },
+      {
+        "id": "eaG-1yOTyNU",
+        "title": "Deep stuff",
+        "views": 73053
+      }
+    ]
+  },
+  "speech": {
+    "words_per_minute": 88,
+    "words_per_minute_while_talking": 0,
+    "longest_pause": null,
+    "first_word_at": 0.18,
+    "hook_text": "look at me while you die batman look at me",
+    "clips": 5
+  }
+}

@@ -215,16 +215,23 @@ def summary(p: dict) -> str:
         f"(short ones {pc['short_shot']:g}s, long ones {pc['long_shot']:g}s, longest {pc['longest_shot']:g}s).",
     ]
     h = pc["hook"]
-    first = f"first cut at {h['first_cut']:g}s" if h["first_cut"] is not None else "no cuts at all"
+    first = f"first cut at {h['first_cut']:g}s" if h.get("first_cut") is not None else "no cuts at all"
     lines.append(f"Opening {h['seconds']:g}s: {h['cuts']} cuts, typical shot {h['median_shot']:g}s, {first}.")
     q = pc["cuts_per_minute_by_quarter"]
     lines.append("Cuts a minute through the video, by quarter: " + ", ".join(f"{v:g}" for v in q) + ".")
     if s := p.get("speech"):
-        lines.append(f"Speech: {s['words_per_minute']} words a minute, typical gap between words "
-                     f"{s['median_gap']:g}s, longest pause {s['longest_pause']:g}s, "
-                     f"{s['pauses_over_half_second_per_minute']:g} pauses over half a second each minute. "
-                     f"First word at {s['first_word_at']:g}s.")
-        if s["hook_text"]:
+        parts = [f"Speech: {s['words_per_minute']} words a minute"]
+        if "median_gap" in s:
+            parts.append(f"typical gap between words {s['median_gap']:g}s")
+        if s.get("longest_pause") is not None:
+            parts.append(f"longest pause {s['longest_pause']:g}s")
+        if "pauses_over_half_second_per_minute" in s:
+            parts.append(f"{s['pauses_over_half_second_per_minute']:g} pauses over half a second each minute")
+        line = ", ".join(parts) + "."
+        if s.get("first_word_at") is not None:
+            line += f" First word at {s['first_word_at']:g}s."
+        lines.append(line)
+        if s.get("hook_text"):
             lines.append(f"Opening words: \"{s['hook_text']}\"")
     bright = _words(c["brightness"], [(0.3, "dark"), (0.45, "medium-dark"), (0.6, "medium"), (2, "bright")])
     contrast = _words(c["contrast"], [(0.45, "low"), (0.7, "medium"), (2, "high")])
@@ -235,4 +242,7 @@ def summary(p: dict) -> str:
     if a := p.get("audio"):
         if a["loudness_lufs"] is not None:
             lines.append(f"Sound: {a['loudness_lufs']:g} LUFS, quiet for {a['quiet_share'] * 100:.0f}% of the time.")
+    if st := p.get("study"):
+        from .creators import study_lines
+        lines += study_lines(st)
     return "\n".join(lines)
