@@ -1119,7 +1119,8 @@ def cmd_idea_add(args) -> None:
     i = plan.add_idea(args.title, args.pillar, format=args.format, hook=args.hook, series=args.series,
                       cta=args.cta, source=args.source, location=args.location,
                       shots=[s.strip() for s in (args.shots or "").split(";") if s.strip()],
-                      note=args.note, score=args.score, draft=args.draft, hold=args.hold)
+                      note=args.note, score=args.score, draft=args.draft, hold=args.hold,
+                      hook_type=args.hook_type, topic=args.topic, pace=args.pace, goal=args.goal, bet=args.bet)
     plan.save()
     ep = f", episode {i['episode']} of {i['series']}" if i["series"] else ""
     print(f"{i['id']}: {i['title']} ({i['format']}, {i['pillar']}{ep})")
@@ -1338,6 +1339,12 @@ def cmd_shoot_list(args) -> None:
     from .content import format_shoot_list
     sl = _plan().shoot_list(args.week)
     print(json.dumps(sl, indent=2) if args.json else format_shoot_list(sl))
+
+
+def cmd_bets(args) -> None:
+    from .content import format_bets
+    b = _plan().bets()
+    print(json.dumps(b, indent=2) if args.json else format_bets(b))
 
 
 def cmd_week_report(args) -> None:
@@ -1711,7 +1718,10 @@ def main(argv: list[str] | None = None) -> None:
         A("--cta", choices=list(CTAS)), A("--source", default="own", help="own, trend, clip, analytics ..."),
         A("--location", help="where it is filmed: gym, track, range, kitchen ..."),
         A("--shots", help="shots to film, separated by ;"), A("--note"), A("--score", type=float), A("--draft"),
-        A("--hold", help="keep it out of weekly plans until ready, with the reason"))
+        A("--hold", help="keep it out of weekly plans until ready, with the reason"),
+        A("--hook-type", help="the hook type it tests (see `hooks`)"), A("--topic", help="what it is about, one short tag"),
+        A("--pace", choices=["fast", "steady"]), A("--goal", choices=["reach", "follows"], help="what it is meant to do"),
+        A("--bet", help="the expectation in words; by default made from the tags"))
     add("idea-import", cmd_idea_import, "add ideas from a JSON list (trend report, clip candidates, notes)",
         A("file"), A("--source"))
     add("idea-list", cmd_idea_list, "list the idea backlog", A("--status"), A("--pillar"), A("--format"),
@@ -1754,6 +1764,8 @@ def main(argv: list[str] | None = None) -> None:
     add("publish-shortcut", cmd_publish_shortcut, "make the double-click 'Post today's reel' button",
         A("where", nargs="?", default=".", help="folder for the shortcut, e.g. the Desktop"))
     add("shoot-list", cmd_shoot_list, "what to film for a week, by location", week, A("--json", action="store_true"))
+    add("bets", cmd_bets, "score each post's bet against its results, and each hook type, topic and pace",
+        A("--json", action="store_true"))
     add("week-report", cmd_week_report, "planned versus posted for a week, with results", week,
         A("--json", action="store_true"))
     add("undo", cmd_undo, "go back one version")

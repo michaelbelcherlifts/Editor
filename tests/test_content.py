@@ -156,3 +156,27 @@ def test_commands_end_to_end(tmp_path, monkeypatch, capsys):
     assert (tmp_path / "library" / "content" / "plan.json").exists()
     with pytest.raises(SystemExit):
         main(["post-set", "p999", "--cta", "none"])
+
+
+def test_bets_are_stated_then_scored(tmp_path, monkeypatch, capsys):
+    plan = Plan(tmp_path)
+    a = plan.add_idea("How to deadlift", "strength", hook_type="how-to", topic="lift-teach", pace="steady", goal="follows")
+    b = plan.add_idea("Powerlifters defend this", "humour", hook_type="tribe", topic="gym-joke", pace="fast", goal="reach")
+    c = plan.add_idea("Untagged", "life")
+    with pytest.raises(EditError, match="unknown goal"):
+        plan.add_idea("x", "run", goal="money")
+    with pytest.raises(EditError, match="unknown hook type"):
+        plan.set_idea(c["id"], hook_type="vibes")
+    assert "expect 1 follows per 1,000" in plan.bet_line(a) and "how-to hook" in plan.bet_line(a)
+    pa, pb, pc = (plan.schedule(i["id"], "2026-12-0" + str(k)) for k, i in enumerate((a, b, c), 1))
+    assert len(plan.bets()["open"]) == 2
+    plan.record_result(pa["id"], reach=20000, follows=40, sends=10)   # 2 follows per 1,000: won
+    plan.record_result(pb["id"], reach=12000, sends=30, follows=2)    # 2.5 shares per 1,000, under the hit line: lost
+    plan.record_result(pc["id"], reach=5000)
+    out = plan.bets()
+    won = {s["title"]: s["won"] for s in out["scored"]}
+    assert won == {"How to deadlift": True, "Powerlifters defend this": False, "Untagged": None}
+    assert out["by"]["goal"]["follows"]["won"] == 1 and not out["by"]["goal"]["follows"]["enough"]
+    assert plan.rows("2026-11-30", 7)[0]["bet"].startswith("how-to hook")
+    text = content.format_bets(out)
+    assert "won " in text and "too few to call" in text
