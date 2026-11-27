@@ -239,7 +239,8 @@ def test_tags_become_attributes(tmp_path, monkeypatch, capsys):
     with pytest.raises(SystemExit):
         main(["clip-tag", "nope", "--tags", '{"series": true}'])
     main(["clip-tag", "--questions"])
-    assert "before seeing any results" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "before seeing any results" in out and "joke_premise" in out and "gym_culture" in out
 
 
 def test_no_weights_when_parts_were_never_judged(tmp_path, monkeypatch):

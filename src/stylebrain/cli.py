@@ -1069,6 +1069,9 @@ def cmd_clip_tag(args) -> None:
     if args.questions:
         for key, text in learn.TAG_HELP.items():
             print(f"  {key}: {text}")
+            if key in learn.TAGS:
+                print(f"    answer with exactly one of: {', '.join(learn.TAGS[key])}")
+        print("  The rest are true or false. Leave out anything you cannot tell.")
         print("  Tag from the video and words only, before seeing any results.")
         return
     if not args.id or not args.tags:
