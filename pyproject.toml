@@ -19,6 +19,10 @@ reference = [
 analysis = [
     "numpy>=2.2.6",
 ]
+tracking = [
+    "numpy>=2.2.6",
+    "opencv-python-headless>=4.9,<5",  # 5 dropped the bundled face finder
+]
 
 [dependency-groups]
 dev = ["pytest>=8"]

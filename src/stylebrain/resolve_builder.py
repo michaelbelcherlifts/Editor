@@ -122,7 +122,7 @@ def _build_once(project, media_pool, edit: EditList, name: str, end_inclusive: b
                 "endFrame": o.src_in + o.duration - adj, "trackIndex": o.track,
                 "recordFrame": origin + o.at, "mediaType": 1}
         placed_over += media_pool.AppendToTimeline([info]) or []
-    return timeline, origin, placed_main, placed_over
+    return timeline, origin, placed_main, placed_over, items
 
 
 def _check(timeline, origin: int, edit: EditList) -> tuple[list[str], set[int]]:
@@ -168,6 +168,33 @@ def _apply_look(project, items, path: str) -> list[str]:
     return []
 
 
+def _apply_framing(project, placed, edit: EditList, clips: dict) -> list[str]:
+    """Scale each main-track clip to cover the frame and slide it so its framing point is in the middle."""
+    from .reframe import geometry
+
+    try:
+        tw, th = int(project.GetSetting("timelineResolutionWidth")), int(project.GetSetting("timelineResolutionHeight"))
+    except (TypeError, ValueError):
+        return ["could not read the timeline size, so clips were not reframed"]
+    failed = 0
+    for item, seg in zip(placed, edit.segments):
+        try:
+            sw, sh = (int(v) for v in str(clips[seg.source].GetClipProperty("Resolution")).lower().split("x"))
+        except (TypeError, ValueError):
+            failed += 1
+            continue
+        g = geometry(sw, sh, tw, th, *seg.framing)
+        if abs(g["zoom"] - 1) < 1e-4 and abs(g["pan"]) < 0.5 and abs(g["tilt"]) < 0.5:
+            continue
+        ok = all(item.SetProperty(k, v) for k, v in
+                 (("ZoomX", round(g["zoom"], 4)), ("ZoomY", round(g["zoom"], 4)),
+                  ("Pan", round(g["pan"], 2)), ("Tilt", round(g["tilt"], 2))))
+        failed += not ok
+    if failed:
+        return [f"{failed} of {len(placed)} clips could not be reframed"]
+    return []
+
+
 def _place_sound_mix(media_pool, timeline, origin: int, path: str, frames: int, end_inclusive: bool) -> list[str]:
     """Put the mixed sound effects file on audio track 2, from the start of the timeline."""
     items = _media_items(media_pool, {path})
@@ -205,7 +232,7 @@ def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | Non
     modes = [True, False] if end_inclusive is None else [end_inclusive]
     for attempt, mode in enumerate(modes):
         final = _unique_name(project, name)
-        timeline, origin, main, over = _build_once(project, media_pool, edit, final, mode)
+        timeline, origin, main, over, clips = _build_once(project, media_pool, edit, final, mode)
         problems, deltas = _check(timeline, origin, edit)
         off_by_one = deltas in ({1}, {-1})
         if off_by_one and attempt + 1 < len(modes):
@@ -213,6 +240,8 @@ def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | Non
             continue
         if edit.look:
             problems += _apply_look(project, main, edit.look)
+        if edit.fill:
+            problems += _apply_framing(project, main, edit, clips)
         if sound_mix:
             problems += _place_sound_mix(media_pool, timeline, origin, sound_mix, edit.duration, mode)
         return BuildReport(final, len(main), len(over), warn + problems, look=edit.look,

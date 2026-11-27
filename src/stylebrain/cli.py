@@ -29,7 +29,8 @@ def _summary(edit: EditList) -> str:
              + (f", {len(edit.sounds)} sounds" if edit.sounds else "")]
     for start, seg in edit.pieces():
         lines.append(f"  {format_time(start, edit.fps):>10}  {Path(seg.source).name}  "
-                     f"[{seg.src_in}-{seg.src_out})" + (f"  {seg.note}" if seg.note else ""))
+                     f"[{seg.src_in}-{seg.src_out})" + (f"  {seg.note}" if seg.note else "")
+                     + (f"  framed x {seg.x:g} y {seg.y:g} zoom {seg.zoom:g}" if seg.framing != (0.5, 0.5, 1.0) else ""))
     for o in sorted(edit.overlays, key=lambda o: o.at):
         lines.append(f"  {format_time(o.at, edit.fps):>10}  overlay {o.name!r} on V{o.track}, "
                      f"{format_time(o.duration, edit.fps)}  {Path(o.source).name}")
@@ -364,6 +365,31 @@ def _wh(size: str) -> tuple[int, int]:
     except ValueError:
         raise EditError("size looks like 1080x1920") from None
     return w, h
+
+
+def cmd_reframe(args) -> None:
+    from . import reframe
+    store = _store(args); edit = store.load()
+    w, h = _wh(args.size)
+    if args.auto:
+        new, lines = reframe.plan(edit, w, h)
+        print("\n".join(lines))
+        message = "reframe to follow the subject"
+    else:
+        if args.x is None and args.y is None and args.zoom is None:
+            raise EditError("say --auto, or give --x, --y or --zoom")
+        t0 = parse_time(args.start, edit.fps) if args.start else 0
+        t1 = parse_time(args.end, edit.fps) if args.end else edit.duration
+        new = edit.reframe(t0, t1, args.x, args.y, args.zoom)
+        parts = [f"{k} {v:g}" for k, v in (("x", args.x), ("y", args.y), ("zoom", args.zoom)) if v is not None]
+        message = f"frame {format_time(t0, edit.fps)} to {format_time(t1, edit.fps)}: " + ", ".join(parts)
+    _save(store, edit, new, message)
+    if not args.no_preview:
+        sheet = Path(".stylebrain") / "renders" / f"{store.project}-v{store.head()}-framing.jpg"
+        try:
+            print(f"  frames to look at: {reframe.preview(new, sheet, w, h)}")
+        except EditError as e:
+            print(f"  note: no preview ({e})")
 
 
 def cmd_export(args) -> None:
@@ -1207,6 +1233,12 @@ def main(argv: list[str] | None = None) -> None:
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")
     out = [A("--size", default="1080x1920"), A("--lufs", type=float, default=-14.0, help="target loudness")]
+    add("reframe", cmd_reframe, "place the crop when footage fills a frame of another shape, or punch in",
+        A("--auto", action="store_true", help="follow the subject through every shot"),
+        A("--from", dest="start"), A("--to", dest="end"),
+        A("--x", type=float, help="0 is the left edge, 1 the right"), A("--y", type=float, help="0 is the top"),
+        A("--zoom", type=float, help="1 is no punch-in"), A("--size", default="1080x1920"),
+        A("--no-preview", action="store_true"))
     add("export", cmd_export, "render the edit to a file ready to post, then check it", A("out", nargs="?"), *out,
         A("--fit", default="fill", choices=["fill", "fit"], help="fill crops to cover the frame; fit keeps it all with bars"),
         A("--no-sounds", action="store_true"), A("--no-check", action="store_true"))

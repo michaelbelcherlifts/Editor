@@ -26,10 +26,21 @@ class Segment:
     src_in: int
     src_out: int
     note: str = ""
+    # Framing, used when the clip has to fill a frame of another shape: the point of the
+    # source picture kept in the middle (0..1 across, 0..1 down) and a punch-in.
+    x: float = 0.5
+    y: float = 0.5
+    zoom: float = 1.0
 
     def __post_init__(self) -> None:
         if self.src_in < 0 or self.src_out <= self.src_in:
             raise EditError(f"bad source range {self.src_in}..{self.src_out} for {self.source}")
+        if not (0 <= self.x <= 1 and 0 <= self.y <= 1 and 1 <= self.zoom <= 4):
+            raise EditError("framing: x and y run from 0 to 1, zoom from 1 to 4")
+
+    @property
+    def framing(self) -> tuple[float, float, float]:
+        return (self.x, self.y, self.zoom)
 
     @property
     def duration(self) -> int:
@@ -75,6 +86,7 @@ class EditList:
     overlays: tuple[Overlay, ...] = field(default=())
     look: str = ""  # path of a .cube LUT applied to every main-track clip
     sounds: tuple[Sound, ...] = field(default=())
+    fill: bool = False  # main-track clips are scaled to cover the frame, placed by each clip's framing
 
     # ---- construction -------------------------------------------------
 
@@ -91,6 +103,7 @@ class EditList:
             overlays=tuple(Overlay(**o) for o in data.get("overlays", [])),
             look=data.get("look", ""),
             sounds=tuple(Sound(**x) for x in data.get("sounds", [])),
+            fill=bool(data.get("fill", False)),
         )
 
     def to_dict(self) -> dict:
@@ -100,6 +113,7 @@ class EditList:
             "overlays": [asdict(o) for o in self.overlays],
             "look": self.look,
             "sounds": [asdict(x) for x in self.sounds],
+            "fill": self.fill,
         }
 
     # ---- reading ------------------------------------------------------
@@ -226,6 +240,19 @@ class EditList:
             raise EditError(f"no sound named {prefix!r}" if prefix else "there are no sounds")
         return replace(self, sounds=keep)
 
+    def reframe(self, t0: int, t1: int, x: float | None = None, y: float | None = None,
+                zoom: float | None = None) -> "EditList":
+        """Set the framing of timeline frames [t0, t1). Values left as None are kept. Nothing moves."""
+        t0, t1 = self._check_range(t0, t1)
+        cut = self.split_at(t0).split_at(t1)
+        new = []
+        for start, seg in cut.pieces():
+            if t0 <= start < t1:
+                seg = replace(seg, x=seg.x if x is None else round(x, 4), y=seg.y if y is None else round(y, 4),
+                              zoom=seg.zoom if zoom is None else round(zoom, 4))
+            new.append(seg)
+        return replace(cut, segments=_join(new), fill=True)
+
     def set_look(self, path: str) -> "EditList":
         """Use a LUT file on the main track, or "" for none."""
         return replace(self, look=path)
@@ -275,7 +302,8 @@ def _join(segments: list[Segment]) -> tuple[Segment, ...]:
     out: list[Segment] = []
     for seg in segments:
         prev = out[-1] if out else None
-        if prev and prev.source == seg.source and prev.src_out == seg.src_in and prev.note == seg.note:
+        if prev and prev.source == seg.source and prev.src_out == seg.src_in and prev.note == seg.note \
+                and prev.framing == seg.framing:
             out[-1] = replace(prev, src_out=seg.src_out)
         else:
             out.append(seg)

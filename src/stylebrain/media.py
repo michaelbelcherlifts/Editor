@@ -40,7 +40,8 @@ def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
 
 def info(path: str) -> Info:
     out = run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-count_packets",
-               "-show_entries", "stream=r_frame_rate,nb_read_packets,nb_frames,duration,width,height,pix_fmt",
+               "-show_entries", "stream=r_frame_rate,nb_read_packets,nb_frames,duration,width,height,pix_fmt"
+               ":stream_side_data=rotation:stream_tags=rotate",
                "-of", "json", str(path)], text=True).stdout
     streams = json.loads(out).get("streams") or []
     if not streams:
@@ -50,7 +51,14 @@ def info(path: str) -> Info:
     frames = s.get("nb_read_packets") or s.get("nb_frames")
     if frames in (None, "N/A"):
         frames = round(float(s["duration"]) * fps)
-    return Info(fps, int(frames), int(s["width"]), int(s["height"]), s.get("pix_fmt", ""))
+    width, height = int(s["width"]), int(s["height"])
+    # Phones store upright video sideways with a rotation note; ffmpeg turns it when reading,
+    # so report the size as it is seen.
+    turn = next((d["rotation"] for d in s.get("side_data_list", []) if "rotation" in d),
+                (s.get("tags") or {}).get("rotate", 0))
+    if round(abs(float(turn))) % 180 == 90:
+        width, height = height, width
+    return Info(fps, int(frames), width, height, s.get("pix_fmt", ""))
 
 
 def probe(path: str) -> tuple[float, int]:

@@ -44,6 +44,7 @@ def _seek(frame: int, fps: float) -> str:
 def _main_track(edit: EditList, work: Path, width: int, height: int, fit: str) -> list[Path]:
     """The main track as a few high-quality parts, look baked in, sound kept."""
     from .look import _lut_filter
+    from .reframe import crop_filter
 
     look = f",{_lut_filter(edit.look)}" if edit.look else ""
     audio = {s: has_audio(s) for s in edit.sources()}
@@ -55,7 +56,8 @@ def _main_track(edit: EditList, work: Path, width: int, height: int, fit: str) -
             secs = seg.duration / edit.fps
             cmd += ["-ss", _seek(seg.src_in, edit.fps), "-t", f"{secs + 1:.4f}", "-i", seg.source]
             chains.append(f"[{n}:v]fps={edit.fps:g},trim=end_frame={seg.duration},setpts=PTS-STARTPTS,"
-                          f"{_fit(width, height, fit)}{look},format=yuv420p[v{n}]")
+                          f"{crop_filter(width, height, *seg.framing) if fit == 'fill' else _fit(width, height, fit)}"
+                          f"{look},format=yuv420p[v{n}]")
             sound = f"[{n}:a]aresample=48000," if audio[seg.source] else "anullsrc=r=48000:cl=stereo,"
             chains.append(f"{sound}aformat=sample_fmts=fltp:channel_layouts=stereo,apad,"
                           f"atrim=duration={secs:.6f},asetpts=PTS-STARTPTS[a{n}]")
