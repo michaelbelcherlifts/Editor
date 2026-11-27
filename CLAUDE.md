@@ -17,7 +17,10 @@ sound, music, reframing, export, house rules, the content calendar and social po
 - After `build`, relay the report. If it lists problems, say so plainly and do
   not claim the edit landed.
 - When a request is ambiguous about where ("cut this"), find out before cutting:
-  read the playhead or markers through the Resolve MCP, or ask.
+  run `uv run stylebrain markers` (his markers and playhead as edit times), or
+  read them through the Resolve MCP, or ask.
+- If `build` warns that a timeline was changed by hand, relay every line of the
+  warning before anything else, and ask whether to carry those changes over by hand.
 - Say what changed in one line, including the new length.
 - Before a first cut, run `uv run stylebrain rules` and follow it. When Michael
   corrects a cut, save the lesson with the house-rules skill so it sticks.
@@ -31,6 +34,7 @@ sound, music, reframing, export, house rules, the content calendar and social po
 - `src/stylebrain/transcript.py`: phrase search and pause finding
 - `src/stylebrain/store.py`: saved versions and undo
 - `src/stylebrain/resolve_builder.py`: builds and verifies a Resolve timeline
+- `src/stylebrain/resolve_notes.py`: his markers and playhead read as edit times, review notes written as markers, and the check for hand-made changes before a rebuild
 - `src/stylebrain/render.py`: HTML animation to transparent video
 - `src/stylebrain/templates.py`, `anatomy.py`: animation templates and the body figure
 - `src/stylebrain/kinetic.py`, `explainers.py`, `pagekit.py`: type templates (kinetic type, mid captions, counters, end cards, clipper), lift explainers (lift presets, form cues, tempo, charts), and the shared stage and caption safe zone

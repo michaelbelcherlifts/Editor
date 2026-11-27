@@ -368,7 +368,20 @@ def cmd_build(args) -> None:
             print(f"note: the music is not lowered under the voice ({e})")
         bed = music.bed(edit, renders / f"{store.project}-v{store.head()}-music.wav", voice=key)
         mixed = (mixed or []) + [("music", str(bed.resolve()), 1)]
-    report = build_timeline(connect(), edit, name, sound_mix=mixed)
+    from . import resolve_notes as notes
+    resolve = connect()
+    project = resolve.GetProjectManager().GetCurrentProject()
+    if project is not None:
+        last, changed = notes.hand_changes(project, store)
+        if changed:
+            print(f"warning: {last!r} was changed by hand in Resolve since it was built:")
+            for line in changed:
+                print(f"  {line}")
+            print("  The new timeline is built from the edit list and will NOT have these changes.")
+            print(f"  {last!r} is left as it is. Colour grades, effects and keyframes cannot be read, so check those by eye.")
+    report = build_timeline(resolve, edit, name, sound_mix=mixed)
+    if report.ok and project is not None and project.GetCurrentTimeline() is not None:
+        notes.remember_build(store, project.GetCurrentTimeline(), store.head())
     print(report.text())
     if not report.ok:
         sys.exit(1)
@@ -383,6 +396,43 @@ def _wh(size: str | None) -> tuple[int, int]:
     except ValueError:
         raise EditError("size looks like 1080x1920") from None
     return w, h
+
+
+def _resolve_timeline(store, edit):
+    """The current Resolve timeline, with a warning line when it is not the latest build of this edit."""
+    from . import resolve_notes as notes
+    from .resolve_builder import connect
+    _, timeline = notes.current(connect())
+    name = timeline.GetName()
+    warn = ""
+    if not name.startswith(f"{store.project} v{store.head()}"):
+        warn = (f"note: the open timeline is {name!r}, not a build of version {store.head()} of this edit, "
+                "so its times may not match the edit; build first to be sure")
+    return timeline, warn
+
+
+def cmd_markers(args) -> None:
+    from . import resolve_notes as notes
+    store = _store(args); edit = store.load()
+    timeline, warn = _resolve_timeline(store, edit)
+    if args.clear:
+        print(f"removed {notes.clear_notes(timeline)} review marker(s); his own markers were not touched")
+        return
+    head = notes.playhead(timeline, edit.fps)
+    marks = [m for m in notes.read_markers(timeline, edit.fps) if args.all or not m["ours"]]
+    if args.json:
+        print(json.dumps({"timeline": timeline.GetName(), "playhead": head, "markers": marks, "warning": warn}, indent=2))
+        return
+    if warn:
+        print(warn)
+    print("playhead: " + ("unknown" if head is None else f"{format_time(head, edit.fps)}"
+                          + ("  (past the end of the edit)" if head >= edit.duration else "")))
+    if not marks:
+        print("no markers on the timeline")
+    for m in marks:
+        length = f" for {format_time(m['frames'], edit.fps)}" if m["frames"] > 1 else ""
+        text = " ".join(x for x in (m["name"], m["note"]) if x and not x.startswith("Marker "))
+        print(f"  {format_time(m['frame'], edit.fps):>10}{length}  {m['colour']:<8} {text}")
 
 
 def cmd_music_add(args) -> None:
@@ -627,6 +677,17 @@ def cmd_review(args) -> None:
         cuts = mine["cuts"] if len(edit.pieces()) > 1 else None
     hook = [f for f in story.hook_check(words, duration, cuts) if f.serious] if words else []
     found = review.compare(mine, target, args.limit) if target else []
+    if args.markers:
+        if args.video:
+            raise EditError("--markers writes onto the Resolve timeline of the current edit; leave out --video")
+        from . import resolve_notes as notes
+        timeline, warn = _resolve_timeline(store, edit)
+        if warn:
+            print(warn)
+        notes.clear_notes(timeline)
+        placed, failed = notes.add_notes(timeline, [(x.at, x.kind, x.text) for x in [*hook, *found]], fps)
+        print(f"wrote {placed} review marker(s) onto {timeline.GetName()!r}"
+              + (f"; {failed} could not be placed" if failed else ""))
     if args.json:
         print(json.dumps({"hook": story.to_json(hook), "style": review.to_json(found)}, indent=2))
         return
@@ -1218,7 +1279,8 @@ def main(argv: list[str] | None = None) -> None:
     add("srt", cmd_srt, "write subtitles for the current cut", *tx, A("--out", required=True))
     add("review", cmd_review, "hook check, then compare the current cut (or a video file) with a saved style", A("style", nargs="?"),
         A("--video", help="a finished video file to review, not the current edit"),
-        A("--transcript"), A("--source"), A("--limit", type=int, default=8), A("--json", action="store_true"))
+        A("--transcript"), A("--source"), A("--limit", type=int, default=8), A("--json", action="store_true"),
+        A("--markers", action="store_true", help="also write the notes onto the Resolve timeline as markers"))
     add("auto", cmd_auto, "first cut in one go: retakes, pauses, look, captions, build, review", A("name"),
         A("--source", required=True), A("--transcript"), A("--style"), A("--look"),
         A("--captions", action="store_true"), A("--keep-retakes", action="store_true"),
@@ -1343,6 +1405,10 @@ def main(argv: list[str] | None = None) -> None:
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")
     out = [A("--size", help="default: the house rule for frame, else 1080x1920"), A("--lufs", type=float, default=-14.0, help="target loudness")]
+    add("markers", cmd_markers, "read his markers and playhead from the open Resolve timeline",
+        A("--all", action="store_true", help="include review markers written by this tool"),
+        A("--clear", action="store_true", help="remove the review markers this tool wrote"),
+        A("--json", action="store_true"))
     add("music-add", cmd_music_add, "put a music track under the edit", A("file"),
         A("--start", type=float, default=0.0, help="seconds into the song where the edit begins"),
         A("--gain", type=float, default=-18.0, help="level in dB"),

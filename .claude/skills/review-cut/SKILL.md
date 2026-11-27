@@ -36,6 +36,10 @@ and a long video also gets a beat map, before any note about pacing or look.
    `uv run stylebrain review STYLE --transcript CLIP.words.json`
    or a finished export: `uv run stylebrain review STYLE --video EXPORT.mp4 --transcript ...`.
    The export route also compares picture and sound.
+   Add `--markers` to also write each note onto the open Resolve timeline as
+   a coloured marker he can step through (Shift+Up and Shift+Down). They
+   replace the last review's markers; `uv run stylebrain markers --clear`
+   removes them. His own markers are never touched.
 3. Read the list back in order. Each line has a time, a kind (opening, pace,
    long_shot, pause, picture, sound) and what differs from the style.
 4. Then look for what numbers miss. Make a `ref-sheet` of his first 15 seconds

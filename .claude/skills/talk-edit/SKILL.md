@@ -21,12 +21,14 @@ rebuild the timeline as a new version.
 
 | He says | Do this |
 | --- | --- |
-| "here", "this", "from here" | Read the playhead timecode through the Resolve MCP. Subtract the timeline start to get a timeline time |
-| "on the marker" | Read the markers through the Resolve MCP |
+| "here", "this", "from here" | `uv run stylebrain markers` prints the playhead as an edit time (or read the timecode through the Resolve MCP and subtract the timeline start) |
+| "on the marker", "between my markers" | `uv run stylebrain markers` lists his markers as edit times, with their notes. A marker with a length is a range |
 | "the part where I say ..." | `uv run stylebrain find "words" --transcript FILE` |
 | a time | Use it directly |
 
-If two readings are plausible, ask one short question before cutting.
+If `markers` says the open timeline is not a build of the current version, its
+times may not match the edit: build first, or ask him. If two readings are
+plausible, ask one short question before cutting.
 
 ## Making the change
 
@@ -67,3 +69,17 @@ lead with that.
 - `uv run stylebrain sources` lists what the edit uses. Commands that take a
   transcript need `--source NAME` once there is more than one clip.
 - A clip at a different frame rate is refused: convert it first, and say why.
+
+## Changes he made by hand in Resolve
+
+Every build makes a new timeline from the edit list, so anything he did by hand
+on the last one (a trim, a title, a resize) is not on the new one. `build`
+checks the last built timeline first and prints a warning listing what he
+changed. When it does:
+
+1. Relay every line before anything else. His old timeline is untouched.
+2. For each change, offer to make it part of the edit so it survives: a trim
+   becomes `cut`, a resize becomes `reframe`, a title becomes an overlay.
+3. It cannot see colour grades, effects or keyframes. Say so, and ask him to
+   check those by eye. The safe order of work is: structure through the edit
+   list first, polish by hand in Resolve last.
