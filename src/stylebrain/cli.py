@@ -350,6 +350,74 @@ def cmd_look_use(args) -> None:
         _save(store, edit, edit.set_look(path), f"use the look {args.name!r}")
 
 
+def cmd_transcribe(args) -> None:
+    from .transcribe import transcribe
+    path, words = transcribe(args.video, args.out, args.engine, args.model)
+    print(f"{len(words)} words, saved to {path}")
+
+
+def cmd_retakes(args) -> None:
+    store = _store(args); edit = store.load()
+    source = _source_for(edit, args.source)
+    words = tr.load_words(args.transcript)
+    found = tr.find_retakes(words, args.min_words)
+    if not found:
+        print("no likely retakes found")
+        return
+    for a, b in found:
+        said = " ".join(w.text for w in words if a <= w.start < b)[:70]
+        where = ", ".join(format_time(lo, edit.fps) for lo, _ in _to_timeline(edit, source, [(a, b)])) or "already cut"
+        print(f"  {where}: {b - a:.1f}s  \"{said}\"")
+    if args.cut:
+        ranges = _to_timeline(edit, source, [(a, b - 0.12) for a, b in found if b - a > 0.12])
+        if ranges:
+            _save(store, edit, edit.remove_ranges(ranges), f"cut {len(found)} likely retakes")
+
+
+def cmd_srt(args) -> None:
+    from .autopilot import timeline_words
+    store = _store(args); edit = store.load()
+    words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
+    Path(args.out).write_text(tr.to_srt(words))
+    print(f"{len(words)} words of the current cut written to {args.out}")
+
+
+def cmd_review(args) -> None:
+    from . import review, style
+    target = style.load(args.style)
+    fps = 30.0
+    if args.video:
+        words = tr.load_words(args.transcript) if args.transcript else None
+        mine = style.measure(args.video, words)
+        if words:
+            mine["words"] = [[w.text, w.start, w.end] for w in words]
+        fps = mine["frame"]["fps"]
+    else:
+        from .autopilot import timeline_words
+        store = _store(args); edit = store.load()
+        fps = edit.fps
+        words = None
+        if args.transcript:
+            words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
+        mine = review.profile_of_edit(edit, words)
+    found = review.compare(mine, target, args.limit)
+    if args.json:
+        print(json.dumps(review.to_json(found), indent=2))
+    elif not found:
+        print(f"nothing stands out against {args.style!r}")
+    else:
+        print(f"{len(found)} things to look at, measured against {args.style!r}:")
+        for s in found:
+            print(s.line(fps))
+
+
+def cmd_auto(args) -> None:
+    from . import autopilot
+    result = autopilot.run(args.name, args.source, args.transcript, args.style, args.look, args.captions,
+                           not args.keep_retakes, not args.no_build, args.width, args.height)
+    print(result.text(Store(args.name).load().fps))
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -424,6 +492,18 @@ def main(argv: list[str] | None = None) -> None:
         A("--reference"), A("--ref-at", default="0"))
     add("look-list", cmd_look_list, "list saved looks")
     add("look-use", cmd_look_use, "put a saved look on the edit ('none' removes it)", A("name"))
+    add("transcribe", cmd_transcribe, "make a word-timing transcript with a local speech-to-text tool",
+        A("video"), A("--out"), A("--engine"), A("--model"))
+    add("retakes", cmd_retakes, "list likely false starts (a phrase said again straight after)", *tx,
+        A("--min-words", type=int, default=4), A("--cut", action="store_true", help="cut them"))
+    add("srt", cmd_srt, "write subtitles for the current cut", *tx, A("--out", required=True))
+    add("review", cmd_review, "compare the current cut (or a video file) with a saved style", A("style"),
+        A("--video", help="a finished video file to review, not the current edit"),
+        A("--transcript"), A("--source"), A("--limit", type=int, default=8), A("--json", action="store_true"))
+    add("auto", cmd_auto, "first cut in one go: retakes, pauses, look, captions, build, review", A("name"),
+        A("--source", required=True), A("--transcript"), A("--style"), A("--look"),
+        A("--captions", action="store_true"), A("--keep-retakes", action="store_true"),
+        A("--no-build", action="store_true"), *size)
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")

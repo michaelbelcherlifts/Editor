@@ -19,7 +19,8 @@ screenshots. Other skills in `.claude/skills/` cover styles, colour, autopilot a
   read the playhead or markers through the Resolve MCP, or ask.
 - Say what changed in one line, including the new length.
 - Creative choices are Michael's. Offer options; do not add effects or cuts that
-  were not asked for.
+  were not asked for. Autopilot is the exception he asked for: it may cut retakes
+  and pauses, and must list every cut it made.
 
 ## Layout
 
@@ -33,6 +34,9 @@ screenshots. Other skills in `.claude/skills/` cover styles, colour, autopilot a
 - `src/stylebrain/reference.py`: studying a reference video (frame sheets, motion timing, colours, side-by-side check)
 - `src/stylebrain/style.py`: measuring a video's style (cuts, opening, speech pace, picture, sound) into `library/styles/`
 - `src/stylebrain/look.py`: colour looks: a LUT made from a reference, saved in `library/looks/`
+- `src/stylebrain/transcribe.py`: word-timing transcripts from a local speech-to-text tool
+- `src/stylebrain/autopilot.py`: first cut in one command (retakes, pauses, look, captions, build, review)
+- `src/stylebrain/review.py`: timestamped suggestions from comparing a cut with a style
 - `src/stylebrain/bake.py`: ffmpeg zooms and speed changes
 - `src/stylebrain/cli.py`: the `stylebrain` command
 
