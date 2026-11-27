@@ -37,6 +37,7 @@ screenshots. Other skills in `.claude/skills/` cover styles, colour, autopilot a
 - `src/stylebrain/transcribe.py`: word-timing transcripts from a local speech-to-text tool
 - `src/stylebrain/autopilot.py`: first cut in one command (retakes, pauses, look, captions, build, review)
 - `src/stylebrain/review.py`: timestamped suggestions from comparing a cut with a style
+- `src/stylebrain/score.py`: the virality rubric: a 0 to 100 score for a short clip, part by part
 - `src/stylebrain/bake.py`: ffmpeg zooms and speed changes
 - `src/stylebrain/cli.py`: the `stylebrain` command
 

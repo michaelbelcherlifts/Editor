@@ -21,6 +21,7 @@ What exists today:
 | Autopilot | One command from a raw clip to a first cut: retakes out, pauses tightened, look, captions, build, review | Tested with a stand-in for Resolve; ran end to end here on a generated clip |
 | Cut review | Timestamped notes on how your cut differs from a saved style | Tested |
 | Transcription | Runs a free local speech-to-text tool (mlx-whisper or whisper) | Plumbing tested with a stand-in. **Not yet run with the real tools** |
+| Virality score | Scores a short clip 0 to 100 on seven listed parts (hook, pacing, payoff, value, shareability, trend, craft). Weights are a starting proposal, not yet tuned on real analytics | Tested |
 | Resolve builder | Builds the edit in Resolve as a new timeline and checks it | Tested against a stand-in only. **Not yet run against real Resolve** |
 
 ## Why an edit list
