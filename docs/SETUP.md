@@ -24,6 +24,7 @@ results:
 - [ ] `overlay-add` puts a clip on V2 at the right place.
 - [ ] A rendered animation (`stylebrain render caption_pop ...`) imports into Resolve
       with its transparency intact.
+- [ ] `uv run stylebrain ref-fetch <a YouTube link>` downloads the video into `references/`.
 - [ ] Audio comes along with the video on the main track.
 
 If `build` reports problems, paste its output to Claude. The builder reads every

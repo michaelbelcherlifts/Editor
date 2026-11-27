@@ -16,6 +16,7 @@ explainer animations, color looks, overnight autopilot). What exists today:
 | Animation templates | Caption pop, lower third, callout, running captions, muscle diagram | Tested |
 | Effect library | Named, reusable effect recipes you can place by name | Tested |
 | Baked effects | Punch-in zooms and speed changes made with ffmpeg | Tested |
+| Reference study | Downloads a link, makes frame sheets, reads motion timing and colours, and compares a remake against the original | Tested on clips made here. **Not yet run on a real YouTube link** |
 | Resolve builder | Builds the edit in Resolve as a new timeline and checks it | Tested against a stand-in only. **Not yet run against real Resolve** |
 
 ## Why an edit list

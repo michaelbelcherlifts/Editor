@@ -229,6 +229,51 @@ def cmd_effect_place(args) -> None:
     print(f"  rendered {r.path}")
 
 
+def _secs(text: str) -> float:
+    return parse_time(text, 1000.0) / 1000.0
+
+
+def cmd_ref_fetch(args) -> None:
+    from . import reference
+    path = reference.fetch(args.url, args.dest)
+    print(json.dumps(reference.describe(str(path)), indent=2))
+
+
+def cmd_ref_sheet(args) -> None:
+    from . import reference
+    times = reference.contact_sheet(args.video, _secs(args.start), _secs(args.end), args.out, args.count, args.columns)
+    print(f"wrote {args.out}; frames in reading order at: " + ", ".join(f"{t:.2f}s" for t in times))
+
+
+def cmd_ref_frames(args) -> None:
+    from . import reference
+    for f in reference.frames(args.video, _secs(args.start), _secs(args.end), args.out, args.count):
+        print(f"{f['time']:.2f}s  {f['path']}")
+
+
+def cmd_ref_motion(args) -> None:
+    from . import reference
+    m = reference.motion(args.video, _secs(args.start), _secs(args.end), args.threshold)
+    data = m.to_dict()
+    if not args.curve:
+        data.pop("curve")
+    print(json.dumps(data, indent=2))
+
+
+def cmd_ref_palette(args) -> None:
+    from . import reference
+    box = json.loads(args.box) if args.box else None
+    for c in reference.palette(args.video, _secs(args.at), args.colours, box):
+        print(f"{c['hex']}  {c['share'] * 100:.0f}%")
+
+
+def cmd_ref_compare(args) -> None:
+    from . import reference
+    reference.compare_sheet(args.reference, _secs(args.ref_start), args.mine, _secs(args.mine_start),
+                            args.seconds, args.out, args.count, background=args.background)
+    print(f"wrote {args.out}: reference on top, yours below")
+
+
 def cmd_undo(args) -> None:
     store = _store(args)
     print(f"back to v{store.undo()}\n" + _summary(store.load()))
@@ -300,6 +345,21 @@ def main(argv: list[str] | None = None) -> None:
         A("--fps", type=float, default=30.0), *size)
     add("effect-place", cmd_effect_place, "render a saved effect and place it on the timeline", A("name"),
         A("--at", required=True), sets, A("--track", type=int, default=2), A("--label"), *size)
+    span = [A("video"), A("--start", required=True), A("--end", required=True)]
+    add("ref-fetch", cmd_ref_fetch, "download a reference video for private study", A("url"),
+        A("--dest", default="references"))
+    add("ref-sheet", cmd_ref_sheet, "one image of evenly spaced frames from a moment", *span,
+        A("--out", required=True), A("--count", type=int, default=24), A("--columns", type=int, default=6))
+    add("ref-frames", cmd_ref_frames, "save larger single frames from a moment", *span,
+        A("--out", required=True), A("--count", type=int, default=12))
+    add("ref-motion", cmd_ref_motion, "when things move in a moment, and for how long", *span,
+        A("--threshold", type=float, default=0.6), A("--curve", action="store_true"))
+    add("ref-palette", cmd_ref_palette, "main colours of a frame", A("video"), A("--at", required=True),
+        A("--colours", type=int, default=5), A("--box", help="[x, y, w, h] as fractions"))
+    add("ref-compare", cmd_ref_compare, "reference on top, your render below, at matching moments",
+        A("reference"), A("mine"), A("--ref-start", default="0"), A("--mine-start", default="0"),
+        A("--seconds", type=float, required=True), A("--out", required=True),
+        A("--count", type=int, default=8), A("--background"))
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")

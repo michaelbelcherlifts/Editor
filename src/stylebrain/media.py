@@ -77,3 +77,20 @@ def read_frame(path: str, t: float, width: int | None = None):
     if len(raw) != w * h * 3:
         raise EditError(f"no frame at {t:.2f}s in {path}")
     return np.frombuffer(raw, np.uint8).reshape(h, w, 3)
+
+
+def read_frames(path: str, start: float, end: float, fps: float | None = None, width: int = 320):
+    """Frames between start and end seconds as an (n, height, width, 3) uint8 array. Needs numpy."""
+    import numpy as np
+
+    if end <= start:
+        raise EditError("the end must be after the start")
+    i = info(path)
+    h = round(i.height * width / i.width / 2) * 2
+    vf = f"scale={width}:{h}" + (f",fps={fps}" if fps else "")
+    raw = run(["ffmpeg", "-v", "error", "-ss", f"{start:.4f}", "-t", f"{end - start:.4f}", "-i", str(path),
+               "-vf", vf, "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]).stdout
+    n = len(raw) // (width * h * 3)
+    if n == 0:
+        raise EditError(f"no frames between {start:.2f}s and {end:.2f}s in {path}")
+    return np.frombuffer(raw[: n * width * h * 3], np.uint8).reshape(n, h, width, 3)
