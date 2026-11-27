@@ -240,3 +240,15 @@ def test_tags_become_attributes(tmp_path, monkeypatch, capsys):
         main(["clip-tag", "nope", "--tags", '{"series": true}'])
     main(["clip-tag", "--questions"])
     assert "before seeing any results" in capsys.readouterr().out
+
+
+def test_no_weights_when_parts_were_never_judged(tmp_path, monkeypatch):
+    import numpy as np
+    monkeypatch.chdir(tmp_path)
+    rng = np.random.default_rng(2)
+    for i in range(30):
+        craft = float(rng.normal())
+        attrs = {"pace": float(rng.normal()), "score_craft": craft,
+                 **{f"score_{p}": 7.5 for p in learn.PARTS if p != "craft"}}      # judged parts left at neutral
+        learn.add(f"c{i:02d}", attrs, {"views": 10 ** (4 + 0.4 * craft)}, mine=True)
+    assert learn.fit(learn.load_all(), "views")["weights"] is None
