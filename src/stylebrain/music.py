@@ -196,7 +196,9 @@ def bed(edit: EditList, out: str | Path, voice: str | Path | None = None, fade: 
              f"afade=t=out:st={max(total - fade, 0):.3f}:d={min(fade, total):.3f},apad=whole_dur={total:.4f}")
     if voice and m.duck:
         cmd += ["-i", str(voice)]
-        chain += ("[bed];[1:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[key];"
-                  "[bed][key]sidechaincompress=threshold=0.02:ratio=8:attack=15:release=400")
+        # The voice is padded without end and the result padded again: whichever input runs out
+        # first, the bed still comes out at the full length of the edit.
+        chain += ("[bed];[1:a]aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,apad[key];"
+                  f"[bed][key]sidechaincompress=threshold=0.02:ratio=8:attack=15:release=400,apad=whole_dur={total:.4f}")
     run(cmd + ["-filter_complex", chain + "[o]", "-map", "[o]", "-t", f"{total:.4f}", "-ar", "48000", str(out)])
     return out
