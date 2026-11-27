@@ -46,6 +46,8 @@ of the clip, not a trim, so do it by hand with `cut` and check with `music-beats
 
 ## Limits to say out loud
 
-Beat finding has only been checked on test tracks with a steady pulse, not yet
-on real songs. Before trusting `music-snap` on a new song, look at
-`music-beats` and listen to an `export` once.
+Beat finding is proven only on test tracks with a steady pulse. The one try on
+a real song was inconclusive (the pulse read as unclear). So on every new song:
+say what `music-add` reported about the pulse, and before `music-snap` have
+him listen to an `export` or check two or three beat times against the song by
+ear. If the beats are off, cut by hand to times he gives.

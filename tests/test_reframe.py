@@ -166,3 +166,13 @@ def test_face_height_is_kept_for_later_punch_ins(wide, monkeypatch, capsys, tmp_
     main(["new", "q", "--source", "/v/a.mov", "--fps", "30", "--frames", "300"])
     main(["reframe", "--zoom", "1.2", "--no-preview"])
     assert "add --y 0.4" in capsys.readouterr().out
+
+
+def test_a_cut_just_after_a_sample_is_still_found(tmp_path, monkeypatch):
+    monkeypatch.setattr(reframe, "_faces", lambda grey: None)
+    out = tmp_path / "late.mp4"
+    # The cut is at frame 97 (3.233s): between samples, the way a real cut at 5.122s was missed.
+    graph = ("color=c=0x303030:s=320x180:r=30:d=3.2333[a];color=c=0x90a0d0:s=320x180:r=30:d=3[b];[a][b]concat=n=2[o]")
+    media.run(["ffmpeg", "-v", "error", "-y", "-filter_complex", graph, "-map", "[o]", "-pix_fmt", "yuv420p", str(out)])
+    for rate in (3.0, 2.0, 5.0):
+        assert reframe.shot_changes(str(out), reframe.track(str(out), 0, 6.2, per_second=rate), 30.0) == [97]
