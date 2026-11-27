@@ -299,6 +299,28 @@ def cmd_build(args) -> None:
         sys.exit(1)
 
 
+def cmd_style_learn(args) -> None:
+    from . import style
+    words = tr.load_words(args.transcript) if args.transcript else None
+    profile = style.measure(args.video, words, args.threshold)
+    path = style.save(args.name, profile, args.about or "")
+    print(f"saved style {args.name!r} to {path}")
+    print(style.summary(profile))
+
+
+def cmd_style_show(args) -> None:
+    from . import style
+    p = style.load(args.name)
+    print(json.dumps(p, indent=2) if args.json else style.summary(p))
+
+
+def cmd_style_list(args) -> None:
+    from . import style
+    for name in style.list_styles():
+        p = style.load(name)
+        print(f"{name}: {p.get('about') or Path(p['source']).name}")
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -360,6 +382,11 @@ def main(argv: list[str] | None = None) -> None:
         A("reference"), A("mine"), A("--ref-start", default="0"), A("--mine-start", default="0"),
         A("--seconds", type=float, required=True), A("--out", required=True),
         A("--count", type=int, default=8), A("--background"))
+    add("style-learn", cmd_style_learn, "measure a video's editing style and save it", A("video"),
+        A("--name", required=True), A("--transcript", help="word-timing JSON, for speech pace"),
+        A("--about"), A("--threshold", type=float, default=0.3, help="how big a change counts as a cut"))
+    add("style-show", cmd_style_show, "describe a saved style", A("name"), A("--json", action="store_true"))
+    add("style-list", cmd_style_list, "list saved styles")
     add("undo", cmd_undo, "go back one version")
     add("goto", cmd_goto, "jump to a version", A("version", type=int))
     add("log", cmd_log, "list versions")
