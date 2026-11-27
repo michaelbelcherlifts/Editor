@@ -635,8 +635,19 @@ def cmd_look_use(args) -> None:
 
 def cmd_transcribe(args) -> None:
     from .transcribe import transcribe
-    path, words = transcribe(args.video, args.out, args.engine, args.model)
+    speech = None
+    if args.speech:
+        try:
+            speech = [tuple(float(x) for x in part.split("-")) for part in args.speech.split(",")]
+            assert all(len(r) == 2 and r[0] < r[1] for r in speech)
+        except (ValueError, AssertionError):
+            raise EditError("--speech takes ranges in seconds, such as 0-3.4 or 0-3.4,12-15") from None
+    path, words = transcribe(args.video, args.out, args.engine, args.model, speech)
     print(f"{len(words)} words, saved to {path}")
+    if speech is None and tr.maybe_sung(words):
+        print("These may be song lyrics, not speech: the words are held as long as sung ones. Read them against the "
+              "video; if a song plays, run again with --speech START-END for the parts where someone talks "
+              "(or leave the transcript out for a music-only clip).")
 
 
 def cmd_retakes(args) -> None:
@@ -688,6 +699,10 @@ def cmd_review(args) -> None:
         mine = review.profile_of_edit(edit, words)
         cuts = mine["cuts"] if len(edit.pieces()) > 1 else None
     hook = [f for f in story.hook_check(words, duration, cuts) if f.serious] if words else []
+    if not words and args.video:  # music and pictures only: the opening is judged on the picture alone
+        first = min(cuts) if cuts else duration
+        if first > 1.5:
+            hook = [story.Finding(first, "first_change", story.first_change_text(first))]
     found = review.compare(mine, target, args.limit) if target else []
     if args.markers:
         if args.video:
@@ -710,8 +725,10 @@ def cmd_review(args) -> None:
     elif words:
         print("No hook problems measured.")
     if not target:
-        if not words:
+        if not words and not args.video:
             raise EditError("give --transcript for the hook check, or a style to compare against")
+        if not words:
+            print("No transcript given, so only the picture was checked" + ("." if hook else ": no problems measured."))
         return
     if not found:
         print(f"nothing stands out against {args.style!r}")
@@ -1433,7 +1450,8 @@ def main(argv: list[str] | None = None) -> None:
     add("look-list", cmd_look_list, "list saved looks")
     add("look-use", cmd_look_use, "put a saved look on the edit ('none' removes it)", A("name"))
     add("transcribe", cmd_transcribe, "make a word-timing transcript with a local speech-to-text tool",
-        A("video"), A("--out"), A("--engine"), A("--model"))
+        A("video"), A("--out"), A("--engine"), A("--model"),
+        A("--speech", help="keep only words spoken in these seconds, such as 0-3.4,12-15 (drops song lyrics)"))
     add("retakes", cmd_retakes, "list likely failed attempts: repeats, restarts, lines said again, 'start over', stutters", *tx,
         A("--min-words", type=int, default=4), A("--cut", action="store_true", help="cut the sure ones"),
         A("--maybe", action="store_true", help="with --cut, also cut the ones marked maybe"))
