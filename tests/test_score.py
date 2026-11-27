@@ -92,3 +92,20 @@ def test_story_gate_caps_a_clip_with_nothing_to_find_out():
                  audio={"loudness_lufs": -14.0}, judge={**BEST, "story": 2})
     assert s.total == 55 and "capped at 55" in s.text() and s.to_dict()["cap"]["at"] == 55
     assert sc.score(GOOD, 30.0, judge={**BEST, "story": 3}).cap is None
+
+
+def test_a_clip_with_no_speech_is_judged_on_its_pictures():
+    judge = {**BEST, "text_on_frame_1": False, "captions": False}
+    cuts = [0.4, 1.6, 2.8, 4.0, 5.2, 6.4, 7.6, 8.8, 10.0]
+    s = sc.score([], 16.0, cuts=cuts, frame={"width": 1080, "height": 1920}, audio={"loudness_lufs": -14.0}, judge=judge)
+    by = {p.name: p for p in s.parts}
+    assert by["Hook"].points == 20.0 and "no speech" in by["Hook"].why      # 15 for the fast first cut, 5 for the promise
+    assert by["Pacing"].points > 17 and "no speech" in by["Pacing"].why
+    slow = sc.score([], 16.0, cuts=[6.0], frame={"width": 1080, "height": 1920}, judge=judge)
+    assert slow.parts[0].points == 5.0
+
+
+def test_score_command_works_without_a_transcript(tmp_path, capsys):
+    with pytest.raises(SystemExit):
+        main(["score"])
+    assert "--video, --transcript, or both" in capsys.readouterr().err

@@ -4,6 +4,9 @@ Talk through an edit in DaVinci Resolve Studio with Claude Code. You say "cut th
 retake" or "swap these two sections"; Claude changes the edit and a new timeline
 version appears in Resolve.
 
+Where the project is going, and what is built versus planned, is in
+[docs/PRD.md](docs/PRD.md).
+
 What exists today:
 
 | Piece | What it does | State |
@@ -93,8 +96,8 @@ uv run pytest
 
 ## Known limits of this version
 
-- One layer of footage on the main track, plus overlays above it. No transitions or
-  audio-only edits yet. Zooms and speed changes are baked into a new file, not live
+- Several clips can share the main track, with b-roll and graphics above it, but all
+  must be at the edit's frame rate. No transitions or audio-only edits yet. Zooms and speed changes are baked into a new file, not live
   in Resolve.
 - Transparent clips are ProRes 4444 and large, roughly 10 to 20 MB per second at 1080p.
 - The muscle figure is a simple stylized diagram, not a medical illustration.

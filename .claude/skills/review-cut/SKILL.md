@@ -66,3 +66,8 @@ judgements to make (1 to 5 each, from reading the transcript and looking at a
 `ref-sheet` of the clip) and the flags. Always show the parts, name the weakest
 one, and say that the weights are untuned: the score ranks clips against each
 other and does not predict views.
+
+For a clip with no speech (music and pictures only), leave out `--transcript`:
+the opening is then judged on how soon the picture changes. A transcript that
+is only "Thanks for watching" is the speech tool inventing words over music,
+and is ignored.

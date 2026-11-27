@@ -149,7 +149,14 @@ def test_commands_retakes_srt_and_review(project, capsys):
     assert "against" not in capsys.readouterr().out
 
 
+def test_phantom_speech_over_music_is_dropped():
+    assert tr.drop_phantom_speech([Word("Thanks", 9, 9.5), Word("for", 9.5, 9.8), Word("watching!", 9.8, 11)]) == []
+    real = say("thanks for watching my bench today", 0)
+    assert tr.drop_phantom_speech(real) == real
+
+
 @pytest.mark.skipif(not shutil.which("ffmpeg"), reason="needs ffmpeg")
+@pytest.mark.skipif(os.name == "nt", reason="the stand-in speech tool is a shell script, which Windows cannot run")
 def test_transcribe_uses_the_first_tool_found(tmp_path, monkeypatch):
     from stylebrain import media
     from stylebrain.transcribe import transcribe

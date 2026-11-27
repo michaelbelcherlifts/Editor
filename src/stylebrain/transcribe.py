@@ -17,7 +17,7 @@ from pathlib import Path
 
 from .edl import EditError
 from .media import run
-from .transcript import Word, load_words
+from .transcript import Word, drop_phantom_speech, load_words
 
 ENGINES = {
     "mlx_whisper": lambda audio, out, model: [
@@ -35,7 +35,10 @@ def available() -> list[str]:
 
 def transcribe(video: str, out: str | Path | None = None, engine: str | None = None,
                model: str | None = None) -> tuple[Path, list[Word]]:
-    """Transcribe `video` to `<video>.words.json` (or `out`). Returns the path and the words."""
+    """Transcribe `video` to `<video>.words.json` (or `out`). Returns the path and the words.
+
+    A clip with no speech (music only) gives no words; that is a result, not an error.
+    """
     found = available()
     if engine and engine not in ENGINES:
         raise EditError(f"unknown engine {engine!r}; choose from {', '.join(ENGINES)}")
@@ -53,9 +56,7 @@ def transcribe(video: str, out: str | Path | None = None, engine: str | None = N
         result = Path(tmp) / "audio.json"
         if not result.exists():
             raise EditError(f"{engine} finished but wrote no transcript")
-        words = load_words(result)
-        if not words:
-            raise EditError(f"{engine} returned no word timings")
+        words = drop_phantom_speech(load_words(result))
         out.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(result, out)
     return out, words

@@ -131,23 +131,31 @@ def score(words: list[Word], duration: float, cuts: list[float] | None = None, f
     out = Score()
 
     # Hook, 25: first meaningful word (7), first useful point (3), first visual change (5),
-    # text on frame 1 (5), clear promise (5)
+    # text on frame 1 (5), clear promise (5).
+    # A clip with no speech (music and pictures only) is judged on its pictures: the 10 points
+    # for the first word and first point go to how soon the picture changes instead.
     first = first_real_word(words)
-    t = first.start if first else duration
-    word_pts = 7 * _ramp(t, 0.3, 3.0)
-    why = [f"first real word at {t:.1f}s" if first else "no speech"]
-    point = first_useful_point(words, judge.get("first_point"))
-    word_pts += 3 * (_ramp(point, 1.5, 6.0) if point is not None else 0.0)
-    why.append(f"first useful point at {point:.1f}s" if point is not None else "no useful point found")
+    silent = not words
     judged = True
+    if silent:
+        why = ["no speech, so the opening is judged on the picture"]
+        word_pts = 0.0
+    else:
+        t = first.start if first else duration
+        word_pts = 7 * _ramp(t, 0.3, 3.0)
+        why = [f"first real word at {t:.1f}s"]
+        point = first_useful_point(words, judge.get("first_point"))
+        word_pts += 3 * (_ramp(point, 1.5, 6.0) if point is not None else 0.0)
+        why.append(f"first useful point at {point:.1f}s" if point is not None else "no useful point found")
+    change_max = 15 if silent else 5
     if cuts is None:
-        change_pts = 2.5
+        change_pts = change_max / 2
         why.append("first visual change not measured")
         judged = False
     else:
         c = cuts[0] if cuts else duration
-        change_pts = 5 * _ramp(c, 1.0, 4.0)
-        why.append(f"first visual change at {c:.1f}s" if cuts else "picture never changes")
+        change_pts = change_max * _ramp(c, 1.0, 4.0)
+        why.append(f"first cut at {c:.1f}s" if cuts else "picture never cuts")
     if "text_on_frame_1" in judge:
         text_pts = 5.0 if judge["text_on_frame_1"] else 0.0
         why.append("text on frame 1" if judge["text_on_frame_1"] else "no text on frame 1")
@@ -159,11 +167,14 @@ def score(words: list[Word], duration: float, cuts: list[float] | None = None, f
 
     # Pacing, 20: pauses (6), a change every 2 to 4 s (5), longest held shot (3), sentence length (2),
     # length 15 to 45 s (4)
-    gaps = [b.start - a.end for a, b in zip(words, words[1:])]
-    worst = max(gaps, default=0.0)
-    pause_pts = 6 * _ramp(worst, 0.3, 1.5)
-    why = [f"longest pause {worst:.1f}s"]
     judged = True
+    if silent:
+        pause_pts, why = 6.0, ["no speech"]
+    else:
+        gaps = [b.start - a.end for a, b in zip(words, words[1:])]
+        worst = max(gaps, default=0.0)
+        pause_pts = 6 * _ramp(worst, 0.3, 1.5)
+        why = [f"longest pause {worst:.1f}s"]
     if cuts is None:
         change_pts, judged = 4.0, False
         why.append("visual changes not measured")
@@ -173,9 +184,12 @@ def score(words: list[Word], duration: float, cuts: list[float] | None = None, f
         held, held_at = longest_shot(cuts, duration)
         change_pts += 3 * _ramp(held, 4.0, 10.0)
         why += [f"a change every {every:.1f}s", f"longest held shot {held:.1f}s at {held_at:.1f}s"]
-    avg = average_sentence_words(words)
-    sentence_pts = 2 * _ramp(avg, 12, 25) if words else 1.0
-    why.append(f"sentences average {avg:g} words")
+    if words:
+        avg = average_sentence_words(words)
+        sentence_pts = 2 * _ramp(avg, 12, 25)
+        why.append(f"sentences average {avg:g} words")
+    else:
+        sentence_pts = 2.0
     length_pts = 4 * (1.0 if 15 <= duration <= 45 else _ramp(duration, 15, 5) if duration < 15 else _ramp(duration, 45, 90))
     why.append(f"{duration:.0f}s long")
     out.parts.append(Part("Pacing", round(pause_pts + change_pts + sentence_pts + length_pts, 1), 20, "; ".join(why), judged))

@@ -22,7 +22,10 @@ on Michael's timeline: the effect is rebuilt as our own HTML animation.
    - `uv run stylebrain ref-sheet VIDEO --start S --end E --out sheet.jpg` then read
      the image. Each tile is stamped with its time.
    - `uv run stylebrain ref-motion VIDEO --start S --end E` lists when things
-     move and for how long. Use these as the animation timings.
+     move and for how long. Use these as the animation timings. Over
+     moving footage add `--box '[x, y, w, h]'` round the graphic, or it will
+     report the camera's movement instead. If it still cannot separate them,
+     read timings off a dense `ref-sheet` (`--count 36` over 1.5 seconds).
    - `uv run stylebrain ref-palette VIDEO --at T` gives the main colours. Add
      `--box '[x, y, w, h]'` (fractions) to read only the graphic.
    - `uv run stylebrain ref-frames ...` for larger stills when detail matters
