@@ -32,6 +32,10 @@ creator profiles. They assume a typical phone clip. For a better fit, remake one
 own footage: `uv run stylebrain look-from-style creator-sam --style PROFILE.json --footage MINE`
 (a saved style name works in place of the file). Then preview and use it as above.
 
+## A dark physique look
+
+For a flex or pose moment (the dark, low-colour gym look), see `docs/aesthetic-shots.md`. A grade cannot add the overhead light that makes that look: say so if the footage is flat and evenly lit.
+
 ## What this does and does not match
 
 It matches overall brightness, contrast and colour balance. It does not copy
