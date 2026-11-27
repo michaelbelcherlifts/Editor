@@ -1206,6 +1206,76 @@ def cmd_week_report(args) -> None:
     print(json.dumps(rep, indent=2) if args.json else format_week_report(rep))
 
 
+def _clip_transcript(video: str, given: str | None) -> str:
+    if given:
+        return given
+    base = Path(video)
+    for cand in (base.with_suffix(".words.json"), base.with_suffix(".en-orig.vtt"), base.with_suffix(".en.vtt")):
+        if cand.exists():
+            return str(cand)
+    from .transcribe import transcribe
+    path, _ = transcribe(video)
+    return str(path)
+
+
+def cmd_clip_find(args) -> None:
+    from . import autoclip as ac
+    transcript = _clip_transcript(args.video, args.transcript)
+    words = tr.drop_phantom_speech(tr.load_words(transcript))
+    cands = ac.find(words, args.count, args.min, args.max, args.skip_intro)
+    out = Path(args.out or Path("exports") / "clips" / Path(args.video).stem)
+    settings = {"count": args.count, "min": args.min, "max": args.max, "skip_intro": args.skip_intro}
+    path = ac.save_candidates(out, args.video, transcript, cands, settings)
+    brief = ac.judging_brief(cands)
+    (out / "brief.txt").write_text(brief, encoding="utf-8")
+    print(f"{len(cands)} candidates saved to {path}")
+    print(f"judge them (one agent per clip is fine), save {out / 'judgements.json'} as "
+          '{"c01": {"story": 4, ...}, ...}, then run `stylebrain clip-cut ' + str(out) + "`\n")
+    print(brief)
+
+
+def cmd_clip_cut(args) -> None:
+    from . import autoclip as ac
+    from .media import probe
+    out = Path(args.dir)
+    data, cands = ac.load_candidates(out)
+    judge_path = Path(args.judge) if args.judge else out / "judgements.json"
+    judgements = json.loads(judge_path.read_text()) if judge_path.exists() else {}
+    if not judgements:
+        print("no judgements found: scoring on measured parts only (judged parts get a neutral value)")
+    only = set(args.only.split(",")) if args.only else None
+    words = tr.drop_phantom_speech(tr.load_words(data["transcript"]))
+    source = data["source"]
+    fps, frames = probe(source)
+    w, h = _wh(args.size)
+    made = []
+    for c in cands:
+        if only and c.id not in only:
+            continue
+        print(f"cutting {c.id} ({c.seconds:.0f}s from {ac._clock(c.start)})...", flush=True)
+        try:
+            made.append(ac.make(c, source, words, out, judgements.get(c.id), w, h, render=not args.no_render,
+                                captions=not args.no_captions, reframe=not args.no_reframe,
+                                hook_seconds=args.hook_seconds, fps=fps, total_frames=frames))
+        except EditError as e:
+            m = ac.Made(c, judgements.get(c.id) or {})
+            m.skipped = f"could not cut: {e}"
+            made.append(m)
+    ranked = ac.rank(made)
+    (out / "review.json").write_text(json.dumps([m.to_dict() for m in ranked], indent=2) + "\n")
+    page = ac.sheet(ranked, out / "review.html", source, args.title or f"Clips from {Path(source).stem}")
+    print(f"\nreview sheet: {page}  (nothing has been posted)")
+    for n, m in enumerate(ranked, 1):
+        if not m.score:
+            print(f"  --  {m.candidate.id}  not cut: {m.skipped}")
+            continue
+        tag = f"  ({m.skipped})" if m.skipped else ""
+        print(f"  #{n} {m.candidate.id}  {m.total}/100  {m.seconds:.0f}s  {m.score['verdict']}{tag}")
+        print(f"      fix: {ac.fix_for(m)}")
+        for line in m.cuts:
+            print(f"      cut: {line}")
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -1471,6 +1541,19 @@ def main(argv: list[str] | None = None) -> None:
     add("export-check", cmd_export_check, "check a finished file (from here or from Resolve) before posting", A("file"), *out,
         A("--seconds", type=float, help="how long it should be"), A("--no-sheet", action="store_true"),
         A("--json", action="store_true"))
+    add("clip-find", cmd_clip_find, "propose reel-length moments from a long recording, for judging", A("video"),
+        A("--transcript", help="word timings (default: VIDEO.words.json or the YouTube .en-orig.vtt beside it, "
+                               "else it is transcribed)"),
+        A("--count", type=int, default=8), A("--min", type=float, default=15.0), A("--max", type=float, default=60.0),
+        A("--skip-intro", type=float, default=0.0, help="seconds at the start to leave out"),
+        A("--out", help="folder for the clips (default: exports/clips/VIDEO-NAME)"))
+    add("clip-cut", cmd_clip_cut, "cut, frame, caption, render and score the candidates, then write a review sheet",
+        A("dir", help="the folder clip-find wrote"),
+        A("--judge", help="judgements JSON (default: DIR/judgements.json)"),
+        A("--only", help="candidate ids, comma separated"), A("--size", help="default: 1080x1920"),
+        A("--hook-seconds", type=float, help="how long the text hook stays (default: the whole clip)"),
+        A("--title"), A("--no-render", action="store_true", help="plan and score only, no video"),
+        A("--no-captions", action="store_true"), A("--no-reframe", action="store_true"))
     add("build", cmd_build, "build the current edit in Resolve as a new timeline", A("--name"))
 
     args = p.parse_args(argv)
