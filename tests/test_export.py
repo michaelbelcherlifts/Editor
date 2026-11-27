@@ -84,3 +84,45 @@ def test_export_commands(clips, tmp_path, monkeypatch, capsys):
     with pytest.raises(SystemExit):
         main(["export-check", clips["blue"], "--no-sheet"])
     assert "no sound" in capsys.readouterr().out
+
+
+def _tone(wav, t0, t1):
+    """The loudest pitch (Hz) between two seconds of a wav."""
+    import wave
+
+    import numpy as np
+    with wave.open(str(wav)) as w:
+        rate, ch = w.getframerate(), w.getnchannels()
+        w.setpos(int(t0 * rate))
+        x = np.frombuffer(w.readframes(int((t1 - t0) * rate)), dtype=np.int16).reshape(-1, ch)[:, 0].astype(float)
+    spec = np.abs(np.fft.rfft(x * np.hanning(len(x))))
+    return float(np.fft.rfftfreq(len(x), 1 / rate)[int(spec.argmax())])
+
+
+def test_j_and_l_cuts_move_the_sound_not_the_picture(tmp_path):
+    pytest.importorskip("numpy")
+    low = _clip(tmp_path / "low.mp4", "red", tone=300, volume=0.2)
+    high = _clip(tmp_path / "high.mp4", "blue", tone=900, volume=0.2)
+    straight = EditList(30.0, (Segment(low, 0, 45), Segment(high, 30, 75)))      # cut at 1.5s
+    assert straight.audio_ranges() == [(low, 0, 45), (high, 30, 75)] and not straight.has_split_edits
+    j = straight.split_edit(44, -12)                                              # sound changes 0.4s early
+    assert j.audio_ranges() == [(low, 0, 33), (high, 18, 75)] and j.duration == 90
+    wav = export.voice(j, tmp_path / "j.wav")
+    assert abs(_tone(wav, 0.5, 1.0) - 300) < 20 and abs(_tone(wav, 1.2, 1.45) - 900) < 20
+    l_cut = straight.split_edit(45, 12)
+    wav = export.voice(l_cut, tmp_path / "l.wav")
+    assert abs(_tone(wav, 1.55, 1.85) - 300) < 20 and abs(_tone(wav, 2.0, 2.5) - 900) < 20
+    out = export.render(j, tmp_path / "j.mp4", 320, 180)
+    assert [_colour(str(out), t) for t in (1.3, 1.7)] == ["red", "blue"]          # the picture still cuts at 1.5s
+    media.run(["ffmpeg", "-v", "error", "-y", "-i", str(out), "-vn", "-ac", "1", "-ar", "48000", str(tmp_path / "o.wav")])
+    assert abs(_tone(tmp_path / "o.wav", 1.2, 1.45) - 900) < 20
+    assert j.split_edit(45, 0) == straight
+    with pytest.raises(EditError):
+        straight.split_edit(45, -50)                                              # more than the pieces allow
+    with pytest.raises(EditError):
+        EditList(30.0, (Segment(low, 0, 45), Segment(high, 5, 60))).split_edit(45, -12)   # nothing to lead in with
+    with pytest.raises(EditError):
+        straight.split_edit(10, -5)                                               # no cut near there
+    # edits afterwards keep it sane: the first piece never has a shift, and a shift never outgrows its neighbours
+    assert j.remove_range(0, 45).audio_shifts() == [0, 0]
+    assert j.remove_range(5, 45).audio_shifts() == [0, -4, 0]

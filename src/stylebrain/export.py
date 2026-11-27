@@ -19,7 +19,7 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .edl import EditError, EditList
+from .edl import EditError, EditList, Segment
 from .media import has_audio, info, run
 
 LUFS = -14.0          # what Instagram, TikTok and YouTube all play back at, near enough
@@ -113,8 +113,11 @@ def render(edit: EditList, out: str | Path, width: int = 1080, height: int = 192
 
         # First the sound alone, to learn how loud the mix is; then one gain to reach the target.
         voice_wav = work / "voice.wav"
-        run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(listing), "-vn",
-             "-t", f"{total:.4f}", "-ar", "48000", str(voice_wav)])
+        if edit.has_split_edits:              # J and L cuts: the sound is cut at other points than the picture
+            voice(edit, voice_wav)
+        else:
+            run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(listing), "-vn",
+                 "-t", f"{total:.4f}", "-ar", "48000", str(voice_wav)])
         layers = [voice_wav]
         if sounds and edit.sounds:
             layers.append(sfx.mix(edit, work / "sfx.wav"))
@@ -155,10 +158,12 @@ def voice(edit: EditList, out: str | Path) -> Path:
     work = Path(tempfile.mkdtemp(prefix="stylebrain-voice-"))
     try:
         parts = []
-        for b in range(0, len(edit.segments), 40):
-            group = edit.segments[b:b + 40]
+        ranges = edit.audio_ranges()          # where each piece's sound comes from; differs from the picture at split edits
+        for b in range(0, len(ranges), 40):
+            group = ranges[b:b + 40]
             cmd, chains = ["ffmpeg", "-v", "error", "-y"], []
-            for n, seg in enumerate(group):
+            for n, (source, a_in, a_out) in enumerate(group):
+                seg = Segment(source, a_in, a_out)
                 secs = seg.duration / edit.fps
                 if audio[seg.source]:
                     cmd += ["-ss", f"{seg.src_in / edit.fps:.6f}", "-t", f"{secs + 1:.4f}", "-vn", "-i", seg.source]

@@ -503,6 +503,22 @@ def cmd_rule_note(args) -> None:
     print(f"house rule saved as note {rules.add_note(args.text)}")
 
 
+def cmd_split_edit(args) -> None:
+    store = _store(args); edit = store.load()
+    at = parse_time(args.at, edit.fps)
+    n = edit.cut_near(at)
+    cut = edit.pieces()[n][0]
+    kind = args.kind
+    frames = 0 if kind == "straight" else max(1, round((0.25 if args.seconds is None else args.seconds) * edit.fps))
+    new = edit.split_edit(at, -frames if kind == "j" else frames)
+    where = format_time(cut, edit.fps)
+    message = (f"straight cut at {where}" if kind == "straight" else
+               f"J-cut at {where}: the next line is heard {frames} frames before the picture changes" if kind == "j" else
+               f"L-cut at {where}: the last line carries on {frames} frames over the new picture")
+    _save(store, edit, new, message)
+    print(f"  length unchanged, {format_time(new.duration, new.fps)}")
+
+
 def cmd_reframe(args) -> None:
     from . import reframe
     store = _store(args); edit = store.load()
@@ -1433,11 +1449,11 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("-p", "--project", help="project name (default: the current one)")
     sub = p.add_subparsers(dest="command", required=True)
 
-    def add(name, fn, help, *arguments):
+    def add(name, fn, help, *arguments, **fixed):
         s = sub.add_parser(name, help=help)
         for flags, kw in arguments:
             s.add_argument(*flags, **kw)
-        s.set_defaults(fn=fn)
+        s.set_defaults(fn=fn, **fixed)
 
     A = lambda *flags, **kw: (flags, kw)  # noqa: E731
     tx = [A("--transcript", required=True, help="word-timing JSON for the source clip"),
@@ -1707,6 +1723,13 @@ def main(argv: list[str] | None = None) -> None:
         A("--clear", action="store_true", help="go back to the default"))
     add("rule-note", cmd_rule_note, "save a correction in his words for Claude to follow", A("text", nargs="?"),
         A("--remove", type=int, help="remove note N"))
+    for kind, text in (("j", "J-cut: the next piece's sound comes in before its picture"),
+                       ("l", "L-cut: the sound carries on after the picture has changed"),
+                       ("straight", "make a J or L cut a plain cut again")):
+        add(f"{kind}cut" if kind != "straight" else "straight-cut", cmd_split_edit, text,
+            A("at", help="a time at or near the cut"),
+            *([] if kind == "straight" else [A("--seconds", type=float, help="how far the sound leads or trails (default 0.25)")]),
+            kind=kind)
     add("reframe", cmd_reframe, "place the crop when footage fills a frame of another shape, or punch in",
         A("--auto", action="store_true", help="follow the subject through every shot"),
         A("--from", dest="start"), A("--to", dest="end"),
