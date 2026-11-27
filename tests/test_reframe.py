@@ -138,3 +138,31 @@ def test_a_punch_in_counts_as_a_zoom_for_sounds(tmp_path, monkeypatch):
     edit = EditList.from_clip("/v/a.mov", 300, 30.0).reframe(90, 180, zoom=1.2)
     _, lines = sfx.auto_place(edit, on=("zooms", "cuts"), min_cut_gap=0.5)
     assert [ln.split()[1:4] for ln in lines] == [["whoosh", "on", "zoom"], ["whoosh", "on", "cut"]]
+
+
+def test_a_clip_holding_two_shots_is_split_at_the_cut(tmp_path, monkeypatch):
+    monkeypatch.setattr(reframe, "_faces", lambda grey: None)
+    out = tmp_path / "two.mp4"
+    graph = ("color=c=0x303030:s=640x360:r=30:d=3[a];color=c=0x8090c0:s=640x360:r=30:d=3[b];"
+             "color=c=white:s=40x90:r=30:d=6,split[w1][w2];"
+             "[a][w1]overlay=x='110+12*sin(12*t)':y=130:shortest=1[s1];"
+             "[b][w2]overlay=x='500+12*sin(12*t)':y=130:shortest=1[s2];[s1][s2]concat=n=2[o]")
+    media.run(["ffmpeg", "-v", "error", "-y", "-filter_complex", graph, "-map", "[o]", "-pix_fmt", "yuv420p", str(out)])
+    samples = reframe.track(str(out), 0, 6)
+    assert reframe.shot_changes(str(out), samples, 30.0) == [90]
+    new, lines = reframe.plan(EditList.from_clip(str(out), 180, 30.0), 180, 320)
+    assert [(s.src_in, s.src_out) for s in new.segments] == [(0, 90), (90, 180)]
+    assert new.segments[0].x < 0.35 < 0.65 < new.segments[1].x and len(lines) == 2
+    assert not any("warning" in ln for ln in lines)
+
+
+def test_face_height_is_kept_for_later_punch_ins(wide, monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr(reframe, "_faces", lambda grey: (0.4, 0.22))
+    new, lines = reframe.plan(EditList.from_clip(wide, 80, 30.0), 180, 320)
+    assert new.segments[0].y == pytest.approx(0.22) and "(face)" in lines[0]
+    g = reframe.geometry(640, 360, 180, 320, *new.reframe(0, 80, zoom=1.2).segments[0].framing)
+    assert g["top"] == 0                                    # the punch-in keeps the top of the picture, where his head is
+    monkeypatch.chdir(tmp_path)
+    main(["new", "q", "--source", "/v/a.mov", "--fps", "30", "--frames", "300"])
+    main(["reframe", "--zoom", "1.2", "--no-preview"])
+    assert "add --y 0.4" in capsys.readouterr().out
