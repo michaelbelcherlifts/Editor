@@ -138,11 +138,19 @@ def _overlap(a: str, b: str) -> float:
     return len(ta & tb) / max(1, min(len(ta), len(tb)))
 
 
+def first_change_text(c: float) -> str:
+    return (f"The first cut is at {c:.1f}s. Only cuts are measured: a picture-in-picture, graphic or caption that "
+            "appears sooner is not seen, so look at the frame sheet before acting on this (pass `first_change` in "
+            "seconds if something changes earlier). Aim for a change in under 1 second: a punch-in, a text pop or "
+            "starting mid-movement.")
+
+
 def hook_check(words: list[Word], duration: float, cuts: list[float] | None = None,
                judge: dict | None = None) -> list[Finding]:
     """Problems in the first seconds of a short, each with the second it happens.
 
-    judge may hold `text_on_frame_1` (bool), `undelivered` (bool, the promise is
+    judge may hold `first_change` (seconds, when the picture first changes
+    counting overlays and captions), `text_on_frame_1` (bool), `undelivered` (bool, the promise is
     never paid off) and `first_point` (seconds, Claude's reading of when the
     first useful point lands). Missing judgements are named, not guessed.
     """
@@ -170,11 +178,15 @@ def hook_check(words: list[Word], duration: float, cuts: list[float] | None = No
     elif point > 3.0:
         out.append(Finding(point, "first_point", f"The first useful point lands at {point:.1f}s. In a short it "
                            "should land inside 3 seconds; move it to the front as a cold open."))
-    if cuts is not None:
-        c = min(cuts) if cuts else duration
+    if "first_change" in judge:  # Claude's reading of the frame sheet, which sees overlays and captions too
+        c = float(judge["first_change"])
         if c > 1.5:
             out.append(Finding(c, "first_change", f"The picture first changes at {c:.1f}s. Aim for under 1 second: "
                                "a punch-in, a text pop or starting mid-movement."))
+    elif cuts is not None:
+        c = min(cuts) if cuts else duration
+        if c > 1.5:
+            out.append(Finding(c, "first_change", first_change_text(c)))
     if "text_on_frame_1" not in judge:
         out.append(Finding(0.0, "text", "Not checked: is there a 3 to 8 word text hook on frame 1? Look at frame 1.",
                            serious=False))

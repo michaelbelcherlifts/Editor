@@ -136,6 +136,7 @@ def render(edit: EditList, out: str | Path, width: int = 1080, height: int = 192
                       f"aresample=48000[a]")
         run(cmd + ["-filter_complex", ";".join(chains), "-map", "[v]", "-map", "[a]", "-t", f"{total:.4f}",
                    "-r", f"{edit.fps:g}", "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+                   "-maxrate", "12M", "-bufsize", "24M",
                    "-pix_fmt", "yuv420p", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
                    "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(out)])
     finally:

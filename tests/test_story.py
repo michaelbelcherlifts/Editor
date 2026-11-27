@@ -111,3 +111,22 @@ def test_commands(tmp_path, capsys, monkeypatch):
     main(["script-check", str(s), "--story", json.dumps({k: 2 for k in story.STORY_QUESTIONS})])
     out = capsys.readouterr().out
     assert "story 6.2 / 25: under 20" in out
+
+
+def test_first_change_can_come_from_the_frame_sheet():
+    """Cuts miss overlays: a judged first_change replaces the measured one."""
+    from stylebrain import story
+    from stylebrain.transcript import Word
+    words = [Word("This", 0.0, 0.2), Word("helped", 0.2, 0.5), Word("me", 0.5, 0.6), Word("squat", 0.6, 1.0)]
+    measured = {f.kind: f for f in story.hook_check(words, 16.8, [5.1])}
+    assert "Only cuts are measured" in measured["first_change"].text
+    assert "first_change" not in {f.kind for f in story.hook_check(words, 16.8, [5.1], {"first_change": 0.4})}
+    assert {f.kind: f for f in story.hook_check(words, 16.8, [5.1], {"first_change": 2.8})}["first_change"].at == 2.8
+
+
+def test_song_lyrics_are_flagged_and_can_be_dropped():
+    from stylebrain.transcript import Word, keep_speech, maybe_sung
+    spoken = [Word(w, i * 0.3, i * 0.3 + 0.22) for i, w in enumerate("so if we die we die".split())]
+    sung = [Word(w, 6 + i * 0.9, 6 + i * 0.9 + 0.7) for i, w in enumerate("I came a long way from the bottom".split())]
+    assert not maybe_sung(spoken) and maybe_sung(sung)
+    assert [w.text for w in keep_speech(spoken + sung, [(0, 3.4)])] == [w.text for w in spoken]

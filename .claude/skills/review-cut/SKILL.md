@@ -75,3 +75,14 @@ For a clip with no speech (music and pictures only), leave out `--transcript`:
 the opening is then judged on how soon the picture changes. A transcript that
 is only "Thanks for watching" is the speech tool inventing words over music,
 and is ignored.
+
+Reels with a song under them: the speech tool writes the lyrics down as if he
+said them, and those words then spoil the hook check, the score and the
+learning set. `transcribe` warns when the words look sung. Read the transcript
+against the video, then run `transcribe VIDEO --speech 0-3.4` (ranges in
+seconds, comma separated) to keep only what is really spoken.
+
+The hook check measures full-frame cuts only. A picture-in-picture, a graphic
+or word-by-word captions that appear earlier are not seen, so look at the frame
+sheet and pass `first_change` (seconds) in `--judge` when something changes
+sooner than the first cut.

@@ -336,3 +336,19 @@ def drop_phantom_speech(words: list[Word]) -> list[Word]:
     if len(words) <= 6 and _norm("".join(w.text for w in words)) in _PHANTOMS:
         return []
     return words
+
+
+def keep_speech(words: list[Word], ranges: list[tuple[float, float]]) -> list[Word]:
+    """Only the words that start inside one of `ranges` (seconds): the spoken parts of a clip with a song."""
+    return [w for w in words if any(lo <= w.start < hi for lo, hi in ranges)]
+
+
+def maybe_sung(words: list[Word]) -> bool:
+    """A guess that the words are song lyrics, not speech: sung words are held far longer than spoken ones.
+
+    Only a hint. Read the transcript against the video before trusting it either way.
+    """
+    lengths = sorted(w.end - w.start for w in words if w.end > w.start)
+    if len(lengths) < 5:
+        return False
+    return lengths[len(lengths) // 2] >= 0.45
