@@ -390,27 +390,39 @@ def cmd_srt(args) -> None:
 
 
 def cmd_review(args) -> None:
-    from . import review, style
-    target = style.load(args.style)
-    fps = 30.0
+    from . import review, story, style
+    target = style.load(args.style) if args.style else None
+    fps, cuts, words, mine = 30.0, None, None, None
     if args.video:
         words = tr.load_words(args.transcript) if args.transcript else None
         mine = style.measure(args.video, words)
         if words:
             mine["words"] = [[w.text, w.start, w.end] for w in words]
-        fps = mine["frame"]["fps"]
+        fps, cuts, duration = mine["frame"]["fps"], mine["cuts"], mine["frame"]["seconds"]
     else:
         from .autopilot import timeline_words
         store = _store(args); edit = store.load()
-        fps = edit.fps
-        words = None
+        fps, duration = edit.fps, edit.duration / edit.fps
         if args.transcript:
             words = timeline_words(edit, _source_for(edit, args.source), tr.load_words(args.transcript))
         mine = review.profile_of_edit(edit, words)
-    found = review.compare(mine, target, args.limit)
+        cuts = mine["cuts"] if len(edit.pieces()) > 1 else None
+    hook = [f for f in story.hook_check(words, duration, cuts) if f.serious] if words else []
+    found = review.compare(mine, target, args.limit) if target else []
     if args.json:
-        print(json.dumps(review.to_json(found), indent=2))
-    elif not found:
+        print(json.dumps({"hook": story.to_json(hook), "style": review.to_json(found)}, indent=2))
+        return
+    if hook:
+        print(f"Story and hook first, {len(hook)} to fix:")
+        for f in hook:
+            print(f.line())
+    elif words:
+        print("No hook problems measured.")
+    if not target:
+        if not words:
+            raise EditError("give --transcript for the hook check, or a style to compare against")
+        return
+    if not found:
         print(f"nothing stands out against {args.style!r}")
     else:
         print(f"{len(found)} things to look at, measured against {args.style!r}:")
@@ -428,7 +440,7 @@ def cmd_auto(args) -> None:
 def cmd_score(args) -> None:
     from . import score as sc
     if args.questions:
-        for key, text in {**sc.JUDGEMENTS, **sc.FLAGS}.items():
+        for key, text in {**sc.JUDGEMENTS, **sc.NUMBERS, **sc.FLAGS}.items():
             print(f"  {key}: {text}")
         return
     if not args.transcript:
@@ -445,6 +457,80 @@ def cmd_score(args) -> None:
         duration = words[-1].end if words else 0.0
     result = sc.score(words, duration, cuts, frame, audio, judge)
     print(json.dumps(result.to_dict(), indent=2) if args.json else result.text())
+
+
+def _json_arg(text: str | None, default):
+    if not text:
+        return default
+    return json.loads(Path(text[1:]).read_text() if text.startswith("@") else text)
+
+
+def _clip_inputs(args) -> tuple[list, float, list | None]:
+    words = tr.load_words(args.transcript)
+    cuts, duration = None, getattr(args, "seconds", None)
+    if getattr(args, "video", None):
+        from . import style
+        m = style.measure(args.video, None)
+        cuts, duration = m["cuts"], m["frame"]["seconds"]
+    if duration is None:
+        duration = words[-1].end if words else 0.0
+    return words, duration, cuts
+
+
+def cmd_hook_check(args) -> None:
+    from . import story
+    words, duration, cuts = _clip_inputs(args)
+    found = story.hook_check(words, duration, cuts, _json_arg(args.judge, {}))
+    if args.json:
+        print(json.dumps(story.to_json(found), indent=2))
+        return
+    serious = [f for f in found if f.serious]
+    print(f"{len(serious)} hook problems" + (f", {len(found) - len(serious)} things to check by eye" if len(found) > len(serious) else "") + ":")
+    for f in found:
+        print(f.line())
+
+
+def cmd_beats(args) -> None:
+    from . import story
+    words, duration, _ = _clip_inputs(args)
+    try:
+        bm = story.beat_map(words, duration, _json_arg(args.beats, None), _json_arg(args.questions, None), args.limit)
+    except ValueError as e:
+        raise EditError(str(e)) from e
+    print(json.dumps(bm.to_dict(), indent=2) if args.json else bm.text())
+
+
+def cmd_hooks(args) -> None:
+    from . import story
+    if args.spoken is None:
+        print("Hook types (write three options, each a different type):")
+        for key, (what, example) in story.HOOK_TYPES.items():
+            print(f"  {key:<11}{what}. e.g. \"{example}\"")
+        return
+    problems = story.check_hook_option(args.spoken, args.text or "")
+    print("hook ok" if not problems else "\n".join(f"  {p}" for p in problems))
+
+
+def cmd_script_check(args) -> None:
+    from . import story
+    if args.questions or not args.script:
+        for key, text in story.STORY_QUESTIONS.items():
+            print(f"  {key}: {text}")
+        return
+    text = Path(args.script).read_text()
+    out = story.check_script(text)
+    if args.story:
+        try:
+            out["story_points"] = story.story_points(_json_arg(args.story, {}))
+        except ValueError as e:
+            raise EditError(str(e)) from e
+    if args.json:
+        print(json.dumps(out, indent=2))
+        return
+    print(f"{out['lines']} lines, about {out['seconds']:.0f}s spoken, sentences average {out['average_sentence_words']} words")
+    if "story_points" in out:
+        print(f"story {out['story_points']:g} / 25" + ("" if out["story_points"] >= 20 else ": under 20, rework the story before the lines"))
+    print("\n".join(f"  {n}" for n in out["notes"]) if out["notes"] else "  no problems measured")
 
 
 def cmd_clip_add(args) -> None:
@@ -634,7 +720,7 @@ def main(argv: list[str] | None = None) -> None:
     add("retakes", cmd_retakes, "list likely false starts (a phrase said again straight after)", *tx,
         A("--min-words", type=int, default=4), A("--cut", action="store_true", help="cut them"))
     add("srt", cmd_srt, "write subtitles for the current cut", *tx, A("--out", required=True))
-    add("review", cmd_review, "compare the current cut (or a video file) with a saved style", A("style"),
+    add("review", cmd_review, "hook check, then compare the current cut (or a video file) with a saved style", A("style", nargs="?"),
         A("--video", help="a finished video file to review, not the current edit"),
         A("--transcript"), A("--source"), A("--limit", type=int, default=8), A("--json", action="store_true"))
     add("auto", cmd_auto, "first cut in one go: retakes, pauses, look, captions, build, review", A("name"),
@@ -646,6 +732,20 @@ def main(argv: list[str] | None = None) -> None:
         A("--seconds", type=float, help="clip length when no video is given"),
         A("--judge", help="Claude's judgements as JSON or @file (see --questions)"),
         A("--questions", action="store_true", help="list the judgements and flags"), A("--json", action="store_true"))
+    clip = [A("--transcript", required=True, help="word timings of the clip"),
+            A("--video", help="the clip, to measure cuts"), A("--seconds", type=float, help="length when no video is given")]
+    add("hook-check", cmd_hook_check, "what holds the first seconds back, with the second it happens", *clip,
+        A("--judge", help="JSON or @file: text_on_frame_1, undelivered, first_point"), A("--json", action="store_true"))
+    add("beats", cmd_beats, "beat map of a long-form transcript: dead stretches and \"and then\" runs", *clip,
+        A("--beats", help='your labels as JSON or @file: [{"label": "hook", "start": 0}, ...]'),
+        A("--questions", help="extra re-hook times you marked, as a JSON list of seconds"),
+        A("--limit", type=float, default=60.0, help="longest stretch allowed with no new question"),
+        A("--json", action="store_true"))
+    add("hooks", cmd_hooks, "list hook types, or check one written hook", A("spoken", nargs="?"),
+        A("--text", help="the on-screen text that goes with it"))
+    add("script-check", cmd_script_check, "measured checks on a written script (one spoken line per line)", A("script", nargs="?"),
+        A("--questions", action="store_true", help="list the five story questions"),
+        A("--story", help="your answers to the five story questions, JSON or @file"), A("--json", action="store_true"))
     add("clip-add", cmd_clip_add, "add a clip's attributes and results to the learning set", A("id"),
         A("--transcript"), A("--video"), A("--seconds", type=float), A("--judge"), A("--about"),
         A("--views", type=float), A("--subscribers", type=float), A("--retention", type=float),
