@@ -4,8 +4,7 @@ Talk through an edit in DaVinci Resolve Studio with Claude Code. You say "cut th
 retake" or "swap these two sections"; Claude changes the edit and a new timeline
 version appears in Resolve.
 
-This is the first piece of a larger plan (copying effects from reference videos,
-explainer animations, color looks, overnight autopilot). What exists today:
+What exists today:
 
 | Piece | What it does | State |
 | --- | --- | --- |
@@ -19,6 +18,9 @@ explainer animations, color looks, overnight autopilot). What exists today:
 | Reference study | Downloads a link, makes frame sheets, reads motion timing and colours, and compares a remake against the original | Tested on clips made here. **Not yet run on a real YouTube link** |
 | Style profiles | Measures a video's cut rate, opening, speech pace, picture and sound, and saves it by name | Tested on clips made here |
 | Colour looks | Makes a LUT that moves your footage toward a reference's tone and colour balance, and puts it on the clips at build | Tested on clips made here; applying it in Resolve is tested against a stand-in only |
+| Autopilot | One command from a raw clip to a first cut: retakes out, pauses tightened, look, captions, build, review | Tested with a stand-in for Resolve; ran end to end here on a generated clip |
+| Cut review | Timestamped notes on how your cut differs from a saved style | Tested |
+| Transcription | Runs a free local speech-to-text tool (mlx-whisper or whisper) | Plumbing tested with a stand-in. **Not yet run with the real tools** |
 | Resolve builder | Builds the edit in Resolve as a new timeline and checks it | Tested against a stand-in only. **Not yet run against real Resolve** |
 
 ## Why an edit list
@@ -64,6 +66,16 @@ uv run stylebrain effect-save pop --template caption_pop --params '{"text": "x"}
 uv run stylebrain effect-place pop --at 0:42 --set text="This changes everything"
 ```
 
+Styles, colour, autopilot and review:
+
+```
+uv run stylebrain ref-fetch https://youtube.com/watch?v=...
+uv run stylebrain style-learn references/ID.mp4 --name fastcut
+uv run stylebrain look-make warm --reference references/ID.mp4 --footage ~/Movies/bench.mov
+uv run stylebrain auto bench2 --source ~/Movies/bench2.mov --style fastcut --look warm --captions
+uv run stylebrain review fastcut --transcript ~/Movies/bench2.words.json
+```
+
 Times are timeline times: seconds (`83.5`), `1:23.5`, timecode `00:01:23:12`, or
 frames `120f`.
 
@@ -83,4 +95,6 @@ uv run pytest
 - Transparent clips are ProRes 4444 and large, roughly 10 to 20 MB per second at 1080p.
 - The muscle figure is a simple stylized diagram, not a medical illustration.
 - Rebuilding does not carry over work done by hand on the previous timeline.
-- Transcripts are read from a word-timing JSON file; making one is not built in yet.
+- Transcription needs a free local tool installed (`uv tool install mlx-whisper` on Apple Silicon).
+- Retake detection only catches a phrase repeated in the same words.
+- A colour look matches overall tone and balance, not local work such as vignettes or skin isolation.
