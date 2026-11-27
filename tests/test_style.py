@@ -93,3 +93,30 @@ def test_learn_show_and_list_from_the_command_line(video, tmp_path, monkeypatch,
     assert "Cuts: 30 a minute" in capsys.readouterr().out
     with pytest.raises(SystemExit):
         main(["style-show", "missing"])
+
+
+def test_cuts_inside_a_film_strip_are_found(tmp_path):
+    # Three shots inside a strip across the middle of a vertical frame, black above and below: the
+    # whole-frame measure changes too little to count them; the middle-band pass finds both cuts.
+    out = tmp_path / "strip.mp4"
+    cmd = ["ffmpeg", "-v", "error"]
+    for c in ["red", "blue", "green"]:
+        cmd += ["-f", "lavfi", "-i", f"color=c={c}:s=180x96:r=20:d=2"]
+    cmd += ["-filter_complex", "[0][1][2]concat=n=3,pad=180:320:0:104:black[v]", "-map", "[v]",
+            "-pix_fmt", "yuv420p", str(out)]
+    media.run(cmd)
+    cuts = style.cut_times(str(out))
+    assert len(cuts) == 2 and abs(cuts[0] - 2.0) <= 0.06 and abs(cuts[1] - 4.0) <= 0.06
+
+
+def test_merge_cuts_drops_near_duplicates():
+    assert style.merge_cuts([1.0, 3.0], [1.05, 5.0, 0.1]) == [1.0, 3.0, 5.0]
+
+
+def test_edit_cuts_come_from_clip_and_broll_boundaries():
+    from stylebrain.edl import EditList, Overlay, Segment
+    edit = EditList(fps=25.0, segments=(Segment("a.mov", 0, 100), Segment("a.mov", 200, 300)),
+                    overlays=(Overlay("broll x", "x.mp4", at=0, duration=101, track=2),   # ends 1 frame after the cut
+                              Overlay("broll y", "y.mp4", at=150, duration=25, track=2),
+                              Overlay("cap", "cap.mov", at=10, duration=20, track=5)))  # captions are not cuts
+    assert style.edit_cuts(edit) == [4.0, 6.0, 7.0]

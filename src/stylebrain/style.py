@@ -26,17 +26,58 @@ def root(base: str | Path = ".") -> Path:
 
 # ---------------------------------------------------------------- measuring
 
-def cut_times(video: str, threshold: float = 0.3, min_gap: float = 0.2) -> list[float]:
-    """Times (seconds) where the picture cuts to a new shot."""
+# The middle band of a vertical frame. Film strips (black bars) and blurred-fill layouts put the real
+# picture here; measured on the whole frame, a cut inside it changes too little of the frame to count.
+MIDDLE = (0.32, 0.62)
+
+
+def _scene_times(video: str, threshold: float, crop: str = "") -> list[float]:
     err = run(["ffmpeg", "-v", "info", "-nostats", "-i", str(video), "-an",
-               "-vf", f"scale=320:-2,select='gt(scene,{threshold})',showinfo", "-f", "null", "-"],
+               "-vf", f"{crop}scale=320:-2,select='gt(scene,{threshold})',showinfo", "-f", "null", "-"],
               text=True).stderr
+    return [float(m.group(1)) for m in re.finditer(r"pts_time:([0-9.]+)", err)]
+
+
+def merge_cuts(*lists: list[float], min_gap: float = 0.2) -> list[float]:
+    """One sorted list of cut times from several detectors, near-duplicates (within min_gap) merged."""
     cuts: list[float] = []
-    for m in re.finditer(r"pts_time:([0-9.]+)", err):
-        t = float(m.group(1))
+    for t in sorted(t for one in lists for t in one):
         if t > min_gap and (not cuts or t - cuts[-1] >= min_gap):
             cuts.append(round(t, 3))
     return cuts
+
+
+def cut_times(video: str, threshold: float = 0.3, min_gap: float = 0.2) -> list[float]:
+    """Times (seconds) where the picture cuts to a new shot.
+
+    A vertical video is also measured on its middle band alone, so cuts inside a film strip or a
+    blurred-fill layout are found too (round 4 and 5 of the practice reels: the whole-frame
+    measure saw one cut in 15 seconds of real cuts)."""
+    found = [_scene_times(video, threshold)]
+    i = info(video)
+    if i.height > i.width:
+        a, b = MIDDLE
+        found.append(_scene_times(video, threshold, f"crop=iw:ih*{b - a}:0:ih*{a},"))
+    return merge_cuts(*found, min_gap=min_gap)
+
+
+def edit_cuts(edit) -> list[float]:
+    """Cut times (seconds) straight from an edit list: every clip boundary on the main track, and where a
+    picture overlay on V2 (b-roll) starts or ends inside the edit. Exact, whatever the frame looks like."""
+    fps, total = edit.fps, edit.duration
+    frames, t = set(), 0
+    for seg in edit.segments:
+        if t:
+            frames.add(t)
+        t += seg.duration
+    for o in edit.overlays:
+        if o.track == 2:
+            frames.update(f for f in (o.at, o.at + o.duration) if 0 < f < total)
+    out: list[float] = []
+    for f in sorted(frames):
+        if not out or f - out[-1] * fps > 1:     # one-frame slivers between a clip and its b-roll are one cut
+            out.append(round(f / fps, 3))
+    return out
 
 
 def shot_lengths(cuts: list[float], duration: float) -> list[float]:
