@@ -7,8 +7,10 @@ description: Use when Michael wants a finished reel ready for each app, such as 
 
 `src/stylebrain/crosspost.py` turns one calendar post into a version for each
 platform it is planned for: Instagram Reels, TikTok, YouTube Shorts and YouTube
-long-form. It prepares posts only. **Never post, upload or schedule anything**:
-Michael presses post himself in each app, then tells you, and you record it.
+long-form. `src/stylebrain/publish.py` then posts the three short-form versions
+in one go, **only when Michael asks** ("post it", "post today's reel", or his
+double-click shortcut). Never post on your own initiative, on a schedule, or
+because a draft looks finished. Long-form YouTube is posted by hand for now.
 
 ## What each version gets
 
@@ -60,3 +62,24 @@ uv run stylebrain post-result POST --platform tiktok --url URL --views N --saves
    likes; creative choices are his.
 4. When he says he posted on an app, record it with `post-result --platform`, so
    links and numbers are kept per app and summed for the week report.
+
+## Posting (the one button)
+
+```
+uv run stylebrain publish POST --dry-run     # check everything, send nothing: run this first
+uv run stylebrain publish POST               # Instagram, TikTok and Shorts, when he asks
+uv run stylebrain publish today              # today's approved reel
+uv run stylebrain publish POST --only tiktok
+uv run stylebrain connect youtube|instagram|tiktok ...   # once per account
+uv run stylebrain publish-shortcut DESKTOP   # the double-click "Post today's reel" file
+```
+
+- It posts the words in each `PLATFORM.txt`, so his edits there count. Each is
+  checked again first; a platform with a problem is skipped, the rest go.
+- Links are recorded on the calendar post per app; pressing twice never posts twice.
+- Until TikTok audits the app, TikTok posts go up private: tell him to make it
+  public in the app.
+- Account setup, step by step: `docs/publishing-setup.md`. Sign-ins live in
+  `library/accounts/` (never commit or print them).
+- Relay the result plainly: which apps it posted to with links, and which were
+  skipped and why.
