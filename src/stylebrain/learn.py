@@ -26,6 +26,7 @@ from pathlib import Path
 
 from .edl import EditError
 from .score import first_real_word, score
+from .story import average_sentence_words, first_useful_point, longest_shot
 from .transcript import Word, _norm
 
 MIN_CLIPS, SOLID_CLIPS = 12, 30
@@ -63,6 +64,8 @@ def attributes(words: list[Word], duration: float, cuts: list[float] | None = No
             "longest_pause": round(max(gaps, default=0.0), 2),
             "pauses_over_300ms": sum(1 for g in gaps if g > 0.3),
             "hook_words": len(toks),
+            "sentence_words": average_sentence_words(words),
+            "first_point_at": round(first_useful_point(words, (judge or {}).get("first_point")) or duration, 2),
         })
         for name, test in HOOKS.items():
             out[name] = float(bool(test(text, toks)))
@@ -70,6 +73,7 @@ def attributes(words: list[Word], duration: float, cuts: list[float] | None = No
         out["cuts_per_minute"] = round(len(cuts) / (duration / 60), 1)
         out["first_cut_at"] = round(cuts[0] if cuts else duration, 2)
         out["cuts_in_first_3s"] = sum(1 for c in cuts if c < 3)
+        out["longest_shot"] = longest_shot(cuts, duration)[0]
     if frame:
         out["vertical"] = float(frame["height"] > frame["width"])
     if audio and audio.get("loudness_lufs") is not None:

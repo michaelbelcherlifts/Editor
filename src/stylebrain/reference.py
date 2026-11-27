@@ -93,18 +93,27 @@ class Motion:
                 "curve": [{"t": round(t, 3), "change": round(c, 2)} for t, c in zip(self.times, self.change)]}
 
 
-def motion(video: str, start: float, end: float, threshold: float = 0.6, width: int = 160) -> Motion:
+def motion(video: str, start: float, end: float, threshold: float = 0.6, width: int = 160,
+           box: list[float] | None = None) -> Motion:
     """Find when things move between start and end, and for how long.
 
-    A burst is a run of frames that each differ from the one before by more
-    than `threshold`. For an animation over still footage, the burst length is
-    the animation's duration.
+    A burst is a run of frames that each change by more than `threshold` above
+    the footage's own background movement (hand-held camera shake, a person
+    breathing), taken as the calmest quarter of the stretch. For an animation
+    over still footage, the burst length is the animation's duration.
+    `box` = [x, y, w, h] as fractions watches only that part of the frame,
+    which is how to time a graphic that sits over moving footage.
     """
     import numpy as np
 
     fps = info(video).fps
     f = read_frames(video, start, end, width=width).astype(np.int16)
+    if box:
+        x, y, w, h = box
+        H, W = f.shape[1:3]
+        f = f[:, int(y * H):max(int((y + h) * H), int(y * H) + 1), int(x * W):max(int((x + w) * W), int(x * W) + 1)]
     change = [0.0] + [float(np.abs(f[n] - f[n - 1]).mean()) for n in range(1, len(f))]
+    threshold += float(np.percentile(change[1:], 25)) if len(change) > 1 else 0.0
     times = [start + n / fps for n in range(len(f))]
     bursts, begin = [], None
     for n, c in enumerate(change):

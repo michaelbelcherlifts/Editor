@@ -5,7 +5,7 @@ The edit is kept as an edit list in `.stylebrain/`; Resolve timelines are built
 from it. Read `.claude/skills/talk-edit/SKILL.md` before editing, and
 `.claude/skills/animate/SKILL.md` before making any animation, and
 `.claude/skills/copy-effect/SKILL.md` before recreating an effect from a link or
-screenshots. Other skills in `.claude/skills/` cover styles, colour, autopilot, reviews and
+screenshots, and `.claude/skills/script/SKILL.md` before writing a script or hooks. Other skills in `.claude/skills/` cover styles, colour, autopilot, reviews and
 the content calendar.
 
 ## Rules
@@ -38,6 +38,7 @@ the content calendar.
 - `src/stylebrain/transcribe.py`: word-timing transcripts from a local speech-to-text tool
 - `src/stylebrain/autopilot.py`: first cut in one command (retakes, pauses, look, captions, build, review)
 - `src/stylebrain/review.py`: timestamped suggestions from comparing a cut with a style
+- `src/stylebrain/story.py`: hook check, beat map, "and then" pass, hook types, script checks
 - `src/stylebrain/score.py`: the virality rubric: a 0 to 100 score for a short clip, part by part
 - `src/stylebrain/learn.py`: clip attributes, the private clip dataset (`library/clips/`, not committed) and the model that finds what goes with performance
 - `src/stylebrain/sfx.py`: the sound library (`library/sfx/`, not committed), automatic placement, and the mix that goes on audio track 2
