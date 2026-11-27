@@ -820,7 +820,7 @@ def cmd_score(args) -> None:
         for key, text in {**sc.JUDGEMENTS, **sc.NUMBERS, **sc.FLAGS}.items():
             print(f"  {key}: {text}")
         return
-    if not args.transcript and not args.video:
+    if not args.transcript and not args.video and not getattr(args, "from_edit", False):
         raise EditError("score needs --video, --transcript, or both")
     words = tr.drop_phantom_speech(tr.load_words(args.transcript)) if args.transcript else []
     judge = json.loads(Path(args.judge[1:]).read_text() if args.judge and args.judge.startswith("@") else args.judge or "{}")
@@ -830,6 +830,11 @@ def cmd_score(args) -> None:
         from . import style
         m = style.measure(args.video, None)
         cuts, frame, audio, duration = m["cuts"], m["frame"], m["audio"], m["frame"]["seconds"]
+    if getattr(args, "from_edit", False):
+        from . import style
+        edit = _store(args).load()
+        cuts = style.edit_cuts(edit)
+        duration = duration or edit.duration / edit.fps
     if duration is None:
         duration = words[-1].end if words else 0.0
     result = sc.score(words, duration, cuts, frame, audio, judge)
@@ -1767,7 +1772,8 @@ def main(argv: list[str] | None = None) -> None:
         A("--video", help="the clip, to measure cuts, frame and sound"),
         A("--seconds", type=float, help="clip length when no video is given"),
         A("--judge", help="Claude's judgements as JSON or @file (see --questions)"),
-        A("--questions", action="store_true", help="list the judgements and flags"), A("--json", action="store_true"))
+        A("--questions", action="store_true", help="list the judgements and flags"), A("--json", action="store_true"),
+        A("--from-edit", action="store_true", help="take the cuts from the project's edit list (exact) instead of the pixels"))
     clip = [A("--transcript", required=True, help="word timings of the clip"),
             A("--video", help="the clip, to measure cuts"), A("--seconds", type=float, help="length when no video is given")]
     add("loop-check", cmd_loop_check, "how cleanly a short runs from its end back into its opening",
