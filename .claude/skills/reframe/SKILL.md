@@ -36,6 +36,8 @@ Upright phone footage already fits and is left alone.
 Punch-ins are a creative choice: offer them, do not add them unasked. A punch-in
 counts as a zoom for `sfx-auto`.
 
+For a flex, pose or physique moment, read `docs/aesthetic-shots.md` first: framing is only one of five parts of that look.
+
 ## Limits to say out loud
 
 - The framing is locked per shot. It does not pan to follow someone walking

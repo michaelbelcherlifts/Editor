@@ -7,6 +7,7 @@ from it. Read `.claude/skills/talk-edit/SKILL.md` before editing, and
 `.claude/skills/copy-effect/SKILL.md` before recreating an effect from a link or
 screenshots, and `.claude/skills/script/SKILL.md` before writing a script or hooks. Other skills in `.claude/skills/` cover styles, colour, autopilot, reviews,
 sound, music, reframing, export, house rules, the content calendar and social posts.
+`docs/aesthetic-shots.md` covers flex, pose and physique moments (light, angle, grade, pacing).
 
 ## Rules
 
