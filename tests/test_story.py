@@ -130,3 +130,23 @@ def test_song_lyrics_are_flagged_and_can_be_dropped():
     sung = [Word(w, 6 + i * 0.9, 6 + i * 0.9 + 0.7) for i, w in enumerate("I came a long way from the bottom".split())]
     assert not maybe_sung(spoken) and maybe_sung(sung)
     assert [w.text for w in keep_speech(spoken + sung, [(0, 3.4)])] == [w.text for w in spoken]
+
+
+def test_loop_check_reads_the_seam():
+    from stylebrain import story
+    from stylebrain.transcript import Word
+
+    def say(text, start=0.0, each=0.3):
+        return [Word(w, start + i * each, start + i * each + 0.25) for i, w in enumerate(text.split())]
+
+    opening = say("This one cue fixed my bench.")
+    kinds = lambda found: {f.kind: f for f in found}                         # noqa: E731
+    k = kinds(story.loop_check(opening + say("Push your feet forward. So yeah.", 3.0), 8.0, end_dark=True))
+    assert k["tail"].serious and "(`loop-trim`)" in k["tail"].text and k["fade"].serious and k["sign_off"].serious
+    k = kinds(story.loop_check(opening + say("Push your feet forward and that's why", 3.0), 5.1, frame_gap=0.05))
+    assert set(k) == {"leads_in"} and not k["leads_in"].serious
+    k = kinds(story.loop_check(opening + say("Now your bench is fixed with one cue.", 3.0), 5.2, frame_gap=0.6))
+    assert set(k) == {"echo", "picture"}
+    k = kinds(story.loop_check(opening + say("Go get stronger today.", 3.0), 4.3, end_level=-60.0))
+    assert set(k) == {"no_loop", "silence"} and "cannot be cut in" in k["no_loop"].text
+    assert story.loop_check([], 10.0) == []

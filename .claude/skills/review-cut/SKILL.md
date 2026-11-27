@@ -86,3 +86,17 @@ The hook check measures full-frame cuts only. A picture-in-picture, a graphic
 or word-by-word captions that appear earlier are not seen, so look at the frame
 sheet and pass `first_change` (seconds) in `--judge` when something changes
 sooner than the first cut.
+
+## Does it loop?
+
+A reel that runs cleanly from its last moment into its first gets replayed
+without the viewer noticing, and replays count as watch time.
+`uv run stylebrain loop-check --video FILE --transcript WORDS` lists what
+breaks the seam (air after the last word, a fade to black, a sign-off line)
+and what helps (a last line the opening finishes, the first line's words said
+again, the same shot at both ends). A loop is optional: never push one onto a
+reel whose payoff is the right place to stop.
+
+`uv run stylebrain loop-trim --transcript WORDS` ends the current edit just
+after the last word. Rewording the last line needs a new recording, so offer
+it as a note for next time or work it into the script (see the script skill).
