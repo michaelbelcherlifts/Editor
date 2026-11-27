@@ -794,11 +794,37 @@ def cmd_beats(args) -> None:
 
 def cmd_hooks(args) -> None:
     from . import story
+    if args.examples is not None or args.niche:
+        kind = args.examples or None
+        try:
+            found = story.proven_examples(kind, args.niche, limit=args.limit)
+        except ValueError as e:
+            raise EditError(str(e)) from e
+        if not found:
+            print("no researched examples" + (f" of {kind}" if kind else "") + (f" in {args.niche}" if args.niche else "")
+                  + " (library/hooks/patterns.json)")
+            return
+        lib = story.hook_library().get("patterns", {})
+        if kind and lib.get(kind, {}).get("why"):
+            print(f"{kind}: {lib[kind]['why']}")
+            for t in lib[kind].get("for_michael", []):
+                print(f"  for you: {t}")
+        for e in found:
+            views = f"{e['views']:,}" if e.get("views") else "?"
+            print(f"  {views:>12} views  [{e['type']}] {e['title']}  ({e.get('creator', '')}, {e.get('niche', '')})")
+            if e.get("opening"):
+                print(f"               opens: \"{e['opening']}\"")
+        return
     if args.spoken is None:
         print("Hook types (write three options, each a different type):")
+        lib = story.hook_library().get("patterns", {})
         for key, (what, example) in story.HOOK_TYPES.items():
-            print(f"  {key:<11}{what}. e.g. \"{example}\"")
+            n = len(lib.get(key, {}).get("examples", []))
+            print(f"  {key:<11}{what}. e.g. \"{example}\"" + (f"  [{n} proven]" if n else ""))
+        print("Proven examples with views: stylebrain hooks --examples TYPE [--niche powerlifting]")
         return
+    kinds = story.classify_hook(args.spoken)
+    print("type: " + (", ".join(kinds) if kinds else "none of the hook types; it may not hook at all"))
     problems = story.check_hook_option(args.spoken, args.text or "")
     print("hook ok" if not problems else "\n".join(f"  {p}" for p in problems))
 
@@ -835,16 +861,18 @@ def cmd_clip_add(args) -> None:
         from . import style
         m = style.measure(args.video, None)
         cuts, frame, audio, colour, duration = m["cuts"], m["frame"], m["audio"], m["colour"], m["frame"]["seconds"]
-    outcome = {k: v for k, v in (("views", args.views), ("subscribers", args.subscribers),
-                                 ("retention", args.retention), ("swiped_away", args.swiped_away)) if v is not None}
+    outcome = {k: getattr(args, k) for k in ("views", "subscribers", "retention", "swiped_away", "reach", "likes",
+                                             "comments", "shares", "saves") if getattr(args, k) is not None}
     if duration is None and words:
         duration = words[-1].end
     if duration is None:
-        if not outcome:
-            raise EditError("give --video or --transcript to measure the clip, or results such as --views")
+        if not outcome and args.age_days is None:
+            raise EditError("give --video or --transcript to measure the clip, or results such as --views or --likes")
         attrs = {}  # results only: update what happened to a clip already in the set
     else:
         attrs = learn.attributes(words, duration, cuts, frame, audio, colour, judge)
+    if args.age_days is not None:
+        attrs["age_days"] = args.age_days
     path = learn.add(args.id, attrs, outcome, args.about or "", args.mine)
     print(f"saved {path}")
 
@@ -1172,7 +1200,7 @@ def cmd_post_set(args) -> None:
 
 def cmd_post_result(args) -> None:
     plan = _plan()
-    p = plan.record_result(args.id, url=args.url, views=args.views, reach=args.reach, likes=args.likes,
+    p = plan.record_result(args.id, url=args.url, platform=args.platform, views=args.views, reach=args.reach, likes=args.likes,
                            comments=args.comments, saves=args.saves, sends=args.sends, follows=args.follows,
                            enquiries=args.enquiries)
     plan.save()
@@ -1187,6 +1215,38 @@ def cmd_social_import(args) -> None:
     for p in made:
         print(f"{p['id']}: {p['format']} on {p['date']} ({plan.idea(p['idea'])['title']}), cta {p['cta']}")
     print(f"placed {len(made)} posts around {args.reel}")
+
+
+def cmd_crosspost(args) -> None:
+    from . import crosspost
+    plan = _plan()
+    chapter_list = None
+    if args.chapters_from:
+        from . import longform
+        edit = Store(args.chapters_from).load()
+        report = longform.check_chapters(_chapter_items(edit), edit.duration / edit.fps)
+        if report.problems:
+            raise EditError("the chapters of " + args.chapters_from + " need fixing first: " + "; ".join(report.problems))
+        chapter_list = [{"at": line.split(" ", 1)[0], "label": line.split(" ", 1)[1]} for line in report.lines]
+    r = crosspost.make(plan, args.post, video=args.video, long_video=args.long_video, transcript=args.transcript,
+                       out_dir=args.out, chapter_list=chapter_list)
+    plan.save()
+    print(f"{r['post']} ({r['title']}, {r['date']}): {len(r['versions'])} versions in {r['dir']}")
+    for v in r["versions"]:
+        state = "ready" if not v["problems"] else f"{len(v['problems'])} to fix"
+        print(f"  {v['platform']:<15}{state:<10}{r['dir']}/{v['platform']}.txt")
+        for p in v["problems"]:
+            print(f"      fix: {p}")
+    print("drafts only: rewrite them in his voice before he sees them; nothing was posted")
+
+
+def cmd_crosspost_week(args) -> None:
+    from . import crosspost
+    plan = _plan()
+    rows = crosspost.week(plan, args.week, make_missing=args.make)
+    if args.make:
+        plan.save()
+    print(json.dumps(rows, indent=2) if args.json else crosspost.format_week(rows))
 
 
 def cmd_shoot_list(args) -> None:
@@ -1402,15 +1462,21 @@ def main(argv: list[str] | None = None) -> None:
         A("--questions", help="extra re-hook times you marked, as a JSON list of seconds"),
         A("--limit", type=float, default=60.0, help="longest stretch allowed with no new question"),
         A("--json", action="store_true"))
-    add("hooks", cmd_hooks, "list hook types, or check one written hook", A("spoken", nargs="?"),
-        A("--text", help="the on-screen text that goes with it"))
+    add("hooks", cmd_hooks, "list hook types, show proven examples, or check one written hook", A("spoken", nargs="?"),
+        A("--text", help="the on-screen text that goes with it"),
+        A("--examples", nargs="?", const="", help="researched examples with views, of one TYPE or all"),
+        A("--niche", help="powerlifting, running, food, guns, lockpicking or fpv"),
+        A("--limit", type=int, default=8))
     add("script-check", cmd_script_check, "measured checks on a written script (one spoken line per line)", A("script", nargs="?"),
         A("--questions", action="store_true", help="list the five story questions"),
         A("--story", help="your answers to the five story questions, JSON or @file"), A("--json", action="store_true"))
     add("clip-add", cmd_clip_add, "add a clip's attributes and results to the learning set", A("id"),
         A("--transcript"), A("--video"), A("--seconds", type=float), A("--judge"), A("--about"),
         A("--views", type=float), A("--subscribers", type=float), A("--retention", type=float),
-        A("--swiped-away", type=float), A("--mine", action="store_true", help="it is one of your own clips"))
+        A("--swiped-away", type=float), A("--reach", type=float), A("--likes", type=float),
+        A("--comments", type=float), A("--shares", type=float), A("--saves", type=float),
+        A("--age-days", type=float, help="days since it was posted, so older clips are compared fairly"),
+        A("--mine", action="store_true", help="it is one of your own clips"))
     add("clip-import", cmd_clip_import, "read results from an Instagram (Meta Business Suite) or YouTube Studio export (CSV)", A("csv"),
         A("--subscribers", "--followers", type=int, help="your follower or subscriber count, for the reach target"),
         A("--all-posts", action="store_true", help="include photos and carousels, not only reels"))
@@ -1498,10 +1564,19 @@ def main(argv: list[str] | None = None) -> None:
     add("post-set", cmd_post_set, "move, re-target or drop a post", A("id"), A("--date"),
         A("--cta", choices=list(CTAS)), A("--platforms"), A("--status"))
     add("post-result", cmd_post_result, "record that he posted it, and its numbers", A("id"), A("--url"),
+        A("--platform", help="instagram, tiktok, youtube-shorts or youtube: keep a link and numbers per app"),
         *[A(f"--{k}", type=float) for k in ("views", "reach", "likes", "comments", "saves", "sends", "follows",
                                             "enquiries")])
     add("social-import", cmd_social_import, "place a carousel/story package around a reel's post", A("package"),
         A("--reel", required=True, help="the reel's post id"))
+    add("crosspost", cmd_crosspost, "prepare a post's versions for each platform (captions, titles, hashtags, checks)",
+        A("post", help="the calendar post id"), A("--video", help="the exported cut; default the idea's draft"),
+        A("--long-video", help="a 16:9 export for YouTube long-form"),
+        A("--transcript", help="word timings; default a .json/.srt next to the video"), A("--out"),
+        A("--chapters-from", help="use the chapters set on this project's edit (stylebrain chapter) for YouTube"))
+    add("crosspost-week", cmd_crosspost_week, "which of a week's reels are ready for every platform", week,
+        A("--make", action="store_true", help="prepare every approved post that has a cut and no package yet"),
+        A("--json", action="store_true"))
     add("shoot-list", cmd_shoot_list, "what to film for a week, by location", week, A("--json", action="store_true"))
     add("week-report", cmd_week_report, "planned versus posted for a week, with results", week,
         A("--json", action="store_true"))

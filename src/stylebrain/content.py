@@ -66,6 +66,7 @@ DEFAULT_SERIES = {
                     "premise": "Each episode tests one claim about lifters who run. Stake, attempt, twist, verdict."},
     "strong-vs-runner": {"name": "Strong guy vs runner",
                          "premise": "Head-to-heads where each side picks the event. Scoreboard and a loser's forfeit."},
+    "one-cue": {"name": "One cue", "premise": "One cue per episode that fixes one lift, shown before and after."},
 }
 
 DEFAULT_SETTINGS = {
@@ -291,13 +292,27 @@ class Plan:
                 idea["status"] = status
         return post
 
-    def record_result(self, post_id: str, url: str | None = None, **results) -> dict:
-        """He posted it (by hand). Record the link and any numbers."""
+    def record_result(self, post_id: str, url: str | None = None, platform: str | None = None, **results) -> dict:
+        """He posted it (by hand). Record the link and any numbers, per platform when he names one."""
         post = self.post(post_id)
-        if url:
-            post["url"] = url
         clean = {k: float(v) for k, v in results.items() if v is not None}
-        post["results"].update(clean)
+        if platform:
+            if platform not in post["platforms"]:
+                raise EditError(f"{post_id} is not planned for {platform} (platforms: {', '.join(post['platforms'])})")
+            if url:
+                post.setdefault("urls", {})[platform] = url
+                post["url"] = post["url"] or url
+            if clean:
+                post.setdefault("by_platform", {}).setdefault(platform, {}).update(clean)
+                totals: dict[str, float] = {}
+                for nums in post["by_platform"].values():
+                    for k, v in nums.items():
+                        totals[k] = totals.get(k, 0.0) + v
+                post["results"] = totals
+        else:
+            if url:
+                post["url"] = url
+            post["results"].update(clean)
         self.set_post(post_id, status="measured" if clean else "posted")
         return post
 

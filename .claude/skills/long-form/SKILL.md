@@ -45,6 +45,9 @@ Creative choices stay Michael's: offer chapter titles and cuts, do not make them
 3. Captions: long-form does not burn captions in. Write an SRT for upload with
    `uv run stylebrain srt --transcript FILE.words.json --out captions.srt`.
 4. Export with `uv run stylebrain export`; it renders at the format's frame.
+5. For the title, description and tags, use the cross-post skill with
+   `uv run stylebrain crosspost POST --long-video FILE --chapters-from PROJECT`
+   so the YouTube description carries his chapters, not drafted ones.
 
 ## What not to claim
 

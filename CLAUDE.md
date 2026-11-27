@@ -7,7 +7,7 @@ from it. Read `.claude/skills/talk-edit/SKILL.md` before editing, and
 `.claude/skills/copy-effect/SKILL.md` before recreating an effect from a link or
 screenshots, and `.claude/skills/script/SKILL.md` before writing a script or hooks, and
 `.claude/skills/long-form/SKILL.md` before planning, cutting or checking a long YouTube video. Other skills in `.claude/skills/` cover styles, colour, autopilot, reviews,
-sound, music, reframing, export, house rules, the content calendar and social posts.
+sound, music, reframing, export, house rules, the content calendar, social posts and cross-posting.
 `docs/aesthetic-shots.md` covers flex, pose and physique moments (light, angle, grade, pacing).
 
 ## Rules
@@ -47,7 +47,8 @@ sound, music, reframing, export, house rules, the content calendar and social po
 - `src/stylebrain/transcribe.py`: word-timing transcripts from a local speech-to-text tool
 - `src/stylebrain/autopilot.py`: first cut in one command (retakes, pauses, look, captions, build, review)
 - `src/stylebrain/review.py`: timestamped suggestions from comparing a cut with a style
-- `src/stylebrain/story.py`: hook check, beat map, "and then" pass, hook types, script checks
+- `src/stylebrain/story.py`: hook check, beat map, "and then" pass, hook types (sorting a line into a type, the researched examples in `library/hooks/`), script checks
+- `library/hooks/`: researched hook patterns with proven YouTube examples and views, and video ideas ready for `idea-import`; `data/hook-research/youtube_hooks.js` refreshes them in the browser pane
 - `src/stylebrain/score.py`: the virality rubric: a 0 to 100 score for a short clip, part by part
 - `src/stylebrain/learn.py`: clip attributes, the private clip dataset (`library/clips/`, not committed) and the model that finds what goes with performance
 - `src/stylebrain/sfx.py`: the sound library (`library/sfx/`, not committed), automatic placement with a cap per minute, and the mixes that go on audio tracks from A2 up
@@ -59,6 +60,7 @@ sound, music, reframing, export, house rules, the content calendar and social po
 - `src/stylebrain/content.py`: the content plan: idea backlog, series, calendar, weekly plans, shoot lists, calls to action (`library/content/`, not committed; never posts)
 - `src/stylebrain/formats.py`: formats (reel, short, longform): the frame, loudness and checks for where a video is posted
 - `src/stylebrain/longform.py`: long-form YouTube: chapter rules, the structure check (opening, re-hooks, pace, payoff), chapter outlines; targets in `docs/long-form.md`
+- `src/stylebrain/crosspost.py`: one reel made ready for each platform (Instagram, TikTok, Shorts, YouTube): captions, titles, hashtags, calls to action, chapters and checks, tied to calendar posts (`library/crosspost/`, not committed; never posts)
 - `src/stylebrain/bake.py`: ffmpeg zooms and speed changes
 - `src/stylebrain/speed.py`: slow motion and speed ramps on part of the timeline (`speed`), baked as new clips
 - `src/stylebrain/cli.py`: the `stylebrain` command

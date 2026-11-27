@@ -217,8 +217,8 @@ def import_analytics(csv_path: str | Path, subscribers: int | None = None, base:
             if match:
                 pick[field] = match
                 break
-    if "id" not in pick or "views" not in pick:
-        raise EditError("could not find a link or id column and a views column. Columns in the file: "
+    if "id" not in pick or not any(f in pick for f in _NUMBERS if f != "seconds"):
+        raise EditError("could not find a link or id column and a results column such as views or likes. Columns in the file: "
                         + ", ".join(heads.values()))
     done = []
     for row in rows:
@@ -237,6 +237,8 @@ def import_analytics(csv_path: str | Path, subscribers: int | None = None, base:
                 pass
         if subscribers:
             outcome["subscribers"] = subscribers
+        if not any(f in outcome for f in _NUMBERS if f != "seconds"):
+            continue
         add(vid, {}, outcome, about=(row.get(pick.get("title", "")) or "")[:120], mine=True, base=base)
         done.append(vid)
     if not done:
