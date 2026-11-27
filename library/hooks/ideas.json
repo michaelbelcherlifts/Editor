@@ -1,0 +1,556 @@
+[
+ {
+  "title": "Can a powerlifter run a sub [time] mile?",
+  "pillar": "run",
+  "format": "reel",
+  "hook": "Can a [bodyweight] lb powerlifter run a sub [time] mile? Less than [x]% of lifters can.",
+  "hook_type": "challenge",
+  "location": "track",
+  "shots": [
+   "Watch on wrist at the start line, close",
+   "Each lap split on screen",
+   "Finish: watch to camera, then breathing on the floor"
+  ],
+  "note": "Hook type: challenge. Proven by: 'Can I run a sub 5 minute mile?!' 21M; Larry Wheels 40 yd dash 1.3M.",
+  "series": "mid-at-both"
+ },
+ {
+  "title": "Powerlifter attempts the 40 yard dash",
+  "pillar": "run",
+  "format": "reel",
+  "hook": "The average 40 is about 5 seconds. I'm [bodyweight] lb. Time to beat: [time].",
+  "hook_type": "challenge",
+  "location": "track",
+  "shots": [
+   "Side-on wide shot of the full 40",
+   "Timer overlay",
+   "Replay in slow motion"
+  ],
+  "note": "Hook type: challenge. Proven by: Larry Wheels 'Bodybuilder Attempts 40 Yard Dash' 1.3M."
+ },
+ {
+  "title": "Every mile I run = one plate on the bar",
+  "pillar": "run",
+  "format": "reel",
+  "hook": "Every mile I run today adds a plate to my deadlift. I hate running.",
+  "hook_type": "constraint",
+  "location": "track",
+  "shots": [
+   "Mile count on screen after each mile",
+   "Plates loaded one by one",
+   "The final deadlift with every plate earned"
+  ],
+  "note": "Hook type: constraint. Proven by: Tyler Vitelli 'Every Mile I Run = 10 Minutes of Scrolling' 13M. Pick the rule so the ending is a lift he can make safely."
+ },
+ {
+  "title": "Powerlifter vs marathoner: 400 m and a deadlift",
+  "pillar": "run",
+  "format": "reel",
+  "hook": "Powerlifter vs marathoner. He picks the run, I pick the lift. Loser does the forfeit.",
+  "hook_type": "versus",
+  "location": "track",
+  "shots": [
+   "Both side by side at the start",
+   "Scoreboard graphic",
+   "Forfeit at the end"
+  ],
+  "note": "Hook type: versus. Proven by: Noel Deyzel 'Powerlifters vs bodybuilders' 21M; 'NAVY SEAL vs HUNTERS' 45M.",
+  "series": "strong-vs-runner"
+ },
+ {
+  "title": "They thought the powerlifter would walk the 5K",
+  "pillar": "run",
+  "format": "reel",
+  "hook": "Everyone at the start line thought the big guy would walk it.",
+  "hook_type": "underdog",
+  "location": "race",
+  "shots": [
+   "Start line: him among runners",
+   "Split times on screen",
+   "Finish and placing"
+  ],
+  "note": "Hook type: underdog. Proven by: 'Elite Powerlifter Pretends to Be a Cleaner' 43M; 'When CBUM Tried Sprinting' 3.4M. Use real reactions or play it as an obvious bit; never fake strangers.",
+  "series": "mid-at-both"
+ },
+ {
+  "title": "Can I run a mile right after a max squat?",
+  "pillar": "run",
+  "format": "reel",
+  "hook": "Max squat, then a mile, no rest. Can I break [time]?",
+  "hook_type": "challenge",
+  "location": "gym",
+  "shots": [
+   "The squat single",
+   "Shoes on, timer running",
+   "Mile finish time"
+  ],
+  "note": "Hook type: challenge. Proven by: 'Can I run a 4:30 mile?' 1.9M; existing 'Max deadlift, then a mile' idea in the plan.",
+  "series": "mid-at-both"
+ },
+ {
+  "title": "Testing if gym bros can run a 7 minute mile",
+  "pillar": "run",
+  "format": "reel",
+  "hook": "Testing if gym bros can run a 7 minute mile. Pass, I buy your pre-workout.",
+  "hook_type": "test",
+  "location": "gym",
+  "shots": [
+   "Ask on the gym floor",
+   "The run with a timer",
+   "Pay up or not"
+  ],
+  "note": "Hook type: test. Proven by: MekLuvin 'Testing if Gymbros Lie' 3.9M, 'How Strong Is The Average Man?' 663K. Needs willing people on camera and their OK to post."
+ },
+ {
+  "title": "How to be a hybrid athlete (by someone who hates the term)",
+  "pillar": "humour",
+  "format": "reel",
+  "hook": "How to become a hybrid athlete. Step one: be mid at two things.",
+  "hook_type": "tribe",
+  "location": "gym",
+  "shots": [
+   "Deadpan to camera, one step per cut",
+   "B-roll of each 'step' done badly on purpose",
+   "End on a real heavy lift: 'or just be good at one'"
+  ],
+  "note": "Hook type: tribe. Proven by: Hamish James 'How To Be A HYBRID ATHLETE' 2.0M."
+ },
+ {
+  "title": "Powerlifters will genuinely defend this",
+  "pillar": "humour",
+  "format": "reel",
+  "hook": "Powerlifters will genuinely defend this.",
+  "hook_type": "tribe",
+  "location": "gym",
+  "shots": [
+   "A powerlifter habit (chalk everywhere, 10 minute rest, eating in the rack)",
+   "Deadpan defence to camera"
+  ],
+  "note": "Hook type: tribe. Proven by: Jacked Fitness Facts 'Powerlifters will genuinely defend this…' 6.5M."
+ },
+ {
+  "title": "Powerlifters at a commercial gym",
+  "pillar": "humour",
+  "format": "reel",
+  "hook": "Powerlifters at a commercial gym:",
+  "hook_type": "pov",
+  "location": "gym",
+  "shots": [
+   "Skit, no voiceover: chalk cloud, plate stacking, the front desk's face"
+  ],
+  "note": "Hook type: pov. Proven by: Jay Kara 'POWERLIFTERS IN THE GYM' 13M; FitFix 'Powerlifting at Commercial Gym' 18M."
+ },
+ {
+  "title": "Powerlifters vs runners after a workout",
+  "pillar": "humour",
+  "format": "reel",
+  "hook": "Powerlifters vs runners after a workout.",
+  "hook_type": "versus",
+  "location": "gym",
+  "shots": [
+   "Split screen: him eating a full pizza vs him eating a gel",
+   "Same joke for rest times, shoes, recovery"
+  ],
+  "note": "Hook type: versus. Proven by: Noel Deyzel 'Powerlifters vs bodybuilders between sets' 21M."
+ },
+ {
+  "title": "Ranking every excuse for missing a lift",
+  "pillar": "humour",
+  "format": "reel",
+  "hook": "Ranking every excuse for missing a lift. Number one is true.",
+  "hook_type": "ranking",
+  "location": "gym",
+  "shots": [
+   "Tier list graphic",
+   "A miss clip for each excuse",
+   "Number one: the real reason"
+  ],
+  "note": "Hook type: ranking. Proven by: 'Ranking best gym fails' 60M; 'Ranking top 5 funniest gym moments' 20M."
+ },
+ {
+  "title": "POV: the range officer sees your lifting belt",
+  "pillar": "humour",
+  "format": "reel",
+  "hook": "POV: you show up to the range straight from deadlifts.",
+  "hook_type": "pov",
+  "location": "range",
+  "shots": [
+   "Skit at the range: belt still on, chalk on hands",
+   "Range officer's look"
+  ],
+  "note": "Hook type: pov. Proven by: macabespeed 'When the RANGE OFFICER Sneaks Up On Your Shooting Bench' 6.5M. Follow the range's rules and filming policy."
+ },
+ {
+  "title": "Things runners say vs what powerlifters hear",
+  "pillar": "humour",
+  "format": "reel",
+  "hook": "Things runners say vs what powerlifters hear.",
+  "hook_type": "tribe",
+  "location": "track",
+  "shots": [
+   "Text card per line",
+   "His face reacting"
+  ],
+  "note": "Hook type: tribe. Proven by: 'Powerlifters will genuinely defend this' 6.5M; existing 'Things powerlifters say' idea."
+ },
+ {
+  "title": "When the meet is in 2 weeks",
+  "pillar": "humour",
+  "format": "reel",
+  "hook": "When the meet is in 2 weeks and someone asks if you want to go for a run.",
+  "hook_type": "pov",
+  "location": "anywhere",
+  "shots": [
+   "Skit: the look, then the excuse"
+  ],
+  "note": "Hook type: pov. Proven by: Luke Elsman 'POV: Someone's 1st time at the gym' 16M."
+ },
+ {
+  "title": "How to deadlift: 3 cues in 30 seconds",
+  "pillar": "strength",
+  "format": "reel",
+  "hook": "How to deadlift: 3 cues, 30 seconds.",
+  "hook_type": "how-to",
+  "location": "gym",
+  "shots": [
+   "Wrong rep first",
+   "Each cue as a big caption, one rep each",
+   "Clean working set"
+  ],
+  "note": "Hook type: how-to. Proven by: 'How to Deadlift: 5 Simple Steps' 16M; 'How To Bench Press With Perfect Technique (5 Steps)' 13M.",
+  "series": "one-cue"
+ },
+ {
+  "title": "Is your squat actually to depth? 5 checks",
+  "pillar": "strength",
+  "format": "reel",
+  "hook": "Is your squat actually to depth? 5 checks. Count yours.",
+  "hook_type": "question",
+  "location": "gym",
+  "shots": [
+   "Side angle at hip height",
+   "Checklist on screen, ticked one by one"
+  ],
+  "note": "Hook type: question. Proven by: Jeff Nippard 'Do You Have A Perfect Squat? (Find Out)' 15M.",
+  "series": "one-cue"
+ },
+ {
+  "title": "This is not how you set up a bench press",
+  "pillar": "strength",
+  "format": "reel",
+  "hook": "This is not how you set up a bench. Here's what an All-American does.",
+  "hook_type": "mistake",
+  "location": "gym",
+  "shots": [
+   "The common setup, labelled wrong",
+   "His setup, step by step",
+   "A heavy rep"
+  ],
+  "note": "Hook type: mistake. Proven by: Spartan Defense 'How to hold a Pistol like a Pro' 47M (opens on the wrong way)."
+ },
+ {
+  "title": "Don't buy a lifting belt until you can do this",
+  "pillar": "strength",
+  "format": "reel",
+  "hook": "Don't buy a lifting belt until you can do this.",
+  "hook_type": "mistake",
+  "location": "gym",
+  "shots": [
+   "Belt on a bench, ignored",
+   "The test (bracing without a belt)",
+   "When the belt makes sense"
+  ],
+  "note": "Hook type: mistake. Proven by: Fpv4_you 'Don't buy an FPV drone yet. Practice on this first' 3.0M; NickFPV 'This is why you don't start FPV with a drone' 31M."
+ },
+ {
+  "title": "How many plates can a cheap barbell take?",
+  "pillar": "strength",
+  "format": "reel",
+  "hook": "How many plates does it take to bend a cheap barbell?",
+  "hook_type": "how-many",
+  "location": "gym",
+  "shots": [
+   "Cheap bar in a rack with safeties set",
+   "Add a plate each round, counter on screen",
+   "The bend (or not)"
+  ],
+  "note": "Hook type: how-many. Proven by: Yee Yee Life 'How Many Frying Pans Does it Take to Stop a Bullet?' 269M. Safety first: safeties or straps, no one under the bar when it fails."
+ },
+ {
+  "title": "I ran a mile a day for a month. Here's my squat",
+  "pillar": "run",
+  "format": "reel",
+  "hook": "I ran a mile every day for 30 days. My squat went from [weight] to [weight].",
+  "hook_type": "result",
+  "location": "track",
+  "shots": [
+   "Day 1 and day 30 squats side by side",
+   "Mile count calendar",
+   "The verdict"
+  ],
+  "note": "Hook type: result. Proven by: 'Ran a mile a day for a month... What happened?' 1.9M; 'RUNNING A MILE EVERYDAY FOR A MONTH' 1.1M. Only post with his real before and after numbers.",
+  "series": "mid-at-both"
+ },
+ {
+  "title": "What an Army powerlifter's warm-up looks like",
+  "pillar": "strength",
+  "format": "reel",
+  "hook": "An Army powerlifter's whole deadlift warm-up.",
+  "hook_type": "proof",
+  "location": "gym",
+  "shots": [
+   "Each warm-up jump, one second each",
+   "Top set as the payoff"
+  ],
+  "note": "Hook type: proof. Proven by: 'Ex Navy Seal Teaches How To Properly Shoot' 10.6M; military authority clips 45M+. Check Army rules on uniform and affiliation before filming in uniform."
+ },
+ {
+  "title": "What I eat in a day for $[amount] at 182",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "What I eat in a day for $[amount], at 182 lb and getting stronger.",
+  "hook_type": "constraint",
+  "location": "kitchen",
+  "shots": [
+   "Receipt or price tag on every item",
+   "Running protein and price totals on screen",
+   "End on a lift"
+  ],
+  "note": "Hook type: constraint. Proven by: Jeff Nippard 'How To Build Muscle For $8/Day' 16M; Hormozi '84 Grams of Protein for Cheap' 2.2M."
+ },
+ {
+  "title": "[n] grams of protein for under $[amount]",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "[n] grams of protein for under [amount] bucks.",
+  "hook_type": "constraint",
+  "location": "kitchen",
+  "shots": [
+   "Ingredients with prices",
+   "One fast build",
+   "Macros card"
+  ],
+  "note": "Hook type: constraint. Proven by: Hormozi '84 Grams of Protein for Cheap' 2.2M; 'High protein lunches for $3' 3.8M."
+ },
+ {
+  "title": "I ate like a marathoner for a day",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "I'm a powerlifter. Today I eat like a marathoner.",
+  "hook_type": "challenge",
+  "location": "kitchen",
+  "shots": [
+   "Each meal with calories",
+   "His reaction",
+   "The next day's lift"
+  ],
+  "note": "Hook type: challenge. Proven by: Will Tennyson 'I Tried His 725lbs Diet' 10M, 'I Swapped Diets With A Victoria's Secret Model' 16M; Eddie Hall 'I ate my old Strongman diet for a day' 19M.",
+  "series": "mid-at-both"
+ },
+ {
+  "title": "Meet day: everything I eat between attempts",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "Everything I eat between squat, bench and deadlift on meet day.",
+  "hook_type": "number",
+  "location": "meet",
+  "shots": [
+   "Each snack with time stamp",
+   "Attempt clips in between"
+  ],
+  "note": "Hook type: number. Proven by: 'what an athlete eats in a day' 3.7M; full day of eating long-form 24M."
+ },
+ {
+  "title": "How many bumper plates does it take to stop a bullet?",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "How many bumper plates does it take to stop a bullet?",
+  "hook_type": "how-many",
+  "location": "range",
+  "shots": [
+   "Plates stacked downrange",
+   "Calibre goes up each round",
+   "Count on screen"
+  ],
+  "note": "Hook type: how-many. Proven by: Yee Yee Life 'How Many Frying Pans…' 269M, 'Can Silly Putty Stop a 50 Cal?' 157M. Only at a range that allows it, with a range officer; never steel plates at close range. His call whether this fits the brand."
+ },
+ {
+  "title": "Does a heavy deadlift wreck your shooting?",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "Heavy deadlifts, then a shooting drill. Does my grip hold up?",
+  "hook_type": "challenge",
+  "location": "range",
+  "shots": [
+   "Timer and target before lifting",
+   "Max pull",
+   "Same drill after, targets side by side"
+  ],
+  "note": "Hook type: challenge. Proven by: 'Range day after max deadlifts' idea in the plan; 'Quick & Accurate Pistol Shooting' 45M."
+ },
+ {
+  "title": "Powerlifter grip vs pistol grip",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "This is not how you hold a pistol. A powerlifter's grip fixes it.",
+  "hook_type": "mistake",
+  "location": "range",
+  "shots": [
+   "Wrong grip",
+   "Grip strength link",
+   "Groups on target before and after"
+  ],
+  "note": "Hook type: mistake. Proven by: Spartan Defense 'How to hold a Pistol like a Pro' 47M; 'John McPhee Reveals Why Most Shooters Hold a Pistol Wrong' 4.2M. Teach only what he is qualified to teach; keep safety rules on screen."
+ },
+ {
+  "title": "Me vs a Ranger: deadlift and a shooting drill",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "Me vs an Army Ranger. He picks the drill, I pick the lift.",
+  "hook_type": "versus",
+  "location": "range",
+  "shots": [
+   "Scoreboard",
+   "Both events",
+   "Forfeit"
+  ],
+  "note": "Hook type: versus. Proven by: 'NAVY SEAL vs. HUNTERS' 45M.",
+  "series": "strong-vs-runner"
+ },
+ {
+  "title": "Picking a lock between every set",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "I pick a lock between every set. If I can't, I skip the set.",
+  "hook_type": "constraint",
+  "location": "gym",
+  "shots": [
+   "Lock and timer on the bench",
+   "Each set and each pick",
+   "Final count"
+  ],
+  "note": "Hook type: constraint. Proven by: 'How To Pick A Lock Open In Under 40 Seconds' 10M; Tommo Carroll 'Lock picking is THIS EASY?!' 3.7M. His own locks only."
+ },
+ {
+  "title": "Can sausage fingers pick a lock?",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "Can a powerlifter with sausage fingers pick a lock in under a minute?",
+  "hook_type": "challenge",
+  "location": "home",
+  "shots": [
+   "Close-up of chalky hands on tiny picks",
+   "Timer",
+   "The click"
+  ],
+  "note": "Hook type: challenge. Proven by: 'Lock picking is THIS EASY?!' 3.7M; 'How To Unlock A Door With A Hairpin' 69M."
+ },
+ {
+  "title": "Don't buy a lock pick set yet",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "Don't buy a lock pick set yet. Start with this.",
+  "hook_type": "mistake",
+  "location": "home",
+  "shots": [
+   "Expensive set vs the cheap starter",
+   "First pick on a clear lock"
+  ],
+  "note": "Hook type: mistake. Proven by: McNally 'Get started picking locks for less than $10' 4.6M; NickFPV 'This is why you don't start FPV with a drone' 31M."
+ },
+ {
+  "title": "Ranking gym locker locks by how fast I can open them",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "Ranking gym locks by how fast I can open them. Yours is on here.",
+  "hook_type": "ranking",
+  "location": "home",
+  "shots": [
+   "Tier list",
+   "Timer per lock"
+  ],
+  "note": "Hook type: ranking. Proven by: LockPickingLawyer channel (1,600+ videos); 'Ranking best gym fails' 60M. His own locks only, never someone else's locker."
+ },
+ {
+  "title": "FPV fly-through into a PR",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "One take. FPV drone through the gym, straight into my heaviest [lift].",
+  "hook_type": "challenge",
+  "location": "gym",
+  "shots": [
+   "Drone path rehearsed with the gym empty",
+   "One take ending on the lift"
+  ],
+  "note": "Hook type: challenge. Proven by: How Ridiculous 'FPV Drone Threads The Needle!' 90M; 'Roof Divin' FPV' 4M. Needs gym permission and a cinewhoop with prop guards."
+ },
+ {
+  "title": "Can a powerlifter learn FPV in one afternoon?",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "Can a powerlifter learn to fly FPV in one afternoon?",
+  "hook_type": "challenge",
+  "location": "outdoors",
+  "shots": [
+   "Simulator first",
+   "First crash",
+   "Last flight of the day"
+  ],
+  "note": "Hook type: challenge. Proven by: andyescapes 'Can a Noob Learn To Fly FPV Drones In 4 Hours?' 675K; TheTomJon 'I Learned to Fly FPV with a DJI Pilot' 3.8M."
+ },
+ {
+  "title": "Don't start FPV with a drone",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "Don't start FPV with a drone. Start with this.",
+  "hook_type": "mistake",
+  "location": "home",
+  "shots": [
+   "Controller and simulator",
+   "First real flight"
+  ],
+  "note": "Hook type: mistake. Proven by: NickFPV 'This is why you don't start FPV with a drone…' 31M."
+ },
+ {
+  "title": "Chasing my own sled push with an FPV drone",
+  "pillar": "life",
+  "format": "reel",
+  "hook": "I chased my own sled push with an FPV drone.",
+  "hook_type": "pov",
+  "location": "gym",
+  "shots": [
+   "Drone follow shot",
+   "Ground angle for comparison"
+  ],
+  "note": "Hook type: pov. Proven by: 'FPV in Bodycam' 10M; existing 'I filmed my sled push with an FPV drone' idea."
+ },
+ {
+  "title": "Powerlifter tries every running test (long-form)",
+  "pillar": "run",
+  "format": "long-form",
+  "hook": "I'm a [bodyweight] lb powerlifter. Today I try every running test: 40, 400, mile, 5K.",
+  "hook_type": "challenge",
+  "location": "track",
+  "shots": [
+   "Each test is a chapter with its own bar",
+   "Re-hook at every event",
+   "Final scoreboard"
+  ],
+  "note": "Hook type: challenge. Proven by: Jesse James West 'Who Is The Strongest Fitness Youtuber?' 11M; Tyler Speers 'How Long Can I Lead an Elite Marathon?' 4.4M.",
+  "series": "mid-at-both"
+ },
+ {
+  "title": "Training with a Ranger for a day (long-form)",
+  "pillar": "life",
+  "format": "long-form",
+  "hook": "I spent a day training like an Army Ranger. Then I made him deadlift.",
+  "hook_type": "versus",
+  "location": "anywhere",
+  "shots": [
+   "His training block",
+   "My training block",
+   "Head to head"
+  ],
+  "note": "Hook type: versus. Proven by: 'What Army Snipers Go Through At Sniper School' 18M; 'NAVY SEAL vs HUNTERS' 45M."
+ }
+]

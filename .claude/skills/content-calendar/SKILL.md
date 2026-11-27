@@ -55,6 +55,13 @@ uv run stylebrain social-import library/social/NAME/package.json --reel POST   #
 
 ## Feeding the backlog
 
+- `library/hooks/ideas.json` holds researched ideas, each built on a hook type
+  that has proven itself on YouTube (the videos are named in its `note`). Import
+  it once with `uv run stylebrain idea-import library/hooks/ideas.json --source trend`;
+  ideas with `[weight]`-style gaps wait for his real numbers before filming.
+  When the backlog runs short, write new ideas from `uv run stylebrain hooks
+  --examples --niche NICHE` and the `for_michael` lines in `library/hooks/patterns.json`.
+
 - Clip candidates (auto-clipping), trend reports and analytics ideas arrive as a
   JSON list: each item needs `title` and `pillar`; optional `format`, `hook`,
   `series`, `cta`, `location`, `shots`, `note`, `score`, `draft`, `status`,

@@ -799,11 +799,37 @@ def cmd_beats(args) -> None:
 
 def cmd_hooks(args) -> None:
     from . import story
+    if args.examples is not None or args.niche:
+        kind = args.examples or None
+        try:
+            found = story.proven_examples(kind, args.niche, limit=args.limit)
+        except ValueError as e:
+            raise EditError(str(e)) from e
+        if not found:
+            print("no researched examples" + (f" of {kind}" if kind else "") + (f" in {args.niche}" if args.niche else "")
+                  + " (library/hooks/patterns.json)")
+            return
+        lib = story.hook_library().get("patterns", {})
+        if kind and lib.get(kind, {}).get("why"):
+            print(f"{kind}: {lib[kind]['why']}")
+            for t in lib[kind].get("for_michael", []):
+                print(f"  for you: {t}")
+        for e in found:
+            views = f"{e['views']:,}" if e.get("views") else "?"
+            print(f"  {views:>12} views  [{e['type']}] {e['title']}  ({e.get('creator', '')}, {e.get('niche', '')})")
+            if e.get("opening"):
+                print(f"               opens: \"{e['opening']}\"")
+        return
     if args.spoken is None:
         print("Hook types (write three options, each a different type):")
+        lib = story.hook_library().get("patterns", {})
         for key, (what, example) in story.HOOK_TYPES.items():
-            print(f"  {key:<11}{what}. e.g. \"{example}\"")
+            n = len(lib.get(key, {}).get("examples", []))
+            print(f"  {key:<11}{what}. e.g. \"{example}\"" + (f"  [{n} proven]" if n else ""))
+        print("Proven examples with views: stylebrain hooks --examples TYPE [--niche powerlifting]")
         return
+    kinds = story.classify_hook(args.spoken)
+    print("type: " + (", ".join(kinds) if kinds else "none of the hook types; it may not hook at all"))
     problems = story.check_hook_option(args.spoken, args.text or "")
     print("hook ok" if not problems else "\n".join(f"  {p}" for p in problems))
 
@@ -1326,8 +1352,11 @@ def main(argv: list[str] | None = None) -> None:
         A("--questions", help="extra re-hook times you marked, as a JSON list of seconds"),
         A("--limit", type=float, default=60.0, help="longest stretch allowed with no new question"),
         A("--json", action="store_true"))
-    add("hooks", cmd_hooks, "list hook types, or check one written hook", A("spoken", nargs="?"),
-        A("--text", help="the on-screen text that goes with it"))
+    add("hooks", cmd_hooks, "list hook types, show proven examples, or check one written hook", A("spoken", nargs="?"),
+        A("--text", help="the on-screen text that goes with it"),
+        A("--examples", nargs="?", const="", help="researched examples with views, of one TYPE or all"),
+        A("--niche", help="powerlifting, running, food, guns, lockpicking or fpv"),
+        A("--limit", type=int, default=8))
     add("script-check", cmd_script_check, "measured checks on a written script (one spoken line per line)", A("script", nargs="?"),
         A("--questions", action="store_true", help="list the five story questions"),
         A("--story", help="your answers to the five story questions, JSON or @file"), A("--json", action="store_true"))

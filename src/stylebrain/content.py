@@ -66,6 +66,7 @@ DEFAULT_SERIES = {
                     "premise": "Each episode tests one claim about lifters who run. Stake, attempt, twist, verdict."},
     "strong-vs-runner": {"name": "Strong guy vs runner",
                          "premise": "Head-to-heads where each side picks the event. Scoreboard and a loser's forfeit."},
+    "one-cue": {"name": "One cue", "premise": "One cue per episode that fixes one lift, shown before and after."},
 }
 
 DEFAULT_SETTINGS = {
