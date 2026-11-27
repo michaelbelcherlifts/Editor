@@ -921,8 +921,30 @@ def cmd_hooks(args) -> None:
         return
     kinds = story.classify_hook(args.spoken)
     print("type: " + (", ".join(kinds) if kinds else "none of the hook types; it may not hook at all"))
+    lay = story.hook_layers(args.spoken)
+    print(f"layers: {lay['layers']} of {len(story.HOOK_LAYERS)} (" + (", ".join(lay["have"]) or "none") + ")")
+    for a in lay["add"]:
+        print(f"  could add {a}")
     problems = story.check_hook_option(args.spoken, args.text or "")
     print("hook ok" if not problems else "\n".join(f"  {p}" for p in problems))
+
+
+def cmd_retention(args) -> None:
+    from . import story
+    raw = _json_arg(args.points, None)
+    if not raw:
+        raise EditError('give the curve as JSON or @file: [[0, 100], [3, 72], [10, 60], ...] (seconds, % watching)')
+    pts = [(p["t"], p["v"]) if isinstance(p, dict) else (p[0], p[1]) for p in raw]
+    try:
+        d = story.retention_diagnosis(pts, args.seconds)
+    except ValueError as e:
+        raise EditError(str(e)) from e
+    if args.json:
+        print(json.dumps(d, indent=2)); return
+    print(f"kept to the end: {d['kept_to_end']:.0%}")
+    for k in story.RETENTION_PARTS:
+        print(f"  {k:<8} lost {d['lost'][k]:.0%}")
+    print("fix " + d["fix"] if d["worst"] else d["fix"])
 
 
 def cmd_script_check(args) -> None:
@@ -1705,6 +1727,9 @@ def main(argv: list[str] | None = None) -> None:
         A("--examples", nargs="?", const="", help="researched examples with views, of one TYPE or all"),
         A("--niche", help="powerlifting, running, food, guns, lockpicking or fpv"),
         A("--limit", type=int, default=8))
+    add("retention", cmd_retention, "which part lost viewers (hook, buildup or payoff) from a retention curve",
+        A("points", help='JSON or @file: [[seconds, percent watching], ...]'), A("--seconds", type=float,
+        help="video length (default: the last point)"), A("--json", action="store_true"))
     add("script-check", cmd_script_check, "measured checks on a written script (one spoken line per line)", A("script", nargs="?"),
         A("--questions", action="store_true", help="list the five story questions"),
         A("--story", help="your answers to the five story questions, JSON or @file"), A("--json", action="store_true"))

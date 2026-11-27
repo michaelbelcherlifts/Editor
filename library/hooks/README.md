@@ -11,6 +11,11 @@ powerlifting humour, running, food, guns, lock picking, FPV drones).
   `stylebrain idea-import` reads. Each names its hook type and the videos that
   prove the format in `note`.
 
+- `playbooks/mckeaveney.json`: Robert McKeaveney's rules for reels that reach
+  millions (hook ladder, hook / buildup / payoff, reading retention, borrowing
+  formats, baseline, what doesn't matter), with his reels as sources and how
+  each fits Michael.
+
 Use:
 
 ```
@@ -18,6 +23,7 @@ uv run stylebrain hooks                                  # types, with how many 
 uv run stylebrain hooks --examples challenge             # proven examples of one type, most viewed first
 uv run stylebrain hooks --examples --niche guns          # all types in one niche
 uv run stylebrain hooks "Can I run a sub 6 mile?" --text "182 lb vs 1 mile"   # its type and problems
+uv run stylebrain retention '[[0,100],[3,70],[10,62],[20,55]]'               # which part lost viewers
 uv run stylebrain idea-import library/hooks/ideas.json --source trend          # into the content plan
 ```
 
