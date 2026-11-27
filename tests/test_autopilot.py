@@ -123,6 +123,8 @@ def test_autopilot_without_resolve_keeps_the_edit(project):
     r = autopilot.run("bench", str(project / "raw.mov"), connect=no_resolve)
     assert not r.built and any("not built in Resolve" in n for n in r.notes)
     assert Store("bench").head() == 3
+    # No sliver of the cut retake is left behind: the edit opens just before the real first line.
+    assert Store("bench").load().segments[0].src_in == round((3.0 - 0.12) * 30)
     with pytest.raises(EditError):
         autopilot.run("bench", str(project / "raw.mov"), connect=no_resolve)
     with pytest.raises(EditError, match="too rough"):
@@ -136,7 +138,7 @@ def test_commands_retakes_srt_and_review(project, capsys):
     main(["retakes", "--transcript", t])
     assert "so today we are going" in capsys.readouterr().out
     main(["retakes", "--transcript", t, "--cut"])
-    assert "0:10.00 -> 0:08.00" in capsys.readouterr().out
+    assert "0:10.00 -> 0:08.13" in capsys.readouterr().out
     main(["srt", "--transcript", t, "--out", "cut.srt"])
     assert "00:00:01,000" in (project / "cut.srt").read_text()
     style.save("ref", {"source": "x", "pacing": style.pacing([1, 2, 3, 4, 5, 6, 7], 8.0)})

@@ -369,7 +369,7 @@ def cmd_retakes(args) -> None:
         where = ", ".join(format_time(lo, edit.fps) for lo, _ in _to_timeline(edit, source, [(a, b)])) or "already cut"
         print(f"  {where}: {b - a:.1f}s  \"{said}\"")
     if args.cut:
-        ranges = _to_timeline(edit, source, found)
+        ranges = _to_timeline(edit, source, [(a, b - 0.12) for a, b in found if b - a > 0.12])
         if ranges:
             _save(store, edit, edit.remove_ranges(ranges), f"cut {len(found)} likely retakes")
 

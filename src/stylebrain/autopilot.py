@@ -133,9 +133,11 @@ def run(name: str, source: str, transcript: str | None = None, style_name: str |
         edit = new
         result.steps.append(f"v{version}: {message}; now {format_time(edit.duration, fps)}")
 
+    kept = words
     if retakes:
         found = tr.find_retakes(words)
-        ranges = _frames(edit, source, found)
+        kept = [w for w in words if not any(a <= w.start < b for a, b in found)]
+        ranges = _frames(edit, source, [(a, b - 0.12) for a, b in found if b - a > 0.12])  # leave air before the repeat
         if ranges:
             save(edit.remove_ranges(ranges), f"cut {len(found)} likely retakes")
             for a, b in found:
@@ -145,7 +147,7 @@ def run(name: str, source: str, transcript: str | None = None, style_name: str |
     min_gap = 0.6
     if target and target.get("speech"):
         min_gap = round(min(max(target["speech"]["long_gap"] * 1.5, 0.35), 1.0), 2)
-    ranges = _frames(edit, source, tr.tighten_ranges(words, min_gap, 0.12, frames / fps))
+    ranges = _frames(edit, source, tr.tighten_ranges(kept, min_gap, 0.12, frames / fps))
     if ranges:
         save(edit.remove_ranges(ranges), f"tighten {len(ranges)} pauses of {min_gap:g}s or more")
 
