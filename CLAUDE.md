@@ -10,6 +10,7 @@ screenshots, and `.claude/skills/script/SKILL.md` before writing a script or hoo
 sound, music, reframing, export, house rules, the content calendar, social posts and cross-posting.
 `docs/aesthetic-shots.md` covers flex, pose and physique moments (light, angle, grade, pacing).
 `docs/cinematic-editing.md` covers cinematic military and sports edits (Blaze Kennedy study: titles, captions, transitions, pacing).
+`docs/looks.md` covers the two caption looks Michael chooses between (`house`, `cinematic`), text behind people, wide lift shots and muting a source's music.
 
 ## Rules
 
@@ -41,6 +42,8 @@ sound, music, reframing, export, house rules, the content calendar, social posts
 - `src/stylebrain/render.py`: HTML animation to transparent video
 - `src/stylebrain/templates.py`, `anatomy.py`: animation templates and the body figure
 - `src/stylebrain/kinetic.py`, `explainers.py`, `pagekit.py`: type templates (kinetic type, mid captions, counters, end cards, clipper), lift explainers (lift presets, form cues, tempo, charts), and the shared stage and caption safe zone
+- `src/stylebrain/looks.py`: the house look templates (house captions, frame-1 hook, big title for behind the person, floating notification banner), fonts in `src/stylebrain/fonts/` (OFL)
+- `src/stylebrain/people.py`: wide lift shots in a vertical frame (`wide-clip`), text behind the person (`behind`, MediaPipe), a source's sound muted between spoken lines (`speech-only`)
 - `src/stylebrain/effects.py`: the saved effect library (`library/effects/`)
 - `src/stylebrain/reference.py`: studying a reference video (frame sheets, motion timing, colours, side-by-side check)
 - `src/stylebrain/style.py`: measuring a video's style (cuts, opening, speech pace, picture, sound) into `library/styles/`

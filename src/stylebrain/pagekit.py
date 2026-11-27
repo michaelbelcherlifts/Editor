@@ -19,10 +19,31 @@ FONTS = {
 }
 
 
+# Fonts that ship inside the editor (SIL Open Font License, see fonts/OFL-*.txt), so a page looks the same
+# on any computer. Inter is named by many templates but is rarely installed; without it pages fell back to
+# Arial Black, which is much of what made captions look auto-generated.
+EMBEDDED = {"montserrat": ("Montserrat", "Montserrat.ttf"), "anton": ("Anton", "Anton.ttf"), "inter": ("Inter", "Inter.ttf")}
+
+
+def font_faces(*names: str) -> str:
+    """@font-face rules (the font file inlined) for embedded fonts, by key: montserrat, anton, inter."""
+    import base64
+    from pathlib import Path
+    out = []
+    for key in names:
+        family, file = EMBEDDED[key]
+        data = base64.b64encode((Path(__file__).parent / "fonts" / file).read_bytes()).decode()
+        out.append(f"@font-face{{font-family:'{family}';src:url(data:font/ttf;base64,{data}) format('truetype');"
+                   "font-weight:100 900;font-style:normal}")
+    return "".join(out)
+
+
 def font_stack(name: str) -> str:
     """The CSS font list for a named choice, or for any font installed on this computer by its exact name."""
     import re
     key = name.strip().lower()
+    if key in EMBEDDED and key != "inter":
+        return f"'{EMBEDDED[key][0]}',{FONT}"
     if key in FONTS:
         return FONTS[key]
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 \-]{0,60}", name.strip()):
@@ -34,7 +55,9 @@ def with_font(html: str, name: str | None) -> str:
     """The same page with every piece of text set in the chosen font."""
     if not name:
         return html
-    return html.replace("</style>", f"#stage,#stage *{{font-family:{font_stack(name)} !important}}</style>", 1)
+    key = name.strip().lower()
+    faces = font_faces(key) if key in EMBEDDED else ""
+    return html.replace("</style>", f"{faces}#stage,#stage *{{font-family:{font_stack(name)} !important}}</style>", 1)
 
 
 # Running captions sit in this band of the frame (fractions of its height). Cards and

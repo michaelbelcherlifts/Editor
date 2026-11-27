@@ -568,6 +568,27 @@ def cmd_transition(args) -> None:
     print("\n".join(lines))
 
 
+def cmd_wide_clip(args) -> None:
+    from . import people
+    out = people.wide_clip(args.source, args.start, args.end, args.out, x=args.x, share=args.share,
+                           fill=args.fill, fps=args.fps)
+    print(f"wrote {out}: {args.end - args.start:.2f}s, {round(args.share * 100)}% of the width, {args.fill} fill. "
+          f"Lay it over the main track with `broll {out} --at T --duration D`.")
+
+
+def cmd_behind(args) -> None:
+    from . import people
+    out = people.behind(args.base, args.text, args.out, fps=args.fps)
+    print(f"wrote {out}: the text layer sits behind the person. Lay it over the main track with `broll`.")
+
+
+def cmd_speech_only(args) -> None:
+    from . import people
+    out, n = people.speech_only(args.source, args.transcript, args.out)
+    print(f"wrote {out}: sound kept in {n} spoken stretches, muted between them. Use it as the source so a new song "
+          "can sit under the edit.")
+
+
 def cmd_export(args) -> None:
     from . import export
     store = _store(args); edit = store.load()
@@ -779,8 +800,10 @@ def cmd_presets(args) -> None:
     from . import presets
     print("Ready-made first-cut styles (auto NAME --source FILE --preset ...):")
     print(presets.listing())
-    from .pagekit import FONTS
-    print(f"Caption fonts (--font): {', '.join(FONTS)}, or the exact name of any font installed on this computer.")
+    from .pagekit import EMBEDDED, FONTS
+    names = list(FONTS) + [k for k in EMBEDDED if k not in FONTS]
+    print(f"Caption fonts (--font): {', '.join(names)} (montserrat and anton ship with the editor), "
+          "or the exact name of any font installed on this computer.")
 
 
 def cmd_preset_preview(args) -> None:
@@ -1953,6 +1976,17 @@ def main(argv: list[str] | None = None) -> None:
         A("--kind", default="whip", choices=["whip", "zoom"]),
         A("--frames", type=int, default=6, help="frames blurred on each side of the cut"),
         A("--left", action="store_true", help="whip to the left instead of the right"))
+    add("wide-clip", cmd_wide_clip, "a lift shown wide in a vertical frame so the bar and plates stay in view",
+        A("source"), A("--start", type=float, required=True), A("--end", type=float, required=True),
+        A("--out", required=True), A("--x", type=float, default=0.5, help="centre of the kept part, 0 left to 1 right"),
+        A("--share", type=float, default=0.62, help="share of the source width kept (0.62 shows a full barbell)"),
+        A("--fill", default="blur", choices=["blur", "film"], help="blur: the shot blurred above and below; film: black bars"),
+        A("--fps", type=float))
+    add("behind", cmd_behind, "put a text layer (e.g. a rendered big_title) behind the person in a vertical clip",
+        A("base", help="the 1080x1920 clip"), A("text", help="transparent .mov, same start"), A("--out", required=True),
+        A("--fps", type=float, default=30.0))
+    add("speech-only", cmd_speech_only, "copy a clip with its sound muted wherever nobody is talking",
+        A("source"), A("--transcript", required=True, help="word timings of the source"), A("--out", required=True))
     add("export", cmd_export, "render the edit to a file ready to post, then check it", A("out", nargs="?"), *out,
         A("--fit", default="fill", choices=["fill", "fit"], help="fill crops to cover the frame; fit keeps it all with bars"),
         A("--no-sounds", action="store_true"), A("--no-music", action="store_true"),
