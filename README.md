@@ -95,8 +95,8 @@ uv run pytest
 
 ## Known limits of this version
 
-- One layer of footage on the main track, plus overlays above it. No transitions or
-  audio-only edits yet. Zooms and speed changes are baked into a new file, not live
+- Several clips can share the main track, with b-roll and graphics above it, but all
+  must be at the edit's frame rate. No transitions or audio-only edits yet. Zooms and speed changes are baked into a new file, not live
   in Resolve.
 - Transparent clips are ProRes 4444 and large, roughly 10 to 20 MB per second at 1080p.
 - The muscle figure is a simple stylized diagram, not a medical illustration.
