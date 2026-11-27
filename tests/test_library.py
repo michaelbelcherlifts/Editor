@@ -24,6 +24,7 @@ NEW = {
                  "angles": [{"vertex": [0.5, 0.5], "a": [0.7, 0.5], "b": [0.5, 0.3]}]},
     "tempo_counter": {"tempo": "3-1-X-0", "reps": 2},
     "compare_chart": {"bars": [{"label": "Me", "value": 516}, {"label": "Avg", "value": 300}], "highlight": 0},
+    "hud_card": {"text": "Squat 500", "kind": "mission"},
 }
 
 
@@ -37,6 +38,7 @@ def test_new_templates_build(name):
     ("kinetic_type", {}), ("title_bar", {"text": " ", "duration": 1}), ("end_card", {"items": []}),
     ("counter", {}), ("clipper", {"headline": "x", "duration": 1, "width": 1920, "height": 1080}),  # no bands
     ("lift_diagram", {"lift": "curl"}), ("form_cue", {}), ("form_cue", {"arrows": [{"from": [2, 0], "to": [0, 0]}]}),
+    ("hud_card", {"text": "x", "kind": "boss"}), ("hud_card", {"text": " "}),
     ("tempo_counter", {"tempo": "3-1-1"}), ("compare_chart", {"bars": [{"label": "a", "value": 0}]}),
 ])
 def test_new_templates_reject_bad_input(name, params):
@@ -143,3 +145,10 @@ def test_kinetic_scatter_splits_layers_and_snaps():
     assert html.count("animation:vis") == 5
     with pytest.raises(EditError):
         build("kinetic_scatter", {**p, "layer": "middle"})
+
+
+@pytest.mark.parametrize("kind", ["mission", "passed", "failed", "warning"])
+def test_hud_card_kinds(kind):
+    html, d = build("hud_card", {"text": "Don't let a <runner> see this", "kind": kind, "sub": "+RESPECT", "duration": 2})
+    assert d == 2 and "&lt;runner&gt;" in html and "+RESPECT" in html
+    assert ("class='dim'" in html) == (kind == "failed")
