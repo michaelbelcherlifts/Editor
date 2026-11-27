@@ -6,8 +6,8 @@ description: Use when Michael wants a finished reel ready for each app, such as 
 # One reel, every platform
 
 `src/stylebrain/crosspost.py` turns one calendar post into a version for each
-platform it is planned for: Instagram Reels, TikTok, YouTube Shorts and YouTube
-long-form. `src/stylebrain/publish.py` then posts the three short-form versions
+platform it is planned for: Instagram Reels, TikTok, YouTube Shorts, Facebook
+Reels and YouTube long-form. `src/stylebrain/publish.py` then posts the four short-form versions
 in one go, **only when Michael asks** ("post it", "post today's reel", or his
 double-click shortcut). Never post on your own initiative, on a schedule, or
 because a draft looks finished. Long-form YouTube is posted by hand for now.
@@ -17,6 +17,10 @@ because a draft looks finished. Long-form YouTube is posted by hand for now.
 - **Instagram**: caption (hook first, about 125 characters show before "more"),
   a line or two of value, the ask, at most 5 hashtags (Instagram's limit since
   December 2025).
+- **Facebook Reels**: like Instagram, 3 hashtags, to the Page linked to
+  Instagram. Facebook's API takes 3 to 90 seconds only; longer reels are
+  skipped there. Reels planned before Facebook was added get it on their next
+  `crosspost` (turn off with `plan-settings --set facebook_reels=false`).
 - **TikTok**: hook, a plain-words line for TikTok search, the ask, 4 hashtags.
 - **YouTube Shorts**: title (the idea's title, under 60 characters reads best),
   description with the hook, the ask, 3 hashtags. Links in Shorts are not
@@ -67,7 +71,7 @@ uv run stylebrain post-result POST --platform tiktok --url URL --views N --saves
 
 ```
 uv run stylebrain publish POST --dry-run     # check everything, send nothing: run this first
-uv run stylebrain publish POST               # Instagram, TikTok and Shorts, when he asks
+uv run stylebrain publish POST               # Instagram, TikTok, Shorts and Facebook, when he asks
 uv run stylebrain publish today              # today's approved reel
 uv run stylebrain publish POST --only tiktok
 uv run stylebrain connect youtube|instagram|tiktok ...   # once per account

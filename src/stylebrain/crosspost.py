@@ -53,6 +53,12 @@ PLATFORMS = {
                   "A link in bio needs a business account or 1,000 followers; until then point to Instagram.",
                   "Trending audio can be added in the app under the voice, at a low level."],
     },
+    "facebook": {
+        "name": "Facebook Reels", "frame": (1080, 1920), "max_seconds": 90,
+        "caption_max": 2200, "hashtags": 3, "hashtags_max": 10, "visible": 125,
+        "notes": ["Posts to the Facebook Page linked to Instagram. Facebook's API only takes reels of 3 to 90 seconds.",
+                  "Upload the clean export, never a file saved from TikTok."],
+    },
     "youtube-shorts": {
         "name": "YouTube Shorts", "frame": (1080, 1920), "max_seconds": 180,
         "title_max": 100, "title_good": 60, "description_max": 5000, "hashtags": 3, "hashtags_max": 15,
@@ -157,6 +163,8 @@ def cta_line(cta: str, platform: str, idea: dict, brand: dict, series_name: str 
             return f"Want a plan built for you? Coaching: {site}" if site else "Want a plan built for you? Coaching link below."
         if platform == "youtube-shorts":
             return "Want a plan built for you? Coaching link on my channel page."
+        if platform == "facebook":
+            return f"Want a plan built for you? Coaching: {site}" if site else "Want a plan built for you? Coaching link on my Page."
         return "Want a plan built for you? Coaching link in bio."
     if cta == "long-form":
         if platform == "youtube-shorts":
@@ -330,9 +338,9 @@ def build(idea: dict, platforms: list[str], cta: str, *, words: list[Word] | Non
         ask = cta_line(cta, p, idea, brand, series_name)
         tags = tags_all[: spec["hashtags"]]
         vid, vf = (long_video, long_facts) if p == "youtube" else (video, facts)
-        if p in ("instagram", "tiktok"):
+        if p in ("instagram", "tiktok", "facebook"):
             body = [hook]
-            if p == "instagram" and middle:
+            if p in ("instagram", "facebook") and middle:
                 body += ["", " ".join(middle)]
             if p == "tiktok":
                 body += ["", PILLAR_WORDS.get(idea.get("pillar") or "", "")]
@@ -393,6 +401,9 @@ def make(plan, post_id: str, *, video: str | None = None, long_video: str | None
     idea = plan.idea(post["idea"])
     video = video or idea.get("draft")
     platforms = list(post["platforms"])
+    if post["format"] == "reel" and "facebook" not in platforms and plan.settings.get("facebook_reels", True):
+        platforms.append("facebook")  # reels planned before Facebook was added go there too
+        post["platforms"] = platforms
     vertical = [p for p in platforms if p != "youtube"]
     if "youtube" in platforms and not long_video:
         long_video = video if idea.get("format") == "long-form" or not vertical else None

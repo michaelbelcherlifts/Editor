@@ -61,7 +61,7 @@ sound, music, reframing, export, house rules, the content calendar, social posts
 - `src/stylebrain/formats.py`: formats (reel, short, longform): the frame, loudness and checks for where a video is posted
 - `src/stylebrain/longform.py`: long-form YouTube: chapter rules, the structure check (opening, re-hooks, pace, payoff), chapter outlines; targets in `docs/long-form.md`
 - `src/stylebrain/crosspost.py`: one reel made ready for each platform (Instagram, TikTok, Shorts, YouTube): captions, titles, hashtags, calls to action, chapters and checks, tied to calendar posts (`library/crosspost/`, not committed; never posts)
-- `src/stylebrain/publish.py`: the one-button poster: a prepared reel to Instagram, TikTok and YouTube Shorts through their official APIs, only when Michael asks (`publish`, `connect`, `publish-shortcut`; sign-ins in `library/accounts/`, not committed; setup in `docs/publishing-setup.md`)
+- `src/stylebrain/publish.py`: the one-button poster: a prepared reel to Instagram, TikTok, YouTube Shorts and Facebook Reels through their official APIs, only when Michael asks (`publish`, `connect`, `publish-shortcut`; sign-ins in `library/accounts/`, not committed; setup in `docs/publishing-setup.md`)
 - `src/stylebrain/bake.py`: ffmpeg zooms and speed changes
 - `src/stylebrain/speed.py`: slow motion and speed ramps on part of the timeline (`speed`), baked as new clips
 - `src/stylebrain/cli.py`: the `stylebrain` command

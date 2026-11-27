@@ -32,6 +32,14 @@ class FakeApps:
             return j({}, 200, {"location": "https://upload.example/yt-session"})
         if url == "https://upload.example/yt-session":
             return j({"id": "abc123"})
+        if url.endswith("/video_reels"):
+            if json_body and json_body.get("upload_phase") == "start":
+                return j({"video_id": "fb55", "upload_url": "https://rupload.facebook.com/video-upload/fb55"})
+            return j({"success": True})
+        if url.startswith(publish.FB_RUPLOAD):
+            return j({"success": True})
+        if url.endswith("/fb55"):
+            return j({"status": {"video_status": "ready", "publishing_phase": {"status": "complete"}}})
         if url.endswith("/media") and method == "POST":
             return j({"id": "container1"})
         if url.startswith(publish.RUPLOAD):
@@ -78,7 +86,8 @@ def setup(tmp_path, hook="One bench cue that works", status="planned"):
     p = plan.schedule(i["id"], DAY, cta="save", status=status)
     crosspost.make(plan, p["id"], base=tmp_path)
     for name, acct in {"youtube": {"client_id": "c", "client_secret": "s", "refresh_token": "r"},
-                       "instagram": {"ig_user_id": "17", "access_token": "page-token", "username": "me"},
+                       "instagram": {"ig_user_id": "17", "access_token": "page-token", "username": "me",
+                                     "page_id": "99"},
                        "tiktok": {"client_key": "k", "client_secret": "s", "refresh_token": "r",
                                   "access_token": "t-access", "expires": 9e12}}.items():
         publish.save_account(name, acct, tmp_path)
@@ -89,11 +98,15 @@ def setup(tmp_path, hook="One bench cue that works", status="planned"):
 def test_one_press_posts_to_all_three_and_records_links(tmp_path, apps):
     plan, pid = setup(tmp_path)
     r = publish.publish(plan, pid, base=tmp_path, log=lambda *a: None)
-    assert set(r["results"]) == {"instagram", "tiktok", "youtube-shorts"}
+    assert set(r["results"]) == {"instagram", "tiktok", "youtube-shorts", "facebook"}
     urls = plan.post(pid)["urls"]
     assert urls["youtube-shorts"] == "https://youtube.com/shorts/abc123"
     assert urls["instagram"] == "https://www.instagram.com/reel/XYZ/"
     assert urls["tiktok"] == "https://www.tiktok.com/video/777"
+    assert urls["facebook"] == "https://www.facebook.com/reel/fb55"
+    finish = [c for c in apps.hits("/99/video_reels") if c["params"]][0]["params"]
+    assert finish["upload_phase"] == "finish" and finish["description"].startswith("One bench cue")
+    assert apps.hits(publish.FB_RUPLOAD)[0]["size"] > 0
     assert plan.post(pid)["status"] == "posted"
     # what was sent: the prepared words, public on YouTube, Reels with the caption, private TikTok until audited
     yt = apps.hits("uploadType")[0] if apps.hits("uploadType") else apps.hits(publish.YT_UPLOAD)[0]
@@ -130,6 +143,7 @@ def test_problems_block_only_that_platform_and_edits_count(tmp_path, apps):
     assert "[weight]" in r["results"]["tiktok"]["error"] and "[weight]" in r["results"]["youtube-shorts"]["error"]
     assert "250 kg" in apps.hits("/17/media")[0]["form"]["caption"]
     assert not apps.hits("/video/init/") and not apps.hits(publish.YT_UPLOAD)
+    assert "[weight]" in r["results"]["facebook"]["error"]
 
 
 def test_one_app_down_does_not_stop_the_others(tmp_path, apps):
@@ -137,7 +151,7 @@ def test_one_app_down_does_not_stop_the_others(tmp_path, apps):
     apps.fail.add("tiktokapis")
     r = publish.publish(plan, pid, base=tmp_path, log=lambda *a: None)
     assert "down" in r["results"]["tiktok"]["error"]
-    assert set(plan.post(pid)["urls"]) == {"instagram", "youtube-shorts"}
+    assert set(plan.post(pid)["urls"]) == {"instagram", "youtube-shorts", "facebook"}
 
 
 def test_guards(tmp_path, apps):
@@ -169,7 +183,18 @@ def test_due_post_and_cli(tmp_path, apps, monkeypatch, capsys):
         publish.due_post(plan, "2026-12-25")
     main(["publish", DAY])
     out = capsys.readouterr().out
-    assert "posted to 3" in out and "make it public in the app" in out
+    assert "posted to 4" in out and "make it public in the app" in out
     main(["publish-shortcut", str(tmp_path / "desk")])
     bat = (tmp_path / "desk" / "Post today's reel.cmd").read_text()
     assert "stylebrain publish today" in bat
+
+
+def test_facebook_skips_reels_over_90_seconds(tmp_path, apps):
+    plan, pid = setup(tmp_path)
+    long = tmp_path / "long.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=gray:s=1080x1920:r=5:d=95",
+                    "-pix_fmt", "yuv420p", str(long)], check=True)
+    fb = Path(plan.post(pid)["crosspost"], "facebook.txt")
+    fb.write_text(fb.read_text().replace(str(tmp_path / "cut.mp4"), str(long)))
+    r = publish.publish(plan, pid, only=["facebook"], base=tmp_path, log=lambda *a: None)
+    assert "1 minute limit" in r["results"]["facebook"]["error"] or "limit" in r["results"]["facebook"]["error"]

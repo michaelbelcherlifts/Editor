@@ -1161,7 +1161,10 @@ def cmd_plan_settings(args) -> None:
             else:
                 st[group][key] = float(v)
         elif group in st and not key:
-            st[group] = float(v) if isinstance(st[group], float) else int(v)
+            if isinstance(st[group], bool):
+                st[group] = str(v).lower() in ("1", "true", "yes", "on")
+            else:
+                st[group] = float(v) if isinstance(st[group], float) else int(v)
         else:
             raise EditError(f"unknown setting {k!r} (try volume.reel=7, pillars.run=0.2, coaching_per_week=2)")
     plan.save()

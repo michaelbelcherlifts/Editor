@@ -32,7 +32,7 @@ POST_STATUSES = ["proposed", "planned", "posted", "measured", "dropped"]
 
 # Where each format goes by default. A reel is cut once and posted to all three.
 FORMATS = {
-    "reel": ["instagram", "tiktok", "youtube-shorts"],
+    "reel": ["instagram", "tiktok", "youtube-shorts", "facebook"],
     "long-form": ["youtube"],
     "carousel": ["instagram", "tiktok"],
     "story": ["instagram"],
@@ -75,6 +75,7 @@ DEFAULT_SETTINGS = {
     "coaching_per_week": 2,   # most posts that point to coaching in one week
     "no_cta_share": 0.3,      # at least this share of posts carry no ask
     "film_days_before": 2,    # a shoot list says to film this many days before posting
+    "facebook_reels": True,   # reels also go to Facebook (added to older posts when they are prepared)
 }
 
 READINESS = {"approved": 0, "edited": 1, "recorded": 2, "planned": 3, "idea": 3}
