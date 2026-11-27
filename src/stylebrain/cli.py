@@ -503,6 +503,22 @@ def cmd_rule_note(args) -> None:
     print(f"house rule saved as note {rules.add_note(args.text)}")
 
 
+def cmd_split_edit(args) -> None:
+    store = _store(args); edit = store.load()
+    at = parse_time(args.at, edit.fps)
+    n = edit.cut_near(at)
+    cut = edit.pieces()[n][0]
+    kind = args.kind
+    frames = 0 if kind == "straight" else max(1, round((0.25 if args.seconds is None else args.seconds) * edit.fps))
+    new = edit.split_edit(at, -frames if kind == "j" else frames)
+    where = format_time(cut, edit.fps)
+    message = (f"straight cut at {where}" if kind == "straight" else
+               f"J-cut at {where}: the next line is heard {frames} frames before the picture changes" if kind == "j" else
+               f"L-cut at {where}: the last line carries on {frames} frames over the new picture")
+    _save(store, edit, new, message)
+    print(f"  length unchanged, {format_time(new.duration, new.fps)}")
+
+
 def cmd_reframe(args) -> None:
     from . import reframe
     store = _store(args); edit = store.load()
@@ -1119,7 +1135,8 @@ def cmd_idea_add(args) -> None:
     i = plan.add_idea(args.title, args.pillar, format=args.format, hook=args.hook, series=args.series,
                       cta=args.cta, source=args.source, location=args.location,
                       shots=[s.strip() for s in (args.shots or "").split(";") if s.strip()],
-                      note=args.note, score=args.score, draft=args.draft, hold=args.hold)
+                      note=args.note, score=args.score, draft=args.draft, hold=args.hold,
+                      hook_type=args.hook_type, topic=args.topic, pace=args.pace, goal=args.goal, bet=args.bet)
     plan.save()
     ep = f", episode {i['episode']} of {i['series']}" if i["series"] else ""
     print(f"{i['id']}: {i['title']} ({i['format']}, {i['pillar']}{ep})")
@@ -1340,6 +1357,12 @@ def cmd_shoot_list(args) -> None:
     print(json.dumps(sl, indent=2) if args.json else format_shoot_list(sl))
 
 
+def cmd_bets(args) -> None:
+    from .content import format_bets
+    b = _plan().bets()
+    print(json.dumps(b, indent=2) if args.json else format_bets(b))
+
+
 def cmd_week_report(args) -> None:
     from .content import format_week_report
     rep = _plan().week_report(args.week)
@@ -1505,11 +1528,11 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("-p", "--project", help="project name (default: the current one)")
     sub = p.add_subparsers(dest="command", required=True)
 
-    def add(name, fn, help, *arguments):
+    def add(name, fn, help, *arguments, **fixed):
         s = sub.add_parser(name, help=help)
         for flags, kw in arguments:
             s.add_argument(*flags, **kw)
-        s.set_defaults(fn=fn)
+        s.set_defaults(fn=fn, **fixed)
 
     A = lambda *flags, **kw: (flags, kw)  # noqa: E731
     tx = [A("--transcript", required=True, help="word-timing JSON for the source clip"),
@@ -1711,7 +1734,10 @@ def main(argv: list[str] | None = None) -> None:
         A("--cta", choices=list(CTAS)), A("--source", default="own", help="own, trend, clip, analytics ..."),
         A("--location", help="where it is filmed: gym, track, range, kitchen ..."),
         A("--shots", help="shots to film, separated by ;"), A("--note"), A("--score", type=float), A("--draft"),
-        A("--hold", help="keep it out of weekly plans until ready, with the reason"))
+        A("--hold", help="keep it out of weekly plans until ready, with the reason"),
+        A("--hook-type", help="the hook type it tests (see `hooks`)"), A("--topic", help="what it is about, one short tag"),
+        A("--pace", choices=["fast", "steady"]), A("--goal", choices=["reach", "follows"], help="what it is meant to do"),
+        A("--bet", help="the expectation in words; by default made from the tags"))
     add("idea-import", cmd_idea_import, "add ideas from a JSON list (trend report, clip candidates, notes)",
         A("file"), A("--source"))
     add("idea-list", cmd_idea_list, "list the idea backlog", A("--status"), A("--pillar"), A("--format"),
@@ -1754,6 +1780,8 @@ def main(argv: list[str] | None = None) -> None:
     add("publish-shortcut", cmd_publish_shortcut, "make the double-click 'Post today's reel' button",
         A("where", nargs="?", default=".", help="folder for the shortcut, e.g. the Desktop"))
     add("shoot-list", cmd_shoot_list, "what to film for a week, by location", week, A("--json", action="store_true"))
+    add("bets", cmd_bets, "score each post's bet against its results, and each hook type, topic and pace",
+        A("--json", action="store_true"))
     add("week-report", cmd_week_report, "planned versus posted for a week, with results", week,
         A("--json", action="store_true"))
     add("undo", cmd_undo, "go back one version")
@@ -1779,6 +1807,13 @@ def main(argv: list[str] | None = None) -> None:
         A("--clear", action="store_true", help="go back to the default"))
     add("rule-note", cmd_rule_note, "save a correction in his words for Claude to follow", A("text", nargs="?"),
         A("--remove", type=int, help="remove note N"))
+    for kind, text in (("j", "J-cut: the next piece's sound comes in before its picture"),
+                       ("l", "L-cut: the sound carries on after the picture has changed"),
+                       ("straight", "make a J or L cut a plain cut again")):
+        add(f"{kind}cut" if kind != "straight" else "straight-cut", cmd_split_edit, text,
+            A("at", help="a time at or near the cut"),
+            *([] if kind == "straight" else [A("--seconds", type=float, help="how far the sound leads or trails (default 0.25)")]),
+            kind=kind)
     add("reframe", cmd_reframe, "place the crop when footage fills a frame of another shape, or punch in",
         A("--auto", action="store_true", help="follow the subject through every shot"),
         A("--from", dest="start"), A("--to", dest="end"),

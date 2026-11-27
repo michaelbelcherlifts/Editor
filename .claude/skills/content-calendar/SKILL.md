@@ -55,6 +55,22 @@ uv run stylebrain crosspost POST [--video cut.mp4]          # captions, titles, 
 uv run stylebrain crosspost-week this-week [--make]        # which reels are ready for every app
 ```
 
+## Bets: every reel tests something
+
+Michael treats posting like day trading: each reel is a bet, stated before it
+goes out, and scored after. Tag ideas with `--hook-type` (the types in
+`hooks`), `--topic` (one short tag, such as lift-teach, gym-joke, run-test,
+food, army, range, lockpick, fpv), `--pace` (fast: 11 to 15 s; steady: 21 s+)
+and `--goal` (reach: sendable, judged on reach or shares per 1,000; follows:
+useful or who-he-is, judged on follows per 1,000). Set tags before seeing any
+numbers. Targets are in `plan-settings` (`hit_reach`, `share_target`,
+`follow_target`), taken from his 2026 insights.
+
+Plan each week around one comparison (two hook types on the same topic, fast
+against steady, one hook type across topics) so the results can say something.
+`uv run stylebrain bets` scores measured posts and each tag; a group under five
+posts is "too few to call", and nothing is a rule until it holds on a later export.
+
 ## Feeding the backlog
 
 - `library/hooks/ideas.json` holds researched ideas, each built on a hook type

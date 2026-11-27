@@ -31,6 +31,10 @@ class Segment:
     x: float = 0.5
     y: float = 0.5
     zoom: float = 1.0
+    # A split edit at the cut into this piece: how many frames the sound changes away from
+    # the picture. Negative is a J-cut (this piece's sound comes in early, under the piece
+    # before); positive is an L-cut (the sound of the piece before carries on under this one).
+    audio_shift: int = 0
 
     def __post_init__(self) -> None:
         if self.src_in < 0 or self.src_out <= self.src_in:
@@ -251,6 +255,50 @@ class EditList:
         order = [p for p in ps if p[0] < at] + [new_piece] + [p for p in ps if p[0] >= at]
         return cut._reassemble(order)
 
+    def cut_near(self, t: int, within: int | None = None) -> int:
+        """The index of the piece that starts at the cut nearest timeline frame `t`."""
+        cuts = [(start, n) for n, (start, _) in enumerate(self.pieces()) if n > 0]
+        if not cuts:
+            raise EditError("there is no cut in this edit yet")
+        start, n = min(cuts, key=lambda c: abs(c[0] - t))
+        within = round(self.fps) if within is None else within
+        if abs(start - t) > within:
+            raise EditError(f"no cut within {within} frames of there; the nearest is at frame {start}")
+        return n
+
+    def split_edit(self, t: int, shift: int) -> "EditList":
+        """Make the cut nearest `t` a J-cut (shift < 0), an L-cut (shift > 0) or a straight cut (0)."""
+        n = self.cut_near(t)
+        prev, seg = self.segments[n - 1], self.segments[n]
+        room = min(prev.duration, seg.duration) - 1
+        if abs(shift) > room:
+            raise EditError(f"the pieces either side of that cut only allow {room} frames")
+        if shift < 0 and seg.src_in + shift < 0:
+            raise EditError(f"the clip has only {seg.src_in} frames before that point to lead in with")
+        segments = list(self.segments)
+        segments[n] = replace(seg, audio_shift=shift)
+        return replace(self, segments=tuple(segments))
+
+    def audio_ranges(self) -> list[tuple[str, int, int]]:
+        """For each piece, the source frames its sound comes from. The lengths add up to the edit's length."""
+        shifts = self.audio_shifts()
+        return [(seg.source, seg.src_in + shifts[n], seg.src_out + shifts[n + 1])
+                for n, seg in enumerate(self.segments)]
+
+    def audio_shifts(self) -> list[int]:
+        """The shift in force at each cut, one more entry than pieces (0 at both ends), kept within what fits."""
+        out = [0]
+        for n in range(1, len(self.segments)):
+            prev, seg = self.segments[n - 1], self.segments[n]
+            room = min(prev.duration, seg.duration) - 1
+            shift = max(-room, min(room, seg.audio_shift))
+            out.append(max(shift, -seg.src_in))
+        return out + [0]
+
+    @property
+    def has_split_edits(self) -> bool:
+        return any(self.audio_shifts())
+
     def sources(self) -> list[str]:
         """Every source file on the main track, in order of first use."""
         return list(dict.fromkeys(s.source for s in self.segments))
@@ -377,9 +425,11 @@ def _join(segments: list[Segment]) -> tuple[Segment, ...]:
         prev = out[-1] if out else None
         if prev and prev.source == seg.source and prev.src_out == seg.src_in and prev.note == seg.note \
                 and prev.framing == seg.framing:
-            out[-1] = replace(prev, src_out=seg.src_out)
+            out[-1] = replace(prev, src_out=seg.src_out)      # one continuous run: a split edit here means nothing
         else:
             out.append(seg)
+    if out and out[0].audio_shift:
+        out[0] = replace(out[0], audio_shift=0)               # nothing comes before the first piece
     return tuple(out)
 
 

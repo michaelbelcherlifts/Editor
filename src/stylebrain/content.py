@@ -78,6 +78,16 @@ DEFAULT_SETTINGS = {
     "facebook_reels": True,   # reels also go to Facebook (added to older posts when they are prepared)
 }
 
+# A bet: what each post tests, stated before it is posted, so results can be scored
+# the way a trade is (Michael's "day trading" framing). Tags are set by rule or
+# before seeing numbers, never after.
+BET_FIELDS = ("hook_type", "topic", "pace", "goal", "bet")
+GOALS = {"reach": "travel: sends and reach", "follows": "convert: follows and saves"}
+PACES = {"fast": "11 to 15 s, a change every 1 to 2 s", "steady": "21 s or more, taught or told"}
+DEFAULT_SETTINGS["hit_reach"] = 31700          # top fifth of his 2026 reels by reach
+DEFAULT_SETTINGS["follow_target"] = 1.0        # follows per 1,000 reached; his 2026 median was 0.34
+DEFAULT_SETTINGS["share_target"] = 10.0        # shares per 1,000 reached; 78% of his reels above it were hits
+
 READINESS = {"approved": 0, "edited": 1, "recorded": 2, "planned": 3, "idea": 3}
 
 # The recording guide (PRD W7.9): long-form filmed so it cuts into shorts.
@@ -191,12 +201,14 @@ class Plan:
                  series: str | None = None, cta: str | None = None, source: str = "own",
                  location: str | None = None, shots: list[str] | None = None, note: str | None = None,
                  score: float | None = None, draft: str | None = None, status: str = "idea",
-                 hold: str | None = None) -> dict:
+                 hold: str | None = None, **bet) -> dict:
         self._check(pillar=pillar, format=format, cta=cta, series=series, status=status)
+        self._check_bet(bet)
         idea = {"id": self._next_id("i", self.ideas), "title": title, "pillar": pillar, "format": format,
                 "hook": hook, "series": series, "episode": None, "cta": cta, "source": source,
                 "location": location or "anywhere", "shots": shots or [], "note": note, "score": score,
-                "draft": draft, "status": status, "hold": hold, "added": dt.date.today().isoformat()}
+                "draft": draft, "status": status, "hold": hold, "added": dt.date.today().isoformat(),
+                **{k: bet.get(k) for k in BET_FIELDS}}
         if series:
             idea["episode"] = 1 + max((i["episode"] or 0 for i in self.ideas if i.get("series") == series), default=0)
         self.ideas.append(idea)
@@ -213,15 +225,16 @@ class Plan:
             if not title or not pillar:
                 raise EditError(f"each idea needs a title and a pillar: {it}")
             allowed = {"format", "hook", "series", "cta", "source", "location", "shots", "note", "score",
-                       "draft", "status", "hold"}
+                       "draft", "status", "hold", *BET_FIELDS}
             out.append(self.add_idea(title, pillar, **{k: v for k, v in it.items() if k in allowed}))
         return out
 
     def set_idea(self, idea_id: str, **fields) -> dict:
         idea = self.idea(idea_id)
         self._check(**{k: v for k, v in fields.items() if k in ("pillar", "format", "cta", "series", "status")})
+        self._check_bet(fields)
         for k, v in fields.items():
-            if k not in idea and k != "hold":
+            if k not in idea and k != "hold" and k not in BET_FIELDS:
                 raise EditError(f"ideas have no field {k!r} (fields: {', '.join(idea)})")
             if k == "score" and v is not None:
                 v = float(v)
@@ -229,6 +242,69 @@ class Plan:
                 v = [s.strip() for s in v.split(";") if s.strip()]
             idea[k] = v
         return idea
+
+    def _check_bet(self, bet: dict) -> None:
+        extra = set(bet) - set(BET_FIELDS) - {"pillar", "format", "cta", "series", "status", "title", "hook", "source",
+                                              "location", "shots", "note", "score", "draft", "hold", "episode"}
+        if extra:
+            raise EditError(f"unknown field(s) {', '.join(sorted(extra))}")
+        if bet.get("goal") is not None and bet["goal"] not in GOALS:
+            raise EditError(f"unknown goal {bet['goal']!r} (goals: {', '.join(GOALS)})")
+        if bet.get("pace") is not None and bet["pace"] not in PACES:
+            raise EditError(f"unknown pace {bet['pace']!r} (paces: {', '.join(PACES)})")
+        if bet.get("hook_type") is not None:
+            from .story import HOOK_TYPES
+            if bet["hook_type"] not in HOOK_TYPES:
+                raise EditError(f"unknown hook type {bet['hook_type']!r} (types: {', '.join(HOOK_TYPES)})")
+
+    def bet_line(self, idea: dict) -> str:
+        """The stated expectation for an idea, from its tags."""
+        if idea.get("bet"):
+            return idea["bet"]
+        if not idea.get("goal"):
+            return ""
+        st = self.settings
+        want = (f"reach {st['hit_reach']:,} or {st['share_target']:g} shares per 1,000" if idea["goal"] == "reach"
+                else f"{st['follow_target']:g} follows per 1,000 reached")
+        tags = ", ".join(x for x in [idea.get("hook_type") and f"{idea['hook_type']} hook",
+                                     idea.get("topic"), idea.get("pace")] if x)
+        return f"{tags}: expect {want}"
+
+    def bets(self) -> dict:
+        """Score every measured post against its bet, and each tag value across posts. Too few posts make no rule."""
+        st = self.settings
+        scored = []
+        for p in self.posts:
+            r = p.get("results") or {}
+            reach = r.get("reach") or r.get("reached") or r.get("views")
+            if p["status"] != "measured" or not reach:
+                continue
+            i = self.idea(p["idea"])
+            shares = 1000 * r.get("shares", r.get("sends", 0)) / reach
+            follows = 1000 * r.get("follows", 0) / reach
+            hit_reach = reach >= st["hit_reach"] or shares >= st["share_target"]
+            hit_follows = follows >= st["follow_target"]
+            won = {"reach": hit_reach, "follows": hit_follows}.get(i.get("goal") or "", None)
+            scored.append({"post": p["id"], "title": i["title"], "date": p["date"], "goal": i.get("goal"),
+                           "bet": self.bet_line(i), "reach": reach, "shares_per_k": round(shares, 2),
+                           "follows_per_k": round(follows, 2), "won": won,
+                           **{k: i.get(k) for k in ("hook_type", "topic", "pace", "pillar")}})
+        by: dict[str, dict] = {}
+        for dim in ("hook_type", "topic", "pace", "pillar", "goal"):
+            groups: dict[str, list[dict]] = {}
+            for s in scored:
+                if s.get(dim):
+                    groups.setdefault(s[dim], []).append(s)
+            by[dim] = {k: {"posts": len(v), "won": sum(1 for s in v if s["won"]),
+                           "hit_rate": round(sum(1 for s in v if s["reach"] >= st["hit_reach"]) / len(v), 2),
+                           "follows_per_k": round(sum(s["follows_per_k"] for s in v) / len(v), 2),
+                           "enough": len(v) >= 5}
+                       for k, v in sorted(groups.items())}
+        open_bets = [{"post": p["id"], "date": p["date"], "title": self.idea(p["idea"])["title"],
+                      "bet": self.bet_line(self.idea(p["idea"]))}
+                     for p in self._live_posts() if p["status"] in ("proposed", "planned", "posted")
+                     and self.idea(p["idea"]).get("goal")]
+        return {"scored": scored, "by": by, "open": open_bets}
 
     def add_series(self, key: str, name: str, premise: str) -> None:
         self.data["series"][key] = {"name": name, "premise": premise}
@@ -444,7 +520,9 @@ class Plan:
                             "title": i["title"], "hook": i["hook"], "cta": p["cta"],
                             "post_status": p["status"], "status": i["status"], "score": i["score"],
                             "draft": i["draft"], "series": f"{series} #{i['episode']}" if series else None,
-                            "location": i["location"]})
+                            "location": i["location"], "hook_type": i.get("hook_type"),
+                            "topic": i.get("topic"), "pace": i.get("pace"), "goal": i.get("goal"),
+                            "bet": self.bet_line(i)})
         return out
 
     def shoot_list(self, monday: str | dt.date) -> dict:
@@ -519,6 +597,28 @@ def format_rows(rows: list[dict]) -> str:
                      f"{r['status']:<9}cta {r['cta']:<9}{r['title']} {extra}".rstrip())
         if r["hook"]:
             lines.append(f"{'':<23}hook: {r['hook']}")
+        if r.get("bet"):
+            lines.append(f"{'':<23}bet: {r['bet']}")
+    return "\n".join(lines)
+
+
+def format_bets(b: dict) -> str:
+    lines = []
+    if not b["scored"]:
+        lines.append("No measured posts with results yet. Record them with post-result ID --reach N --shares N --follows N.")
+    for s in b["scored"]:
+        mark = {True: "won ", False: "lost", None: "    "}[s["won"]]
+        lines.append(f"  {mark} {s['date']} {s['title']}: reach {s['reach']:,.0f}, "
+                     f"{s['shares_per_k']:g} shares and {s['follows_per_k']:g} follows per 1,000  ({s['bet']})")
+    for dim, groups in b["by"].items():
+        if groups:
+            lines.append(f"By {dim.replace('_', ' ')}:")
+            for k, g in groups.items():
+                lines.append(f"  {k:<16}{g['posts']:>3} posts  {g['won']} won  hit rate {g['hit_rate']:.0%}  "
+                             f"follows {g['follows_per_k']:g}/1,000" + ("" if g["enough"] else "  (too few to call)"))
+    if b["open"]:
+        lines.append(f"Open bets ({len(b['open'])}):")
+        lines += [f"  {o['date']} {o['post']} {o['title']}: {o['bet']}" for o in b["open"]]
     return "\n".join(lines)
 
 
