@@ -89,3 +89,11 @@ and why, and ask Michael to confirm before it goes in a final cut. He is the exp
 
 To sync highlights to words, find each word with `stylebrain find`, subtract the
 overlay's start time, and pass the results as `at` values.
+
+## Fonts
+
+Every built-in template takes a `font` parameter: one of inter, helvetica,
+impact, condensed, rounded, serif, mono, or the exact name of a font installed
+on the computer doing the render. A font that is not installed falls back to
+the default without an error, so look at the rendered frame before saying it
+is set in that font.

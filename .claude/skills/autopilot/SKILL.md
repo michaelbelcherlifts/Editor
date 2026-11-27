@@ -34,8 +34,11 @@ already answer.
 
 Then run `uv run stylebrain auto NAME --source FILE --preset STYLE [--look LOOK]
 --width W --height H`. A preset sets the caption treatment and how tight the
-pauses are; his house rules still win where set. The caption font is the same
-for every preset for now.
+pauses are; his house rules still win where set. Add `--font NAME` when he
+wants another caption font: inter (the default), helvetica, impact, condensed,
+rounded, serif or mono, or the exact name of a font installed on his computer.
+`preset-preview STYLE --font NAME` shows it first. If he settles on one, save it
+as the house rule `caption_font`.
 
 ## How to run it
 

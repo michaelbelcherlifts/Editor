@@ -89,7 +89,7 @@ def place_captions(edit: EditList, words: list[tr.Word], width: int, height: int
 def run(name: str, source: str, transcript: str | None = None, style_name: str | None = None,
         look_name: str | None = None, captions: bool | None = None, retakes: bool | None = None, build: bool = True,
         width: int | None = None, height: int | None = None, connect=None, render=None,
-        preset: str | None = None) -> Result:
+        preset: str | None = None, font: str | None = None) -> Result:
     """Anything left as None follows the house rules (`rules.py`), then the defaults.
 
     `preset` names a ready-made style (`presets.py`): its caption treatment is
@@ -99,6 +99,10 @@ def run(name: str, source: str, transcript: str | None = None, style_name: str |
     from .media import probe
 
     chosen = presets.get(preset) if preset else None
+    font = rules.pick(font, "caption_font") or None
+    if font:
+        from .pagekit import font_stack
+        font_stack(font)                                   # fail now, not after the cuts, if the name is no good
     if chosen and captions is None:
         captions = bool(chosen["template"])
 
@@ -198,9 +202,9 @@ def run(name: str, source: str, transcript: str | None = None, style_name: str |
         else:
             new = place_captions(edit, on_tl, width, height, render=render,
                                  template=chosen["template"] if chosen else "captions",
-                                 extra=chosen["params"] if chosen else None)
+                                 extra={**(chosen["params"] if chosen else {}), **({"font": font} if font else {})})
             save(new, f"place captions in {len(new.overlays) - len(edit.overlays)} pieces"
-                 + (f" ({preset})" if chosen else ""))
+                 + (f" ({preset})" if chosen else "") + (f", font {font}" if font else ""))
 
     if build:
         try:
