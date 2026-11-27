@@ -80,3 +80,20 @@ def test_new_reads_a_real_file(tmp_path, monkeypatch):
     main(["new", "real", "--source", "c.mp4"])
     e = Store("real").load()
     assert (e.fps, e.duration) == (30.0, 60)
+
+
+def test_j_l_and_straight_cut_commands(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    main(["new", "split", "--source", "a.mov", "--fps", "30", "--frames", "300"])
+    main(["cut", "2", "4"])                                     # leaves a cut at 2s
+    capsys.readouterr()
+    main(["jcut", "2.3"])
+    out = capsys.readouterr().out
+    assert "J-cut at" in out and "8 frames before the picture" in out and "length unchanged" in out
+    main(["lcut", "2", "--seconds", "0.5"])
+    assert "L-cut at" in capsys.readouterr().out
+    main(["straight-cut", "2"])
+    assert "straight cut at" in capsys.readouterr().out
+    with pytest.raises(SystemExit):
+        main(["jcut", "8"])
+    assert "no cut within" in capsys.readouterr().err

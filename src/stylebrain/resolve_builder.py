@@ -117,10 +117,18 @@ def _build_once(project, media_pool, edit: EditList, name: str, end_inclusive: b
     origin = timeline.GetStartFrame()
     adj = 1 if end_inclusive else 0
 
+    split = edit.has_split_edits
     main = [{"mediaPoolItem": items[seg.source], "startFrame": seg.src_in, "endFrame": seg.src_out - adj,
-             "trackIndex": 1, "recordFrame": origin + start}
+             "trackIndex": 1, "recordFrame": origin + start, **({"mediaType": 1} if split else {})}
             for start, seg in edit.pieces()]
     placed_main = media_pool.AppendToTimeline(main) or []
+    if split:
+        # J and L cuts: picture and sound are placed apart, the sound cut at its own points on A1.
+        shifts, sound = edit.audio_shifts(), []
+        for n, ((start, _), (source, a_in, a_out)) in enumerate(zip(edit.pieces(), edit.audio_ranges())):
+            sound.append({"mediaPoolItem": items[source], "startFrame": a_in, "endFrame": a_out - adj,
+                          "trackIndex": 1, "recordFrame": origin + start + shifts[n], "mediaType": 2})
+        media_pool.AppendToTimeline(sound)
 
     placed_over = []
     for o in sorted(edit.overlays, key=lambda o: (o.track, o.at)):
@@ -151,6 +159,13 @@ def _check(timeline, origin: int, edit: EditList) -> tuple[list[str], set[int]]:
     by_track: dict[int, list] = {}
     for o in edit.overlays:
         by_track.setdefault(o.track, []).append(o)
+    if edit.has_split_edits:
+        shifts = edit.audio_shifts()
+        want_sound = sorted(origin + start + shifts[n] for n, (start, _) in enumerate(edit.pieces()))
+        got_sound = sorted(i.GetStart() for i in timeline.GetItemListInTrack("audio", 1) or [])
+        if got_sound != want_sound:
+            problems.append(f"the J and L cuts did not land: sound on A1 starts at {len(got_sound)} points, "
+                            f"expected {len(want_sound)} at their own frames")
     for track, wanted in by_track.items():
         starts = {i.GetStart() - origin for i in timeline.GetItemListInTrack("video", track) or []}
         for o in wanted:

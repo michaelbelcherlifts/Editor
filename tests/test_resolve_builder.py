@@ -52,3 +52,13 @@ def test_missing_media_is_an_error():
 def test_forced_wrong_mode_is_reported_not_hidden():
     report = build_timeline(Resolve(Project(end_inclusive=False)), edit(), "x", end_inclusive=True)
     assert not report.ok and "expected 100" in report.text()
+
+
+def test_split_edits_place_picture_and_sound_apart():
+    project = Project()
+    e = EditList.from_clip("/v/a.mov", 1000, 24.0).remove_range(100, 300).split_edit(100, -6)
+    report = build_timeline(Resolve(project), e, "j")
+    assert report.ok, report.text()
+    tl = project.timelines[0]
+    assert [(i.start - 86400, i.duration) for i in tl.tracks[1]] == [(0, 100), (100, 700)]
+    assert [(i.start - 86400, i.duration) for i in tl.audio[1]] == [(0, 94), (94, 706)]

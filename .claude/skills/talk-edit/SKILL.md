@@ -84,3 +84,23 @@ changed. When it does:
 3. It cannot see colour grades, effects or keyframes. Say so, and ask him to
    check those by eye. The safe order of work is: structure through the edit
    list first, polish by hand in Resolve last.
+
+## J-cuts and L-cuts
+
+A straight cut changes picture and sound together. A split edit moves the
+sound's cut away from the picture's:
+
+- `uv run stylebrain jcut TIME [--seconds 0.25]`: the next line is heard a
+  moment before its picture arrives. Use it to pull the viewer into the next
+  thought, or to hide a hard jump between two takes.
+- `uv run stylebrain lcut TIME [--seconds 0.25]`: the last line carries on
+  over the new picture. Use it when cutting to b-roll or a reaction.
+- `uv run stylebrain straight-cut TIME` makes it a plain cut again.
+
+TIME is at or near an existing cut (within a second). The length of the edit
+does not change. Offer these where he asks for smoother cuts; do not add them
+unasked. A J-cut needs footage before the incoming piece's start to lead in
+with: after a pause was tightened, what leads in is the tail of that pause, so
+listen for a breath or a click. In Resolve the picture and sound are placed
+apart on V1 and A1; this has not yet been tried in real Resolve, so check the
+first build by ear and relay any problem the report lists.
