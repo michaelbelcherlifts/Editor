@@ -1,0 +1,23 @@
+[project]
+name = "stylebrain"
+version = "0.1.0"
+description = "Talk-through editing for DaVinci Resolve: an edit list engine that rebuilds timelines as new versions."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+stylebrain = "stylebrain.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/stylebrain"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
