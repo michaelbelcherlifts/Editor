@@ -7,6 +7,36 @@ from .edl import EditError
 FONT = "'Inter','SF Pro Display','Helvetica Neue','Segoe UI',Arial,sans-serif"
 HEAVY = "'Inter Display','Inter','Arial Black','Segoe UI Black','Helvetica Neue',Arial,sans-serif"
 
+# Named font choices, each a stack of fonts that ship with macOS or Windows so one of them is there.
+FONTS = {
+    "inter": FONT,
+    "helvetica": "'Helvetica Neue',Helvetica,Arial,sans-serif",
+    "impact": "Impact,Haettenschweiler,'Arial Narrow Bold','Arial Black',sans-serif",
+    "condensed": "'Avenir Next Condensed','Bahnschrift Condensed','Arial Narrow','Helvetica Neue',sans-serif",
+    "rounded": "'SF Pro Rounded','Arial Rounded MT Bold','Nunito','Segoe UI',sans-serif",
+    "serif": "Georgia,'Times New Roman',Times,serif",
+    "mono": "'JetBrains Mono','SF Mono',Menlo,Consolas,'Courier New',monospace",
+}
+
+
+def font_stack(name: str) -> str:
+    """The CSS font list for a named choice, or for any font installed on this computer by its exact name."""
+    import re
+    key = name.strip().lower()
+    if key in FONTS:
+        return FONTS[key]
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 \-]{0,60}", name.strip()):
+        raise EditError(f"font names use letters, numbers, spaces and hyphens; the named choices are {', '.join(FONTS)}")
+    return f"'{name.strip()}',{FONT}"
+
+
+def with_font(html: str, name: str | None) -> str:
+    """The same page with every piece of text set in the chosen font."""
+    if not name:
+        return html
+    return html.replace("</style>", f"#stage,#stage *{{font-family:{font_stack(name)} !important}}</style>", 1)
+
+
 # Running captions sit in this band of the frame (fractions of its height). Cards and
 # panels keep out of it so they never cover the words being spoken.
 CAPTION_BAND = (0.70, 0.92)

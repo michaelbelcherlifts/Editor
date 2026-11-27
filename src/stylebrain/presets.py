@@ -53,15 +53,17 @@ def sample_words(words: list[str] | None = None, each: float = 0.32) -> list[dic
 
 
 def preview(name: str, out: str | Path | None = None, width: int = 1080, height: int = 1920, fps: float = 30.0,
-            render=None) -> Path | None:
+            render=None, font: str | None = None) -> Path | None:
     """Render a few seconds of the preset's captions on a plain backdrop, to pick by sight. None for no captions."""
     p = get(name)
     if not p["template"]:
         return None
     if render is None:
         from .effects import render_template as render
-    r = render(p["template"], {**p["params"], "words": sample_words()}, None, fps, width, height, f"preset-{name}")
-    out = Path(out) if out else Path(".stylebrain") / "renders" / f"preset-{name}.mp4"
+    tag = f"preset-{name}" + (f"-{font.strip().lower().replace(' ', '-')}" if font else "")
+    params = {**p["params"], "words": sample_words(), **({"font": font} if font else {})}
+    r = render(p["template"], params, None, fps, width, height, tag)
+    out = Path(out) if out else Path(".stylebrain") / "renders" / f"{tag}.mp4"
     out.parent.mkdir(parents=True, exist_ok=True)
     from .media import run
     run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"color=c=0x30343a:s={width}x{height}:r={fps:g}",

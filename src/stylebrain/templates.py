@@ -13,7 +13,7 @@ from pathlib import Path
 from .edl import EditError
 from .anatomy import figure_svg, resolve_muscles
 
-from .pagekit import CAPTION_BAND, FONT, _page, _stage, keep_clear_box  # noqa: F401  (re-exported)
+from .pagekit import CAPTION_BAND, FONT, _page, _stage, keep_clear_box, with_font  # noqa: F401  (re-exported)
 
 
 def caption_pop(text: str, duration: float = 2.0, stagger: float = 0.09, size: int = 96,
@@ -244,7 +244,10 @@ TEMPLATES.update({
 def build(name: str, params: dict) -> tuple[str, float]:
     if name not in TEMPLATES:
         raise EditError(f"no template named {name!r}; there are: {', '.join(sorted(TEMPLATES))}")
+    params = dict(params)
+    font = params.pop("font", None) if name != "html" else None   # every built-in template takes `font`
     try:
-        return TEMPLATES[name](**params)
+        html, seconds = TEMPLATES[name](**params)
+        return with_font(html, font), seconds
     except TypeError as e:
         raise EditError(f"template {name!r}: {e}") from None

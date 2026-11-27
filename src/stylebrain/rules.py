@@ -24,6 +24,7 @@ SETTINGS: dict[str, tuple] = {
     "captions": (bool, False, None, None, "the first cut puts captions on"),
     "style": (str, "", None, None, "the saved style a first cut aims for"),
     "look": (str, "", None, None, "the saved colour look a first cut uses"),
+    "caption_font": (str, "", None, None, "the font for captions on a first cut: a named choice or an installed font"),
     "frame": (str, "", None, None, "frame size for captions and exports, such as 1080x1920"),
     "sounds_per_minute": (float, 8.0, 0.0, 60.0, "most automatic sound effects a minute (0 for no limit)"),
     "sound_gain": (float, -14.0, -40.0, 0.0, "level of automatic sound effects in dB"),

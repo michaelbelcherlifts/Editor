@@ -201,3 +201,25 @@ def test_autopilot_with_a_preset_uses_its_captions_and_pause(project):
             html, seconds = build(p["template"], {**p["params"], "words": presets.sample_words(), "width": 1080, "height": 1920})
             assert "<" in html and seconds > 2
     assert "one-word" in presets.listing() and presets.preview("clean") is None
+
+
+def test_caption_font_reaches_the_page_and_bad_names_stop_early(project):
+    from stylebrain import pagekit, presets
+    from stylebrain.templates import build
+    html, _ = build("mid_captions", {"words": presets.sample_words(), "font": "impact", "width": 1080, "height": 1920})
+    assert "#stage,#stage *{font-family:Impact," in html
+    html, _ = build("captions", {"words": presets.sample_words(), "font": "PP Mori", "width": 1080, "height": 1920})
+    assert "font-family:'PP Mori'," in html and "!important" in html
+    assert "!important" not in build("captions", {"words": presets.sample_words()})[0]
+    with pytest.raises(EditError):
+        pagekit.font_stack("x'};body{display:none")
+    calls = []
+
+    def render(template, params, out, fps, width, height, label):
+        calls.append(params)
+        return FakeRender(str(project / f"{label}.mov"))
+
+    r = autopilot.run("f", str(project / "raw.mov"), preset="punchy", font="serif", build=False, render=render)
+    assert calls[0]["font"] == "serif" and "font serif" in r.text()
+    with pytest.raises(EditError):
+        autopilot.run("g", str(project / "raw.mov"), preset="punchy", font="bad;name", build=False, render=render)
