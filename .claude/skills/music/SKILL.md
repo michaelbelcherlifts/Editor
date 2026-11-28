@@ -16,7 +16,8 @@ the sound-effects skill: recorded, never refused; ask for his guidance on paid a
 - `--start` is where in the song the edit begins. To open on the drop, find the
   drop's time in the song and start there, or a bar before it.
 - `--gain` is the level. About -18 under talking, -10 to -8 for a montage with
-  no speech. It is lowered further by itself while he speaks (`--no-duck` to stop that).
+  no speech. It is lowered by about 5 dB while he speaks and held there across the short gaps between lines, so it
+  does not pump (`--no-duck` to stop that).
 - It reports the tempo and whether the pulse is clear. If it says there is no
   clear pulse, say so: beat times on that track are a rough guide only.
 
