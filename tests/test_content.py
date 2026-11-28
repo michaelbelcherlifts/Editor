@@ -209,3 +209,15 @@ def test_series_keep_their_weekday(tmp_path):
     assert by_day["2026-12-04"]["title"] != "Vs"  # merged series has no day of its own
     sats = [by_day[d]["title"] for d in ("2026-12-05", "2026-12-12")]
     assert sats.count("Teammate") == 1  # every other week only
+
+
+def test_replanning_keeps_hand_placed_proposals(tmp_path):
+    plan = Plan(tmp_path)
+    plan.settings["volume"] = {"reel": 7}
+    backlog(plan)
+    trend = plan.add_idea("Trend joke", "humour")
+    plan.schedule(trend["id"], "2026-12-02", status="proposed")
+    plan.propose_week(MON)
+    plan.propose_week(MON)
+    week = [p for p in plan.posts if p["status"] == "proposed"]
+    assert len(week) == 7 and any(p["idea"] == trend["id"] and p["date"] == "2026-12-02" for p in week)
