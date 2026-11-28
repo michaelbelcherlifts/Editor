@@ -571,7 +571,7 @@ def cmd_transition(args) -> None:
 def cmd_wide_clip(args) -> None:
     from . import people
     out = people.wide_clip(args.source, args.start, args.end, args.out, x=args.x, share=args.share,
-                           fill=args.fill, fps=args.fps)
+                           fill=args.fill, fps=args.fps, top=args.top, bottom=args.bottom)
     print(f"wrote {out}: {args.end - args.start:.2f}s, {round(args.share * 100)}% of the width, {args.fill} fill. "
           f"Lay it over the main track with `broll {out} --at T --duration D`.")
 
@@ -1995,6 +1995,8 @@ def main(argv: list[str] | None = None) -> None:
         A("--out", required=True), A("--x", type=float, default=0.5, help="centre of the kept part, 0 left to 1 right"),
         A("--share", type=float, default=0.62, help="share of the source width kept (0.62 shows a full barbell)"),
         A("--fill", default="blur", choices=["blur", "film"], help="blur: the shot blurred above and below; film: black bars"),
+        A("--top", type=float, default=0.0, help="top of the kept box, 0 to 1 (with --bottom: the box around lifter and bar)"),
+        A("--bottom", type=float, default=1.0, help="bottom of the kept box, 0 to 1"),
         A("--fps", type=float))
     add("behind", cmd_behind, "put a text layer (e.g. a rendered big_title) behind the person in a vertical clip",
         A("base", help="the 1080x1920 clip"), A("text", help="transparent .mov, same start"), A("--out", required=True),

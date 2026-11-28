@@ -57,9 +57,13 @@ def test_new_presets_exist_and_build():
 
 def test_wide_filter_keeps_the_crop_inside_the_frame():
     f = people.wide_filter(x=0.9, share=0.62, fill="blur", fps=29.97)
-    assert r"crop=iw*0.62:ih:max(0\,min(iw-iw*0.62\,iw*0.9-iw*0.62/2)):0" in f and "boxblur" in f and "fps=29.97" in f
+    assert r"crop=iw*0.62:ih*1.0000:max(0\,min(iw-iw*0.62\,iw*0.9-iw*0.62/2)):ih*0.0," in f and "boxblur" in f and "fps=29.97" in f
     film = people.wide_filter(fill="film")
-    assert "pad=1080:1920" in film and ":ih:" in film and "/2.0" not in film   # never crops the height (plates stay)
+    assert "pad=1080:1920" in film and "ih*1.0000" in film and "/2.0" not in film   # never crops the height (plates stay)
+    boxed = people.wide_filter(x=0.35, share=0.5, top=0.1, bottom=0.95)
+    assert "crop=iw*0.5:ih*0.8500" in boxed and ":ih*0.1," in boxed and "force_original_aspect_ratio=decrease" in boxed
+    with pytest.raises(EditError):
+        people.wide_filter(top=0.8, bottom=0.7)
     with pytest.raises(EditError):
         people.wide_filter(fill="stretch")
     with pytest.raises(EditError):
