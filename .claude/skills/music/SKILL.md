@@ -11,13 +11,15 @@ the sound-effects skill: recorded, never refused; ask for his guidance on paid a
 
 ## Adding it
 
-`uv run stylebrain music-add SONG.mp3 --start 31.5 --gain -18`
+`uv run stylebrain music-add SONG.mp3 --start 31.5 --gain -21`
 
 - `--start` is where in the song the edit begins. To open on the drop, find the
   drop's time in the song and start there, or a bar before it.
-- `--gain` is the level. About -18 under talking, -10 to -8 for a montage with
-  no speech. It is lowered by about 5 dB while he speaks and held there across the short gaps between lines, so it
-  does not pump (`--no-duck` to stop that).
+- `--gain` is the level. -21 is the default and sits clearly under talking; -10 to -8 for a montage with
+  no speech. Michael wants the music consistent: one song at one steady level. It dips by only about 2 dB (never more than 3)
+  while he speaks and holds there across the gaps between lines (`--no-duck` for no dip at all).
+  After an export, check the level between lines: the voice should sit well above the music (6 dB or more)
+  and the music should hold within about 2 dB.
 - It reports the tempo and whether the pulse is clear. If it says there is no
   clear pulse, say so: beat times on that track are a rough guide only.
 
