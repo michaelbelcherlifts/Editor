@@ -1664,6 +1664,76 @@ def cmd_outline(args) -> None:
     print(longform.outline_text(args.kind, args.minutes))
 
 
+def _gb(n: int) -> str:
+    return f"{n / 1e9:.2f} GB" if n >= 1e8 else f"{n / 1e6:.0f} MB"
+
+
+def cmd_footage_setup(args) -> None:
+    from . import footage
+    cfg = footage.setup(args.inbox, args.library, args.finals)
+    for line in footage.status():
+        print(line)
+    if not cfg.get("inbox"):
+        print("Google Drive for desktop was not found. Install it, sign in, then run footage-setup again.")
+
+
+def cmd_footage_status(args) -> None:
+    from . import footage
+    for line in footage.status():
+        print(line)
+
+
+def cmd_footage_pull(args) -> None:
+    from . import footage
+    done = footage.pull(source=args.source, name=args.name, dry_run=args.dry_run)
+    if not done:
+        print("nothing new to pull (files still uploading wait a minute before they count)")
+        return
+    for r in done:
+        print(f"  {r.kind:<10} {r.source.name}  ->  {r.dest}" + (f"  (recorded {r.note})" if r.note else ""))
+    total = sum(r.size for r in done)
+    verb = "would copy" if args.dry_run else "copied and checked"
+    print(f"{verb} {len(done)} files, {_gb(total)}")
+
+
+def cmd_footage_list(args) -> None:
+    from . import footage
+    rows = footage.shoots()
+    if not rows:
+        print("no shoots yet: `stylebrain footage-pull` brings them in")
+    for r in rows:
+        kinds = ", ".join(f"{n} {k}" for k, n in sorted(r["kinds"].items()))
+        print(f"  {r['shoot']:<32} {r['files']:>3} files  {_gb(r['bytes']):>9}  {kinds}")
+
+
+def cmd_footage_clips(args) -> None:
+    from . import footage
+    for p in footage.clips(args.shoot, kind=args.kind):
+        print(p)
+
+
+def cmd_footage_clear(args) -> None:
+    from . import footage
+    safe, kept = footage.clear(yes=args.yes)
+    for line in kept:
+        print(f"  kept: {line}")
+    if not safe:
+        print("nothing in the inbox is both pulled and checked, so nothing to clear")
+        return
+    size = sum(p.stat().st_size for p in safe) if not args.yes else 0
+    if args.yes:
+        print(f"removed {len(safe)} files from the Drive inbox. They sit in the Drive trash for 30 days "
+              "and still count toward the 15 GB until the trash is emptied.")
+    else:
+        print(f"{len(safe)} files ({_gb(size)}) are safely in the library and can leave the inbox; "
+              "run again with --yes to remove them")
+
+
+def cmd_footage_final(args) -> None:
+    from . import footage
+    print(f"copied to {footage.final(args.file)}; it shows in the Drive app under Style Brain/Finals")
+
+
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="stylebrain", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -2040,6 +2110,20 @@ def main(argv: list[str] | None = None) -> None:
         A("--title"), A("--no-render", action="store_true", help="plan and score only, no video"),
         A("--no-captions", action="store_true"), A("--no-reframe", action="store_true"),
         A("--punch-ins", action="store_true", help="alternate a 1.15x punch-in at sentence starts (off unless asked)"))
+    add("footage-setup", cmd_footage_setup, "find Google Drive and set the inbox, finals and footage library folders",
+        A("--inbox", help="default: My Drive/Style Brain/Inbox"), A("--finals", help="default: My Drive/Style Brain/Finals"),
+        A("--library", help="where footage is kept, such as the SSD (default: Videos/Style Brain Footage)"))
+    add("footage-status", cmd_footage_status, "show the footage folders, free space and what is waiting in the inbox")
+    add("footage-pull", cmd_footage_pull, "copy new footage from the Drive inbox (or a camera card) into the library",
+        A("--source", help="pull from this folder instead, such as a camera card's DCIM"),
+        A("--name", help="name the shoot, such as 'bench day'"), A("--dry-run", action="store_true"))
+    add("footage-list", cmd_footage_list, "list the shoots in the footage library")
+    add("footage-clips", cmd_footage_clips, "full paths of one shoot's clips", A("shoot"),
+        A("--kind", help="phone, camera, drone, action-cam, audio, photos or other"))
+    add("footage-clear", cmd_footage_clear, "remove inbox files that are safely copied, to free Drive space",
+        A("--yes", action="store_true"))
+    add("footage-final", cmd_footage_final, "copy a finished export to Drive Style Brain/Finals for posting from the phone",
+        A("file"))
     add("build", cmd_build, "build the current edit in Resolve as a new timeline", A("--name"))
 
     args = p.parse_args(argv)
