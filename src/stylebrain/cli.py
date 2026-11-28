@@ -1487,6 +1487,129 @@ def cmd_publish(args) -> None:
         sys.exit(1)
 
 
+# ---------------------------------------------------------------- trial reels
+
+def _spec_arg(text: str) -> dict:
+    text = text[1:] if text.startswith("@") else text
+    if Path(text).exists():
+        return json.loads(Path(text).read_text())
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        raise EditError("give the spec as a JSON file or JSON text") from None
+
+
+def cmd_trial_suggest(args) -> None:
+    from . import trials
+    caption, goal = args.caption or "", args.goal
+    if args.post:
+        plan = _plan()
+        idea = plan.idea(plan.post(args.post)["idea"])
+        goal = goal or idea.get("goal")
+    spec = trials.suggest(args.video, args.reel, hooks=args.hook, goal=goal or "reach", caption=caption,
+                          post=args.post)
+    out = Path(args.out) if args.out else trials.root() / spec["reel"] / "spec.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(spec, indent=2) + "\n")
+    for n, v in enumerate(spec["variants"], 1):
+        print(f"  v{n} {v['kind']:<10}{trials.describe(v)}")
+    problems = [p for p in trials.check_spec(spec) if p]
+    print(f"draft spec in {out}: the hooks and hypotheses are suggestions; change them, then "
+          f"`stylebrain trial-make {out}`")
+    for p in problems:
+        print(f"  to fill in: {p}")
+
+
+def cmd_trial_make(args) -> None:
+    from . import trials
+    spec = _spec_arg(args.spec)
+    print(f"rendering {len(spec.get('variants') or [])} versions of {spec.get('reel')}")
+    r = trials.make(spec, check=args.check)
+    folder = trials.root() / r["reel"]
+    if args.share_on or args.start:
+        for w in trials.schedule(r, start=args.start, share_on=args.share_on, at=args.at, gap_hours=args.gap_hours):
+            print(f"  warning: {w}")
+        trials.save(r)
+        (folder / "post-sheet.md").write_text(trials.sheet(r))
+    for v in r["variants"]:
+        extra = f"  check: {'; '.join(v['check'])}" if v.get("check") else ""
+        print(f"  {v['id']} {Path(v['file']).name} ({v['seconds']:.1f}s){extra}")
+    print(f"first frames: {folder / 'first-frames.jpg'}; posting sheet: {folder / 'post-sheet.md'}; nothing was posted")
+
+
+def cmd_trial_schedule(args) -> None:
+    from . import trials
+    r = trials.load(args.reel)
+    warnings = trials.schedule(r, start=args.start, share_on=args.share_on, at=args.at, gap_hours=args.gap_hours)
+    trials.save(r)
+    (trials.root() / r["reel"] / "post-sheet.md").write_text(trials.sheet(r))
+    for v in r["variants"]:
+        print(f"  {v['id']} {v['kind']:<10}{v['scheduled']}")
+    if r.get("share_on"):
+        print(f"  share the winner to everyone on {r['share_on']}")
+    for w in warnings:
+        print(f"  warning: {w}")
+
+
+def cmd_trial_result(args) -> None:
+    from . import trials
+    r = trials.load(args.reel)
+    nums = {k: getattr(args, k) for k in trials.NUMBERS}
+    v = trials.record_result(r, args.version, url=args.url, posted=args.posted, **nums)
+    trials.save(r)
+    print(f"{r['reel']} {v['id']}: " + (", ".join(f"{k} {x:g}" for k, x in v["results"].items()) or "posted")
+          + (f" ({v['url']})" if v.get("url") else ""))
+
+
+def cmd_trial_score(args) -> None:
+    from . import trials
+    r = trials.load(args.reel)
+    s = trials.score(r, min_views=args.min_views)
+    print(json.dumps(s, indent=2) if args.json else trials.format_score(s, r))
+
+
+def cmd_trial_promote(args) -> None:
+    from . import trials
+    r = trials.load(args.reel)
+    v = trials.promote(r, args.version)
+    trials.save(r)
+    note = "" if r["winner"] == v["id"] else f" (the scores favoured {r['winner']}; kept as his call)"
+    print(f"{r['reel']}: {v['id']} ({v['change']}) shared to everyone{note}")
+
+
+def cmd_trial_learn(args) -> None:
+    from . import trials
+    res = trials.learn(trials.all_trials())
+    print(json.dumps(res, indent=2) if args.json else trials.format_learn(res))
+
+
+def cmd_trial_list(args) -> None:
+    from . import trials
+    rows = trials.all_trials()
+    if not rows:
+        print("no trial sets yet")
+    for t in rows:
+        posted = sum(1 for v in t["variants"] if v.get("posted"))
+        read = sum(1 for v in t["variants"] if v.get("results"))
+        print(f"  {t['reel']:<36}{len(t['variants'])} versions, {posted} posted, {read} with results"
+              + (f", promoted {t['promoted']}" if t.get("promoted") else ""))
+
+
+def cmd_trial_copy(args) -> None:
+    from . import trials
+    files = trials.copy_to(trials.load(args.reel), args.folder)
+    print(f"copied {len(files)} files to {Path(args.folder) / args.reel}")
+
+
+def cmd_trial_publish(args) -> None:
+    from . import publish as pub
+    got = pub.publish_trial(args.reel, args.version, dry_run=args.dry_run)
+    if args.dry_run:
+        print(f"ready: would post {got['would_post']} to Instagram as a trial reel (manual sharing)")
+    else:
+        print(f"posted {args.reel} {args.version} as a trial reel: {got['url']}")
+
+
 def cmd_publish_shortcut(args) -> None:
     from . import publish as pub
     path = pub.shortcut(args.where, ".")
@@ -2002,6 +2125,36 @@ def main(argv: list[str] | None = None) -> None:
     add("publish", cmd_publish, "post a prepared reel to Instagram, TikTok and YouTube Shorts (only when he asks)",
         A("post", help="post id, a date, today or tomorrow"), A("--only", help="comma-separated platforms"),
         A("--dry-run", action="store_true", help="check everything, send nothing"))
+    when = [A("--start", help="first trial, such as '2026-11-29 18:00'"),
+            A("--share-on", help="the day the winner should reach the main feed (trials end two days before)"),
+            A("--at", default="18:00", help="clock time for every trial (default 18:00)"),
+            A("--gap-hours", type=float, default=24.0, help="hours between versions (default 24)")]
+    add("trial-suggest", cmd_trial_suggest, "draft five trial versions of a finished reel (one change each)",
+        A("video"), A("--reel", required=True, help="a short name for the reel"),
+        A("--hook", action="append", help="an alternative opening line (repeat for two); | splits lines"),
+        A("--goal", choices=["reach", "follows"]), A("--caption"), A("--post", help="its calendar post id"),
+        A("--out"))
+    add("trial-make", cmd_trial_make, "render a reel's trial versions, labelled, with a posting sheet",
+        A("spec", help="spec JSON file (from trial-suggest) or JSON text"),
+        A("--check", action="store_true", help="check each file like a platform would"), *when)
+    add("trial-schedule", cmd_trial_schedule, "when to post each trial version", A("reel"), *when)
+    add("trial-result", cmd_trial_result, "a trial version's link or its insights", A("reel"), A("version"),
+        A("--url"), A("--posted", help="when it went up, if not now"),
+        *[A(f"--{k.replace('_', '-')}", dest=k, type=float) for k in ("views", "reach", "likes", "comments", "shares",
+                                                                       "saves", "follows")],
+        A("--skip-rate", dest="skip_rate", type=float, help="percent"),
+        A("--avg-watch", dest="avg_watch", type=float, help="seconds"),
+        A("--hours", type=float, help="hours since it was posted when read"))
+    add("trial-score", cmd_trial_score, "rank a reel's trial versions and name the winner", A("reel"),
+        A("--min-views", type=int, default=300), A("--json", action="store_true"))
+    add("trial-promote", cmd_trial_promote, "record the version he shared to everyone", A("reel"), A("version"))
+    add("trial-learn", cmd_trial_learn, "which kinds of change win across every reel tested",
+        A("--json", action="store_true"))
+    add("trial-list", cmd_trial_list, "list trial sets")
+    add("trial-copy", cmd_trial_copy, "copy a reel's versions and sheet to a folder (e.g. Drive finals)",
+        A("reel"), A("folder"))
+    add("trial-publish", cmd_trial_publish, "post one version to Instagram as a trial reel (only when he asks)",
+        A("reel"), A("version"), A("--dry-run", action="store_true"))
     add("publish-shortcut", cmd_publish_shortcut, "make the double-click 'Post today's reel' button",
         A("where", nargs="?", default=".", help="folder for the shortcut, e.g. the Desktop"))
     add("shoot-list", cmd_shoot_list, "what to film for a week, by location", week, A("--json", action="store_true"))
