@@ -340,12 +340,12 @@ class Plan:
         return min(dates) if dates else None
 
     def schedule(self, idea_id: str, date: str | dt.date, *, platforms: list[str] | None = None,
-                 cta: str | None = None, status: str = "planned") -> dict:
+                 cta: str | None = None, status: str = "planned", auto: bool = False) -> dict:
         idea = self.idea(idea_id)
         self._check(cta=cta)
         post = {"id": self._next_id("p", self.posts), "idea": idea_id, "date": parse_date(date).isoformat(),
                 "format": idea["format"], "platforms": platforms or FORMATS[idea["format"]],
-                "cta": cta or idea.get("cta") or "none", "status": status, "url": None, "results": {}}
+                "cta": cta or idea.get("cta") or "none", "status": status, "url": None, "results": {}, **({"auto": True} if auto else {})}
         self.posts.append(post)
         if status == "planned" and idea["status"] == "idea":
             idea["status"] = "planned"
@@ -426,7 +426,9 @@ class Plan:
         days = [monday + dt.timedelta(days=d) for d in range(7)]
         week = {d.isoformat() for d in days}
         # Replace any earlier proposal for this week; keep what he already approved.
-        self.data["posts"] = [p for p in self.posts if not (p["status"] == "proposed" and p["date"] in week)]
+        # Hand-placed proposals (dated trend ideas, his own picks) stay.
+        self.data["posts"] = [p for p in self.posts
+                              if not (p["status"] == "proposed" and p.get("auto") and p["date"] in week)]
         taken = {p["idea"] for p in self._live_posts()}
         shortfalls, made = [], []
         for offset, (fmt, per_week) in enumerate(self.settings["volume"].items()):
@@ -445,7 +447,7 @@ class Plan:
                 if not eps:
                     shortfalls.append(f"series {key}: no episode ready for {days[wd]:%a %d %b}")
                     continue
-                made.append(self.schedule(eps[0]["id"], days[wd], status="proposed"))
+                made.append(self.schedule(eps[0]["id"], days[wd], status="proposed", auto=True))
                 taken.add(eps[0]["id"]); pool.remove(eps[0]); busy.add(wd); n -= 1
             # The rest of a weekday series waits for its day in later weeks.
             dayed = set(self.series_days(monday)) | {k for k, v in self.data["series"].items() if v.get("day")}
@@ -475,7 +477,7 @@ class Plan:
                     day = days[free[math.floor(idx * len(free) / max(len(order), 1)) % len(free)]]
                 else:
                     day = days[(math.floor(idx * 7 / max(len(order), 1)) + offset * 3) % 7]
-                made.append(self.schedule(idea["id"], day, status="proposed"))
+                made.append(self.schedule(idea["id"], day, status="proposed", auto=True))
                 taken.add(idea["id"])
         self._assign_ctas([p for p in self.posts if p["date"] in week and p["status"] in ("proposed",)], week)
         return {"week": monday.isoformat(), "posts": made, "shortfalls": shortfalls}
