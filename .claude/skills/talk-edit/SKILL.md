@@ -25,6 +25,7 @@ rebuild the timeline as a new version.
 | "on the marker", "between my markers" | `uv run stylebrain markers` lists his markers as edit times, with their notes. A marker with a length is a range |
 | "the part where I say ..." | `uv run stylebrain find "words" --transcript FILE` |
 | a time | Use it directly |
+| a lift ("the bench", "that squat", "the heavy single") | `uv run stylebrain reps CLIP --sheet check.jpg` prints where each rep starts and ends. Cut on those times, never inside a rep. For a single rep add `--between START END` around it |
 
 If `markers` says the open timeline is not a build of the current version, its
 times may not match the edit: build first, or ask him. If two readings are
