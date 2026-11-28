@@ -36,6 +36,9 @@ From the Blaze Kennedy study (`docs/cinematic-editing.md`).
   1080x1920 on a laptop CPU.
 - `speech-only SRC --transcript WORDS --out OUT`: the source's own sound muted between spoken lines, so a
   vlog's background music drops out and a new song (`music-add`) can sit under the edit.
+- `react CLIP FACE --out OUT`: a reaction layout. The clip he reacts to fills the frame and his face-cam sits
+  in a white-bordered 3:4 box (`--corner`, `--size`), ending above the caption band. `--sound face|clip|both`.
+  The deadpan "react to a gym clip" format (Jack Overton PT: 100K subs, Shorts up to 23M views, Nov 2026).
 
 ## Habits that came with them
 

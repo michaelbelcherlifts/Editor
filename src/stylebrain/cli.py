@@ -582,6 +582,15 @@ def cmd_behind(args) -> None:
     print(f"wrote {out}: the text layer sits behind the person. Lay it over the main track with `broll`.")
 
 
+def cmd_react(args) -> None:
+    from . import people
+    out = people.react_clip(args.clip, args.face, args.out, corner=args.corner, size=args.size,
+                            clip_start=args.clip_start, face_start=args.face_start, duration=args.duration,
+                            sound=args.sound, fps=args.fps)
+    print(f"wrote {out}: the clip full frame with your face-cam {args.corner}, {args.sound} sound. "
+          f"Add it with `add-source {out}` or lay it over the main track with `broll`.")
+
+
 def cmd_speech_only(args) -> None:
     from . import people
     out, n = people.speech_only(args.source, args.transcript, args.out)
@@ -2000,6 +2009,13 @@ def main(argv: list[str] | None = None) -> None:
         A("--fps", type=float))
     add("behind", cmd_behind, "put a text layer (e.g. a rendered big_title) behind the person in a vertical clip",
         A("base", help="the 1080x1920 clip"), A("text", help="transparent .mov, same start"), A("--out", required=True),
+        A("--fps", type=float, default=30.0))
+    add("react", cmd_react, "a reaction layout: a clip full frame with your face-cam boxed in a corner",
+        A("clip", help="what you react to"), A("face", help="your face-cam recording"), A("--out", required=True),
+        A("--corner", default="bottom-left", choices=["bottom-left", "bottom-right", "top-left", "top-right"]),
+        A("--size", type=float, default=0.40, help="face box width as a share of the frame width (0.2 to 0.6)"),
+        A("--clip-start", type=float, default=0.0), A("--face-start", type=float, default=0.0),
+        A("--duration", type=float), A("--sound", default="face", choices=["face", "clip", "both"]),
         A("--fps", type=float, default=30.0))
     add("speech-only", cmd_speech_only, "copy a clip with its sound muted wherever nobody is talking",
         A("source"), A("--transcript", required=True, help="word timings of the source"), A("--out", required=True))

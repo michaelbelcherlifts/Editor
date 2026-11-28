@@ -6,6 +6,9 @@
   out on top (MediaPipe's multiclass selfie segmenter; `uv sync --extra people`)
 - speech_only: a copy of a clip with its sound kept only where words are spoken, so a vlog's own music
   drops out between lines and a new song can sit under the edit
+- react_clip: a reaction layout: a clip fills the frame and his face-cam sits in a framed box in a corner,
+  above the caption band (the deadpan "react to a gym clip" format, e.g. Jack Overton PT, 100K subs,
+  Shorts up to 23M views, Nov 2026)
 
 Michael asked for all three after round 1 of the practice reels: "put text behind people", "zoom out and
 include the weights", and better music.
@@ -63,6 +66,55 @@ def wide_clip(src: str, start: float, end: float, out: str, x: float = 0.5, shar
     run(["ffmpeg", "-v", "error", "-y", "-ss", f"{start}", "-to", f"{end}", "-i", src, "-an",
          "-filter_complex", wide_filter(x, share, fill, fps=fps, top=top, bottom=bottom), "-map", "[v]",
          "-c:v", "libx264", "-crf", "15", "-preset", "veryfast", "-pix_fmt", "yuv420p", out])
+    return Path(out)
+
+
+CORNERS = ("bottom-left", "bottom-right", "top-left", "top-right")
+
+
+def react_filter(corner: str = "bottom-left", size: float = 0.40, border: int = 6, width: int = W,
+                 height: int = H, fps: float = 30.0) -> str:
+    """The ffmpeg filter for `react_clip`: input 0 (the clip) fills the frame, input 1 (his face-cam) is cut
+    to a 3:4 box `size` of the frame width, with a white border, in `corner`. A bottom box ends above the
+    caption band so captions never cover his face; a top box sits below the app's top bar."""
+    from .pagekit import CAPTION_BAND
+    if corner not in CORNERS:
+        raise EditError(f"corner is one of {', '.join(CORNERS)}")
+    if not 0.2 <= size <= 0.6:
+        raise EditError("size is between 0.2 and 0.6 of the frame width")
+    bw = round(width * size) // 2 * 2
+    bh = round(bw * 4 / 3) // 2 * 2
+    margin = round(width * 0.04)
+    x = margin if corner.endswith("left") else width - bw - margin - 2 * border
+    y = (round(height * 0.10) if corner.startswith("top")
+         else round(height * CAPTION_BAND[0]) - bh - 2 * border - margin)
+    return (f"[0:v]fps={fps:g},scale={width}:{height}:force_original_aspect_ratio=increase,"
+            f"crop={width}:{height},setsar=1[bg];"
+            f"[1:v]fps={fps:g},scale={bw}:{bh}:force_original_aspect_ratio=increase,crop={bw}:{bh},"
+            f"pad={bw + 2 * border}:{bh + 2 * border}:{border}:{border}:white,setsar=1[face];"
+            f"[bg][face]overlay={x}:{y}:shortest=1[v]")
+
+
+def react_clip(clip: str, face: str, out: str, corner: str = "bottom-left", size: float = 0.40,
+               clip_start: float = 0.0, face_start: float = 0.0, duration: float | None = None,
+               sound: str = "face", fps: float = 30.0) -> Path:
+    """Render the reaction layout: `clip` (the thing he reacts to) full frame, `face` (his face-cam) boxed
+    in a corner. The result is as long as the shorter input, or `duration`. `sound` keeps the face-cam's
+    audio ("face"), the clip's ("clip"), or both mixed ("both")."""
+    audio = {"face": ["-map", "1:a?"], "clip": ["-map", "0:a?"]}
+    if sound not in ("face", "clip", "both"):
+        raise EditError("sound is face, clip or both")
+    if duration is not None and duration <= 0:
+        raise EditError("duration must be positive")
+    graph = react_filter(corner, size, fps=fps)
+    maps = audio.get(sound, ["-map", "[a]"])
+    if sound == "both":
+        graph += ";[0:a][1:a]amix=inputs=2:duration=shortest:normalize=0[a]"
+    length = ["-t", f"{duration}"] if duration else []
+    run(["ffmpeg", "-v", "error", "-y", "-ss", f"{clip_start}", "-i", clip, "-ss", f"{face_start}", "-i", face,
+         *length, "-filter_complex", graph, "-map", "[v]", *maps, "-shortest",
+         "-c:v", "libx264", "-crf", "15", "-preset", "veryfast", "-pix_fmt", "yuv420p",
+         "-c:a", "aac", "-b:a", "192k", out])
     return Path(out)
 
 

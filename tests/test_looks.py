@@ -1,4 +1,4 @@
-"""House look templates, the two new presets, and the people helpers (no MediaPipe or ffmpeg needed)."""
+"""House look templates, the two new presets, and the people helpers (no MediaPipe needed; one render test needs ffmpeg)."""
 import pytest
 
 from stylebrain import looks, people, presets
@@ -84,3 +84,35 @@ def test_composite_puts_text_behind_the_person():
     out = people.composite(bg, text, mask)
     assert out[0, 0, 0] == 100 and out[0, 1, 0] == 250
     assert (people.composite(bg, None, mask) == bg).all()
+
+
+def test_react_filter_keeps_the_face_box_above_the_caption_band():
+    import re
+    f = people.react_filter("bottom-left", size=0.4)
+    x, y = map(int, re.search(r"overlay=(\d+):(\d+)", f).groups())
+    assert x == 43 and "pad=444:588" in f
+    assert y + 588 <= round(1920 * 0.70)
+    right = people.react_filter("top-right", size=0.3)
+    rx, ry = map(int, re.search(r"overlay=(\d+):(\d+)", right).groups())
+    assert rx + 336 <= 1080 and ry == 192
+    with pytest.raises(EditError):
+        people.react_filter("middle")
+    with pytest.raises(EditError):
+        people.react_filter(size=0.9)
+
+
+def test_react_clip_renders_a_vertical_file(tmp_path):
+    import shutil
+    import subprocess
+    if not shutil.which("ffmpeg"):
+        pytest.skip("ffmpeg not installed")
+    clip, face, out = tmp_path / "clip.mp4", tmp_path / "face.mp4", tmp_path / "react.mp4"
+    for path, colour in ((clip, "blue"), (face, "red")):
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"color={colour}:s=1280x720:d=1.5",
+                        "-f", "lavfi", "-i", "sine=d=1.5", "-shortest", str(path)], check=True)
+    people.react_clip(str(clip), str(face), str(out), sound="both", duration=1.0)
+    probe = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=codec_type,width,height",
+                            "-of", "csv=p=0", str(out)], capture_output=True, text=True, check=True).stdout
+    assert "video,1080,1920" in probe and "audio" in probe
+    with pytest.raises(EditError):
+        people.react_clip(str(clip), str(face), str(out), sound="loud")
