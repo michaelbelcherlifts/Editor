@@ -27,6 +27,7 @@ the centre. `--fit fit` keeps the whole picture with bars. Say which was used.
    you see: captions cut off, a graphic off-centre, his head cropped, a frame
    that looks wrong. Numbers do not catch these.
 3. Give the path and the length in one line. Never post or upload the file.
+4. A finished reel gets its five trial versions next (`.claude/skills/trial-reels/SKILL.md`).
 
 The straight export does not include anything he changed by hand in Resolve.
 If he has polished the timeline there, say that before exporting this way.

@@ -301,11 +301,16 @@ def post_youtube(video: str, text: dict, acct: dict) -> dict:
     return {"id": vid, "url": f"https://youtube.com/shorts/{vid}", "privacy": "public"}
 
 
-def post_instagram(video: str, text: dict, acct: dict) -> dict:
+def post_instagram(video: str, text: dict, acct: dict, trial: bool = False) -> dict:
+    """A Reel. With `trial`, a Trial Reel: shown to non-followers first and never shared to followers by
+    itself (graduation MANUAL: he shares the winner to everyone in the app)."""
     tok, ig = acct["access_token"], acct["ig_user_id"]
-    made = _json(*http("POST", f"{GRAPH}/{ig}/media", form={
-        "media_type": "REELS", "upload_type": "resumable", "caption": text["caption"], "share_to_feed": "true",
-        "access_token": tok})[::2], "starting the Instagram upload")
+    form = {"media_type": "REELS", "upload_type": "resumable", "caption": text["caption"], "access_token": tok}
+    if trial:
+        form["trial_params"] = json.dumps({"graduation_strategy": "MANUAL"})
+    else:
+        form["share_to_feed"] = "true"
+    made = _json(*http("POST", f"{GRAPH}/{ig}/media", form=form)[::2], "starting the Instagram upload")
     cid = made["id"]
     size = Path(video).stat().st_size
     _json(*http("POST", f"{RUPLOAD}/{cid}", headers={"Authorization": f"OAuth {tok}", "offset": "0",
@@ -330,7 +335,7 @@ def post_instagram(video: str, text: dict, acct: dict) -> dict:
     link = _json(*http("GET", f"{GRAPH}/{mid}", params={"fields": "permalink", "access_token": tok})[::2],
                  "reading the Instagram link")
     return {"id": mid, "url": link.get("permalink") or f"https://www.instagram.com/{acct.get('username') or ''}",
-            "privacy": "public"}
+            "privacy": "trial" if trial else "public"}
 
 
 def post_facebook(video: str, text: dict, acct: dict) -> dict:
@@ -495,6 +500,27 @@ def publish(plan, post_id: str, *, only: list[str] | None = None, dry_run: bool 
     history = json.loads(logf.read_text()) if logf.exists() else []
     logf.write_text(json.dumps(history + [report], indent=2) + "\n")
     return report
+
+
+def publish_trial(reel: str, vid: str, *, dry_run: bool = False, base: str | Path = ".") -> dict:
+    """Post one trial version to Instagram as a Trial Reel, when he asks. Never shared to followers by
+    itself; a version already posted is not posted again."""
+    from . import trials
+
+    record = trials.load(reel, base)
+    v = trials.version(record, vid)
+    if v.get("posted"):
+        raise PublishError(f"{record['reel']} {v['id']} was already posted ({v.get('url') or 'link not kept'})")
+    text = {"caption": v.get("caption") or record.get("caption") or ""}
+    problems = recheck("instagram", text, v["file"])
+    if problems:
+        raise PublishError(f"{record['reel']} {v['id']} NOT posted: " + "; ".join(problems))
+    if dry_run:
+        return {"would_post": v["file"], "version": v["id"], "trial": True}
+    got = post_instagram(v["file"], text, load_account("instagram", base), trial=True)
+    trials.record_result(record, v["id"], url=got["url"])
+    trials.save(record, base)
+    return got
 
 
 def shortcut(where: str | Path, project: str | Path) -> Path:
