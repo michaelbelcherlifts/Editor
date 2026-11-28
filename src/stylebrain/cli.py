@@ -384,7 +384,8 @@ def cmd_build(args) -> None:
     if report.ok and project is not None and project.GetCurrentTimeline() is not None:
         notes.remember_build(store, project.GetCurrentTimeline(), store.head())
     print(report.text())
-    if not report.ok:
+    cut_reps = _rep_problems(edit)
+    if not report.ok or cut_reps:
         sys.exit(1)
 
 
@@ -408,6 +409,46 @@ def _anim_size(args) -> tuple[int, int]:
             edit = None
     w, h = _wh(None, edit)
     return args.width or w, args.height or h
+
+
+def _rep_problems(edit: EditList) -> list[str]:
+    """Print every place the edit cuts into a measured rep, as problems. A lift must be shown whole."""
+    from . import reps
+    problems, _ = reps.check(edit)
+    for line in problems:
+        print(f"  problem: {line}")
+    if problems:
+        print("  A lift has to be shown whole. Move the cut (`rep-check` lists the times), then build again.")
+    return problems
+
+
+def cmd_reps(args) -> None:
+    from . import reps
+    result = reps.measure(args.video, tuple(args.between) if args.between else None)
+    saved = reps.save(result)
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print(reps.text(result))
+        print(f"saved to {saved}")
+    found = [reps.Rep(**r) for r in result["reps"]]
+    if found and args.sheet:
+        print(f"check sheet (start, far point, end of each rep): {reps.sheet(args.video, found, args.sheet)}")
+
+
+def cmd_rep_check(args) -> None:
+    from . import reps
+    edit = _store(args).load()
+    problems, unmeasured = reps.check(edit)
+    for line in problems:
+        print(f"problem: {line}")
+    for source in unmeasured:
+        print(f"not measured: {source} (run `stylebrain reps {source}` if it shows a lift)")
+    if not problems:
+        print("No measured rep is cut into." if len(unmeasured) < len({s.source for s in edit.segments})
+              else "Nothing to check yet: no clip in this edit has had its reps measured.")
+    else:
+        sys.exit(1)
 
 
 def _resolve_timeline(store, edit):
@@ -621,6 +662,7 @@ def cmd_export(args) -> None:
     out = Path(args.out or Path("exports") / f"{store.project}-v{store.head()}.mp4")
     export.render(edit, out, w, h, args.fit, args.lufs, sounds=not args.no_sounds, music=not args.no_music)
     print(f"exported {out} ({format_time(edit.duration, edit.fps)})")
+    _rep_problems(edit)
     if args.no_check:
         return
     c = export.check(out, edit.duration / edit.fps, w, h, args.lufs, sheet=out.with_suffix(".frames.jpg"))
@@ -1995,6 +2037,12 @@ def main(argv: list[str] | None = None) -> None:
         A("--from-edit", action="store_true", help="take the cuts from the project's edit list (exact) instead of the pixels"))
     clip = [A("--transcript", required=True, help="word timings of the clip"),
             A("--video", help="the clip, to measure cuts"), A("--seconds", type=float, help="length when no video is given")]
+    add("reps", cmd_reps, "find where each rep of a lift starts and ends in a clip (a local script, no frames to read)",
+        A("video"), A("--between", type=float, nargs=2, metavar=("START", "END"),
+                      help="roughly where the set is, in seconds; needed for a single rep"),
+        A("--sheet", help="save the frame at each rep's start, far point and end to this image"),
+        A("--json", action="store_true"))
+    add("rep-check", cmd_rep_check, "check that no cut in the edit lands inside a measured rep")
     add("loop-check", cmd_loop_check, "how cleanly a short runs from its end back into its opening",
         A("--transcript", help="word timings of the clip"), A("--video", help="the clip, to check the last frame and sound"),
         A("--seconds", type=float, help="length when no video is given"), A("--json", action="store_true"))

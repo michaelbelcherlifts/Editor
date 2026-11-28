@@ -28,6 +28,10 @@ sound, music, reframing, export, house rules, the content calendar, social posts
 - Say what changed in one line, including the new length.
 - Before a first cut, run `uv run stylebrain rules` and follow it. When Michael
   corrects a cut, save the lesson with the house-rules skill so it sticks.
+- A lift is shown whole. Before cutting a clip of a lift, run `uv run stylebrain reps CLIP` (a local
+  script that finds where each rep starts and ends; `--between` for a single, `--sheet` to check it)
+  and never start or end a piece inside a rep. `build` and `rep-check` report any cut that does.
+  Michael, on the first cut of his own footage: "you cut half of the bench press out".
 - Creative choices are Michael's. Offer options; do not add effects or cuts that
   were not asked for. Autopilot is the exception he asked for: it may cut retakes
   and pauses, and must list every cut it made.
@@ -70,6 +74,7 @@ sound, music, reframing, export, house rules, the content calendar, social posts
 - `src/stylebrain/trials.py`: Instagram Trial Reels: every finished reel made into five versions (control plus one change each: hook text, opening, length, pace, audio or caption), labelled, scheduled, scored and learned from (`trial-*`; `library/trials/`, not committed); read `.claude/skills/trial-reels/SKILL.md` and `docs/trial-reels.md`
 - `src/stylebrain/publish.py`: the one-button poster: a prepared reel to Instagram, TikTok, YouTube Shorts and Facebook Reels through their official APIs, only when Michael asks (`publish`, `connect`, `publish-shortcut`; sign-ins in `library/accounts/`, not committed; setup in `docs/publishing-setup.md`)
 - `src/stylebrain/footage.py`: his own footage: the Google Drive inbox (`My Drive/Style Brain/Inbox`) and camera cards pulled into the footage library (PC, later the SSD), one folder per shoot day and device, every copy checked; finals back to Drive for the phone. Read `docs/footage.md` before touching his footage
+- `src/stylebrain/reps.py`: where each rep of a lift starts and ends in a clip, found by a local script (`reps`), and the check that no cut lands inside a rep (`rep-check`, also run by `build` and `export`)
 - `src/stylebrain/bake.py`: ffmpeg zooms and speed changes
 - `src/stylebrain/speed.py`: slow motion and speed ramps on part of the timeline (`speed`), baked as new clips
 - `src/stylebrain/transitions.py`: whip and zoom blur transitions over a cut (`transition`), baked as new clips
