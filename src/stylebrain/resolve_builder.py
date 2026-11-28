@@ -52,6 +52,7 @@ class BuildReport:
     sound_tracks: list[str] = field(default_factory=list)
     frame: str = ""
     chapters: int = 0
+    notes: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
@@ -69,9 +70,10 @@ class BuildReport:
             head += f", {self.frame}"
         if self.chapters:
             head += f", {self.chapters} chapter markers"
+        notes = "".join(f"\n  note: {n}" for n in self.notes)
         if self.ok:
-            return head + ", all checked"
-        return head + "\n" + "\n".join(f"  problem: {p}" for p in self.problems)
+            return head + ", all checked" + notes
+        return head + "\n" + "\n".join(f"  problem: {p}" for p in self.problems) + notes
 
 
 def _walk(folder):
@@ -270,6 +272,35 @@ def _place_sound_mix(media_pool, timeline, origin: int, path: str, frames: int, 
     return []
 
 
+def _match_project(project, edit: EditList) -> list[str]:
+    """Make sure the project runs at the edit's frame rate before anything is built.
+
+    Resolve fixes a project's frame rate once it has a timeline. An empty project is set to the edit's
+    rate (and, when the edit has a format, its frame) here. A project that already has timelines at
+    another rate is refused, with nothing built: on the first real run a 30 fps edit in a 24 fps
+    project came out as short clips with gaps.
+    """
+    fps = float(project.GetSetting("timelineFrameRate"))
+    if abs(fps - edit.fps) <= 0.01:
+        return []
+    notes = []
+    if not project.GetTimelineCount() and project.SetSetting("timelineFrameRate", f"{edit.fps:g}"):
+        now = float(project.GetSetting("timelineFrameRate"))
+        if abs(now - edit.fps) <= 0.01:
+            notes.append(f"the project had no timelines, so it was set from {fps:g} to {edit.fps:g} fps")
+            if edit.format:
+                from .formats import get
+                f = get(edit.format)
+                if (project.SetSetting("timelineResolutionWidth", str(f.width))
+                        and project.SetSetting("timelineResolutionHeight", str(f.height))):
+                    notes.append(f"and to {f.size}")
+            return notes
+    raise EditError(f"the open Resolve project is {fps:g} fps but the edit is {edit.fps:g} fps, and Resolve cannot "
+                    "change a project's frame rate once it has a timeline. Nothing was built. Open a new project "
+                    "(File > New Project) and run build again: an empty project is set to the edit's frame rate "
+                    "for you.")
+
+
 def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | None = None,
                    sound_mix: str | list | None = None) -> BuildReport:
     """Create a new timeline from the edit and verify it.
@@ -286,10 +317,8 @@ def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | Non
         raise EditError("no project is open in Resolve")
     resolve.GetProjectManager().SaveProject()
     media_pool = project.GetMediaPool()
-    fps = float(project.GetSetting("timelineFrameRate"))
-    warn = []
-    if abs(fps - edit.fps) > 0.01:
-        warn.append(f"project is {fps:g} fps but the edit is {edit.fps:g} fps; timings will drift")
+    warn: list[str] = []
+    notes = _match_project(project, edit)
 
     modes = [True, False] if end_inclusive is None else [end_inclusive]
     for attempt, mode in enumerate(modes):
@@ -318,5 +347,5 @@ def build_timeline(resolve, edit: EditList, name: str, end_inclusive: bool | Non
                 tracks.append(f"{kind} on A{2 + n}: {count}")
         return BuildReport(final, len(main), len(over), warn + problems, look=edit.look,
                            sounds=len(edit.sounds) if stems else 0, sound_tracks=tracks,
-                           frame=edit.format and _format_size(edit), chapters=chapters)
+                           frame=edit.format and _format_size(edit), chapters=chapters, notes=notes)
     raise AssertionError("unreachable")

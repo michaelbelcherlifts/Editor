@@ -39,9 +39,26 @@ def test_never_overwrites_an_existing_timeline_name():
     assert names == ["cut", "cut (2)", "cut (3)"]
 
 
-def test_reports_a_frame_rate_mismatch():
-    report = build_timeline(Resolve(Project(fps="29.97")), edit(), "x")
-    assert not report.ok and "fps" in report.text()
+def test_an_empty_project_is_set_to_the_edits_frame_rate():
+    project = Project(fps="29.97")
+    report = build_timeline(Resolve(project), edit(), "x")
+    assert report.ok and project.fps == f"{edit().fps:g}"
+    assert "note: the project had no timelines, so it was set from 29.97 to" in report.text()
+
+
+def test_a_project_with_timelines_at_another_rate_is_refused_and_nothing_is_built():
+    project = Project()
+    r = Resolve(project)
+    build_timeline(r, edit(), "first")
+    project.fps = "29.97"                       # as if the project had been made at another rate
+    with pytest.raises(EditError, match="Nothing was built"):
+        build_timeline(r, edit(), "second")
+    assert project.GetTimelineCount() == 1
+    locked = Project(fps="29.97")
+    locked.locked = True                        # Resolve refuses the change
+    with pytest.raises(EditError, match="29.97 fps"):
+        build_timeline(Resolve(locked), edit(), "x")
+    assert locked.GetTimelineCount() == 0
 
 
 def test_missing_media_is_an_error():
