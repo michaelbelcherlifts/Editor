@@ -23,6 +23,14 @@ posts anything: Michael presses post himself, then tells you, and you record it.
 - **Series**: `mid-at-both` and `strong-vs-runner` to start; episodes number
   themselves. Add more with `series-add`.
 
+## Series days
+
+A series can own a weekday (`"day": "Mon"` in its entry in plan.json, or
+`"Sat (every other week...)"`). `plan-week` puts the series' next ready episode
+on that day first, keeps the rest of its episodes for their day in later weeks,
+and fills the other days from the backlog. Series marked `merged_into` have no
+day of their own. Michael asked for series so people follow along (28 Nov).
+
 ## Rules
 
 - Protect the baseline (McKeaveney): each reel is judged against his recent

@@ -180,3 +180,32 @@ def test_bets_are_stated_then_scored(tmp_path, monkeypatch, capsys):
     assert plan.rows("2026-11-30", 7)[0]["bet"].startswith("how-to hook")
     text = content.format_bets(out)
     assert "won " in text and "too few to call" in text
+
+
+def test_series_keep_their_weekday(tmp_path):
+    plan = Plan(tmp_path)
+    plan.settings["volume"] = {"reel": 7}
+    plan.add_series("normal-things", "Powerlifter does normal things", "Wordless, a normal task done like a lifter.")
+    plan.data["series"]["normal-things"]["day"] = "Wed"
+    plan.data["series"]["one-cue"]["day"] = "Mon"
+    plan.data["series"]["strong-vs-runner"]["merged_into"] = "mid-at-both"
+    plan.data["series"]["strong-vs-runner"]["day"] = "Fri"
+    plan.add_series("teammate", "Humbling my teammate", "x")
+    plan.data["series"]["teammate"]["day"] = "Sat (every other week, when a teammate is free)"
+    backlog(plan)
+    plan.add_idea("Firewood", "humour", series="normal-things")
+    plan.add_idea("Groceries", "humour", series="normal-things")
+    plan.add_idea("Cue two", "strength", series="one-cue")
+    plan.add_idea("Cue one", "strength", series="one-cue")
+    plan.add_idea("Vs", "run", series="strong-vs-runner")
+    plan.add_idea("Teammate", "humour", series="teammate")
+    weeks = [dt.date(2026, 11, 30) + dt.timedelta(days=7 * k) for k in range(2)]
+    for w in weeks:
+        plan.propose_week(w)
+    by_day = {p["date"]: plan.idea(p["idea"]) for p in plan.posts}
+    assert by_day["2026-11-30"]["title"] == "Cue two" and by_day["2026-12-07"]["title"] == "Cue one"
+    assert by_day["2026-12-02"]["title"] == "Firewood" and by_day["2026-12-09"]["title"] == "Groceries"
+    assert len(plan.posts) == 14 and len(set(by_day)) == 14  # still one reel a day
+    assert by_day["2026-12-04"]["title"] != "Vs"  # merged series has no day of its own
+    sats = [by_day[d]["title"] for d in ("2026-12-05", "2026-12-12")]
+    assert sats.count("Teammate") == 1  # every other week only
