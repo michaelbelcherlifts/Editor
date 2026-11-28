@@ -1,0 +1,890 @@
+[
+ {
+  "id": "hook-slam",
+  "kind": "text",
+  "name": "Hook slam",
+  "template": "text_fx",
+  "params": {
+   "text": "THIS CHANGED EVERYTHING",
+   "entry": "slam",
+   "look": "outline",
+   "accent_words": [
+    "everything"
+   ],
+   "size": 130
+  },
+  "beats": [
+   "hook"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "hit",
+    "at": 0.1
+   }
+  ],
+  "about": "Words slam in one by one, huge, with the key word in yellow. The frame-1 hook."
+ },
+ {
+  "id": "hook-zoom-through",
+  "kind": "text",
+  "name": "Zoom-through impact",
+  "template": "text_fx",
+  "params": {
+   "text": "405 LBS",
+   "entry": "zoom_through",
+   "look": "outline",
+   "family": "condensed",
+   "size": 220,
+   "exit": "zoom_out"
+  },
+  "beats": [
+   "hook",
+   "payoff",
+   "number"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "whoosh",
+    "at": -0.15
+   },
+   {
+    "tag": "hit",
+    "at": 0.3
+   }
+  ],
+  "about": "The text rushes at the camera from huge and blurred, lands, then flies out. Use it for a number or one-word payoff."
+ },
+ {
+  "id": "pop-outline",
+  "kind": "text",
+  "name": "Pop with outline",
+  "template": "text_fx",
+  "params": {
+   "text": "Here's the trick",
+   "entry": "pop",
+   "look": "outline",
+   "accent_words": [
+    "trick"
+   ]
+  },
+  "beats": [
+   "setup",
+   "value"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "pop",
+    "at": 0.1
+   }
+  ],
+  "about": "The everyday pop: words scale in with a small overshoot, white with a black outline."
+ },
+ {
+  "id": "typewriter-disclaimer",
+  "kind": "text",
+  "name": "Typewriter disclaimer",
+  "template": "text_fx",
+  "params": {
+   "text": "DISCLAIMER: do not try this at home",
+   "entry": "typewriter",
+   "look": "shadow",
+   "family": "mono",
+   "size": 52,
+   "uppercase": false,
+   "y": 0.2,
+   "exit": "none"
+  },
+  "beats": [
+   "stakes",
+   "setup",
+   "joke"
+  ],
+  "energy": 2,
+  "creators": [
+   "togi"
+  ],
+  "sfx": [
+   {
+    "tag": "click",
+    "at": 0.1
+   }
+  ],
+  "about": "Small text types on letter by letter. TOGI opens on a typed disclaimer before the chaos."
+ },
+ {
+  "id": "decode-hud",
+  "kind": "text",
+  "name": "Decode reveal",
+  "template": "text_fx",
+  "params": {
+   "text": "MAX: 600 KG",
+   "entry": "decode",
+   "look": "neon",
+   "family": "mono",
+   "accent": "#3ddc84",
+   "color": "#eafff2",
+   "size": 120
+  },
+  "beats": [
+   "number",
+   "stakes",
+   "turn"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "click",
+    "at": 0.1
+   }
+  ],
+  "about": "Letters scramble through random characters, then lock in left to right. Game and hacker feel."
+ },
+ {
+  "id": "mask-rise-title",
+  "kind": "text",
+  "name": "Mask rise",
+  "template": "text_fx",
+  "params": {
+   "text": "THE PLAN",
+   "entry": "mask_rise",
+   "look": "shadow",
+   "family": "tall",
+   "size": 200,
+   "stagger": 0.12
+  },
+  "beats": [
+   "setup",
+   "chapter"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "Each word rises out from behind an invisible line. Clean, cinematic chapter title."
+ },
+ {
+  "id": "blur-in-cinematic",
+  "kind": "text",
+  "name": "Cinematic blur-in",
+  "template": "text_fx",
+  "params": {
+   "text": "ONE MORE REP",
+   "entry": "blur_in",
+   "look": "shadow",
+   "family": "tall",
+   "size": 180,
+   "stagger": 0.18
+  },
+  "beats": [
+   "turn",
+   "payoff",
+   "emotion"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "Words fade up out of a blur, slow and quiet. For the emotional beat, not the joke."
+ },
+ {
+  "id": "stamp-verdict",
+  "kind": "text",
+  "name": "Verdict stamp",
+  "template": "text_fx",
+  "params": {
+   "text": "NATTY",
+   "entry": "stamp",
+   "look": "box",
+   "box": "#ff3b30",
+   "family": "condensed",
+   "size": 170,
+   "exit": "pop_out"
+  },
+  "beats": [
+   "payoff",
+   "joke"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "thud",
+    "at": 0.12
+   }
+  ],
+  "about": "A rubber-stamp verdict slammed onto the frame at an angle."
+ },
+ {
+  "id": "marker-highlight",
+  "kind": "text",
+  "name": "Highlighter sweep",
+  "template": "text_fx",
+  "params": {
+   "text": "Squeeze the bar",
+   "entry": "marker",
+   "look": "plain",
+   "color": "#111111",
+   "accent": "#ffe14a",
+   "family": "clean",
+   "uppercase": false,
+   "size": 96
+  },
+  "beats": [
+   "value",
+   "list"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "Dark text with a yellow highlighter sweeping behind it. Teaching points, over light footage or a card."
+ },
+ {
+  "id": "underline-key",
+  "kind": "text",
+  "name": "Underline draw",
+  "template": "text_fx",
+  "params": {
+   "text": "Elbows UNDER the bar",
+   "entry": "underline",
+   "look": "outline",
+   "accent": "#ffe14a",
+   "size": 96
+  },
+  "beats": [
+   "value"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "A bar draws itself under the line. Marks the one rule to remember."
+ },
+ {
+  "id": "outline-fill",
+  "kind": "text",
+  "name": "Outline then fill",
+  "template": "text_fx",
+  "params": {
+   "text": "NEW PR",
+   "entry": "outline_fill",
+   "look": "plain",
+   "family": "condensed",
+   "size": 220
+  },
+  "beats": [
+   "payoff",
+   "turn"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "The word appears as an empty outline, then fills solid. Good for a reveal."
+ },
+ {
+  "id": "neon-flicker",
+  "kind": "text",
+  "name": "Neon flicker",
+  "template": "text_fx",
+  "params": {
+   "text": "LATE NIGHT SESSION",
+   "entry": "flicker",
+   "look": "neon",
+   "accent": "#ff2a6d",
+   "family": "tall",
+   "size": 150
+  },
+  "beats": [
+   "setup",
+   "vibe"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "click",
+    "at": 0.1
+   }
+  ],
+  "about": "A neon sign stuttering on. Gym-at-night mood."
+ },
+ {
+  "id": "glitch-in",
+  "kind": "text",
+  "name": "Glitch in",
+  "template": "text_fx",
+  "params": {
+   "text": "WAIT WHAT",
+   "entry": "glitch",
+   "exit": "glitch_out",
+   "look": "outline",
+   "size": 140
+  },
+  "beats": [
+   "turn",
+   "hook"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "glitch",
+    "at": 0.1
+   }
+  ],
+  "about": "RGB-split jitter as the words arrive, glitching out on exit."
+ },
+ {
+  "id": "number-3d",
+  "kind": "text",
+  "name": "3D number pop",
+  "template": "text_fx",
+  "params": {
+   "text": "516 DOTS",
+   "entry": "pop",
+   "look": "3d",
+   "accent": "#ffe14a",
+   "color": "#ffe14a",
+   "family": "heavy",
+   "size": 190
+  },
+  "beats": [
+   "number",
+   "payoff"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "pop",
+    "at": 0.1
+   }
+  ],
+  "about": "Chunky number with a stacked 3D shadow, popping in."
+ },
+ {
+  "id": "gradient-title",
+  "kind": "text",
+  "name": "Gradient rise",
+  "template": "text_fx",
+  "params": {
+   "text": "THE RESULT",
+   "entry": "rise",
+   "look": "gradient",
+   "accent": "#ffe14a",
+   "family": "heavy",
+   "size": 150
+  },
+  "beats": [
+   "payoff"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "White-to-gold gradient letters rising in."
+ },
+ {
+  "id": "title-card-box",
+  "kind": "text",
+  "name": "White box title card",
+  "template": "text_fx",
+  "params": {
+   "text": "Squat depth drill",
+   "entry": "snap",
+   "exit": "none",
+   "look": "box",
+   "box": "#ffffff",
+   "color": "#111111",
+   "family": "condensed",
+   "uppercase": false,
+   "size": 76,
+   "x": 0.06,
+   "y": 0.08,
+   "align": "left",
+   "duration": 6
+  },
+  "beats": [
+   "setup",
+   "title"
+  ],
+  "energy": 1,
+  "creators": [
+   "luka"
+  ],
+  "sfx": [],
+  "about": "Black condensed type in a white box, top-left, held for the whole video."
+ },
+ {
+  "id": "pill-tag",
+  "kind": "text",
+  "name": "Pill tag",
+  "template": "text_fx",
+  "params": {
+   "text": "TIP 2",
+   "entry": "pop",
+   "look": "pill",
+   "box": "#ffe14a",
+   "color": "#111111",
+   "size": 80,
+   "y": 0.3
+  },
+  "beats": [
+   "list",
+   "value"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "pop",
+    "at": 0.1
+   }
+  ],
+  "about": "Rounded pill label that pops in. Numbered tips."
+ },
+ {
+  "id": "bounce-letters",
+  "kind": "text",
+  "name": "Bouncing letters",
+  "template": "text_fx",
+  "params": {
+   "text": "NO WAY",
+   "entry": "bounce",
+   "look": "outline",
+   "size": 160
+  },
+  "beats": [
+   "joke",
+   "turn"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "pop",
+    "at": 0.1
+   }
+  ],
+  "about": "Letters drop in and bounce one after another. Playful."
+ },
+ {
+  "id": "wave-letters",
+  "kind": "text",
+  "name": "Letter wave",
+  "template": "text_fx",
+  "params": {
+   "text": "let's go",
+   "entry": "wave",
+   "look": "outline",
+   "size": 150
+  },
+  "beats": [
+   "cta",
+   "joke",
+   "payoff"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "Letters ride in on a wave."
+ },
+ {
+  "id": "letters-stagger",
+  "kind": "text",
+  "name": "Letter stagger",
+  "template": "text_fx",
+  "params": {
+   "text": "DAY ONE",
+   "entry": "letters",
+   "look": "shadow",
+   "family": "tall",
+   "size": 200
+  },
+  "beats": [
+   "setup",
+   "chapter"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "Letters grow in quickly one after another."
+ },
+ {
+  "id": "drop-bounce",
+  "kind": "text",
+  "name": "Drop in",
+  "template": "text_fx",
+  "params": {
+   "text": "FAILED",
+   "entry": "drop",
+   "look": "outline",
+   "color": "#ff3b30",
+   "size": 160
+  },
+  "beats": [
+   "payoff",
+   "joke"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "thud",
+    "at": 0.3
+   }
+  ],
+  "about": "Words fall from above and bounce on landing."
+ },
+ {
+  "id": "slide-lower",
+  "kind": "text",
+  "name": "Slide-in lower line",
+  "template": "text_fx",
+  "params": {
+   "text": "Michael Belcher, 516 DOTS",
+   "entry": "slide_right",
+   "exit": "fade",
+   "look": "box",
+   "family": "clean",
+   "uppercase": false,
+   "size": 54,
+   "x": 0.06,
+   "y": 0.84,
+   "align": "left",
+   "duration": 3
+  },
+  "beats": [
+   "setup",
+   "credibility"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "A boxed line slides in low on the frame. A quick credential."
+ },
+ {
+  "id": "flip-reveal",
+  "kind": "text",
+  "name": "Flip reveal",
+  "template": "text_fx",
+  "params": {
+   "text": "MYTH",
+   "entry": "flip",
+   "exit": "pop_out",
+   "look": "box",
+   "box": "#ff3b30",
+   "family": "condensed",
+   "size": 150
+  },
+  "beats": [
+   "turn"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "Words flip down into place like a scoreboard."
+ },
+ {
+  "id": "spin-in",
+  "kind": "text",
+  "name": "Spin in",
+  "template": "text_fx",
+  "params": {
+   "text": "CHAOS",
+   "entry": "spin",
+   "look": "outline",
+   "size": 160
+  },
+  "beats": [
+   "joke"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [],
+  "about": "Words spin in from nothing. Use sparingly."
+ },
+ {
+  "id": "shake-alarm",
+  "kind": "text",
+  "name": "Alarm shake",
+  "template": "text_fx",
+  "params": {
+   "text": "DON'T DO THIS",
+   "entry": "shake",
+   "look": "outline",
+   "color": "#ff3b30",
+   "size": 140
+  },
+  "beats": [
+   "stakes",
+   "hook"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "impact",
+    "at": 0.05
+   }
+  ],
+  "about": "Red text that shakes on arrival. A warning."
+ },
+ {
+  "id": "split-wide",
+  "kind": "text",
+  "name": "Wide-spaced reveal",
+  "template": "text_fx",
+  "params": {
+   "text": "DISCIPLINE",
+   "entry": "split",
+   "look": "shadow",
+   "family": "tall",
+   "size": 170
+  },
+  "beats": [
+   "turn",
+   "emotion",
+   "title"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "riser",
+    "at": -0.6
+   }
+  ],
+  "about": "Letters start spread wide and pull together. Cinematic."
+ },
+ {
+  "id": "wipe-reveal",
+  "kind": "text",
+  "name": "Wipe reveal",
+  "template": "text_fx",
+  "params": {
+   "text": "BEFORE",
+   "entry": "wipe",
+   "exit": "wipe_out",
+   "look": "box",
+   "family": "condensed",
+   "size": 140
+  },
+  "beats": [
+   "setup",
+   "compare"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "whoosh",
+    "at": 0.0
+   }
+  ],
+  "about": "The text is wiped on left to right and wiped off. Before/after labels."
+ },
+ {
+  "id": "shrink-in",
+  "kind": "text",
+  "name": "Shrink in",
+  "template": "text_fx",
+  "params": {
+   "text": "WAIT FOR IT",
+   "entry": "shrink_in",
+   "look": "outline",
+   "size": 130
+  },
+  "beats": [
+   "stakes"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "Text grows from a dot with a spring."
+ },
+ {
+  "id": "fade-quiet",
+  "kind": "text",
+  "name": "Quiet fade",
+  "template": "text_fx",
+  "params": {
+   "text": "I almost quit.",
+   "entry": "fade",
+   "look": "shadow",
+   "family": "clean",
+   "uppercase": false,
+   "size": 80
+  },
+  "beats": [
+   "emotion",
+   "turn"
+  ],
+  "energy": 1,
+  "creators": [],
+  "sfx": [],
+  "about": "Plain sentence-case words fading up. Lets the moment breathe."
+ },
+ {
+  "id": "meme-tilt",
+  "kind": "text",
+  "name": "Tilted meme slam",
+  "template": "text_fx",
+  "params": {
+   "text": "HIM WHEN THE BAR MOVES",
+   "entry": "slam",
+   "look": "outline",
+   "tilt": -7,
+   "accent_words": [
+    "bar"
+   ],
+   "size": 110,
+   "y": 0.2
+  },
+  "beats": [
+   "joke",
+   "hook"
+  ],
+  "energy": 5,
+  "creators": [
+   "adam"
+  ],
+  "sfx": [
+   {
+    "tag": "pop",
+    "at": 0.1
+   }
+  ],
+  "about": "Meme-page headline, slightly tilted, one word coloured."
+ },
+ {
+  "id": "native-title",
+  "kind": "text",
+  "name": "Platform-native title",
+  "template": "text_fx",
+  "params": {
+   "text": "what I eat in a day as a powerlifter",
+   "entry": "snap",
+   "exit": "none",
+   "look": "native",
+   "family": "clean",
+   "uppercase": false,
+   "size": 64,
+   "y": 0.16,
+   "duration": 5
+  },
+  "beats": [
+   "title",
+   "setup"
+  ],
+  "energy": 1,
+  "creators": [
+   "alex",
+   "mek",
+   "vince"
+  ],
+  "sfx": [],
+  "about": "Looks like the app's own text tool: white, thin black outline, upper third."
+ },
+ {
+  "id": "cta-follow",
+  "kind": "text",
+  "name": "Follow for part 2",
+  "template": "text_fx",
+  "params": {
+   "text": "FOLLOW FOR PART 2",
+   "entry": "wave",
+   "look": "pill",
+   "box": "#ffffff",
+   "color": "#111111",
+   "size": 76,
+   "y": 0.8
+  },
+  "beats": [
+   "cta"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "A call to action at the end, in a white pill."
+ },
+ {
+  "id": "look-togi-kinetic",
+  "kind": "text",
+  "name": "TOGI kinetic titles",
+  "template": "kinetic_scatter",
+  "params": {
+   "text": "one of my BIG things",
+   "accent_words": [
+    "big"
+   ],
+   "tilt_words": [
+    "things"
+   ]
+  },
+  "beats": [
+   "hook",
+   "talk"
+  ],
+  "energy": 5,
+  "creators": [
+   "togi"
+  ],
+  "sfx": [
+   {
+    "tag": "hit",
+    "at": 0.0
+   }
+  ],
+  "about": "Measured from TOGI: words snap on round the frame, white behind him, blue in front, the set swaps at once. Same as the togi-kinetic effect."
+ },
+ {
+  "id": "look-clipper",
+  "kind": "text",
+  "name": "Clipper layout",
+  "template": "clipper",
+  "params": {
+   "headline": "bro really benched 405 for 10",
+   "accent_words": [
+    "405"
+   ],
+   "duration": 3
+  },
+  "beats": [
+   "hook",
+   "joke"
+  ],
+  "energy": 4,
+  "creators": [
+   "adam",
+   "tren"
+  ],
+  "sfx": [],
+  "about": "Fan-page repost layout: landscape clip in black bands, meme headline on top."
+ },
+ {
+  "id": "look-cinematic-title",
+  "kind": "text",
+  "name": "Cinematic spaced title",
+  "template": "spaced_title",
+  "params": {
+   "text": "discipline over motivation",
+   "size": 110
+  },
+  "beats": [
+   "title",
+   "emotion"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "riser",
+    "at": -0.5
+   }
+  ],
+  "about": "Tall, wide-spaced capitals fading in, as in cinematic military and gym edits."
+ }
+]

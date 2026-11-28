@@ -1,0 +1,992 @@
+[
+ {
+  "id": "cap-karaoke",
+  "kind": "caption",
+  "name": "Karaoke fill",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "karaoke"
+  },
+  "beats": [
+   "talk"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "Three words on screen; each fills with yellow as it is spoken."
+ },
+ {
+  "id": "cap-box-active",
+  "kind": "caption",
+  "name": "Box on the active word",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "box_active"
+  },
+  "beats": [
+   "talk"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [],
+  "about": "A yellow box jumps from word to word with the voice. The most-used short-form look."
+ },
+ {
+  "id": "cap-single",
+  "kind": "caption",
+  "name": "One word at a time",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "single",
+   "y": 0.5,
+   "size": 120
+  },
+  "beats": [
+   "talk",
+   "hook"
+  ],
+  "energy": 5,
+  "creators": [
+   "mek"
+  ],
+  "sfx": [],
+  "about": "One word at a time mid-frame, popping. Fastest feel."
+ },
+ {
+  "id": "cap-bounce",
+  "kind": "caption",
+  "name": "Bouncing active word",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "bounce_active"
+  },
+  "beats": [
+   "talk",
+   "joke"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [],
+  "about": "The spoken word jumps and grows."
+ },
+ {
+  "id": "cap-underline",
+  "kind": "caption",
+  "name": "Underline active",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "underline_active"
+  },
+  "beats": [
+   "talk",
+   "value"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "A yellow underline under the spoken word. Calmer than a box."
+ },
+ {
+  "id": "cap-sweep",
+  "kind": "caption",
+  "name": "Two-colour keyword sweep",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "sweep",
+   "accent_words": [
+    "sixty",
+    "pounds",
+    "squat"
+   ],
+   "max_words": 2
+  },
+  "beats": [
+   "talk",
+   "value"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [],
+  "about": "Capitals, keywords alternate yellow and green. The busy look that big business-advice pages use."
+ },
+ {
+  "id": "cap-past",
+  "kind": "caption",
+  "name": "Spoken words stay coloured",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "past_colour",
+   "accent": "#3ddc84"
+  },
+  "beats": [
+   "talk"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "Words turn green as they're said and stay that way."
+ },
+ {
+  "id": "cap-boxed-line",
+  "kind": "caption",
+  "name": "Line on a dark box",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "boxed_line",
+   "family": "clean",
+   "uppercase": false,
+   "size": 70
+  },
+  "beats": [
+   "talk",
+   "value"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "Each line sits on a dark rounded box. Readable over busy footage."
+ },
+ {
+  "id": "cap-minimal",
+  "kind": "caption",
+  "name": "Minimal sentence captions",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "minimal",
+   "family": "clean",
+   "max_words": 6,
+   "y": 0.75
+  },
+  "beats": [
+   "talk",
+   "emotion"
+  ],
+  "energy": 1,
+  "creators": [],
+  "sfx": [],
+  "about": "Small sentence-case captions, no outline. Lets the footage carry it."
+ },
+ {
+  "id": "cap-pill",
+  "kind": "caption",
+  "name": "Pill on the active word",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "pill_active",
+   "accent": "#ffffff"
+  },
+  "beats": [
+   "talk"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "A white pill slides between words."
+ },
+ {
+  "id": "cap-stack",
+  "kind": "caption",
+  "name": "Two stacked lines",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "stack_two",
+   "max_words": 4
+  },
+  "beats": [
+   "talk"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "Two short lines at once, for longer explanations."
+ },
+ {
+  "id": "cap-big-keyword",
+  "kind": "caption",
+  "name": "Big keyword",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "big_keyword",
+   "accent_words": [
+    "sixty",
+    "squat"
+   ]
+  },
+  "beats": [
+   "talk",
+   "number"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [],
+  "about": "Keywords at twice the size in colour."
+ },
+ {
+  "id": "cap-condensed-karaoke",
+  "kind": "caption",
+  "name": "Condensed karaoke",
+  "template": "caption_style",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "style": "karaoke",
+   "family": "condensed",
+   "size": 110,
+   "max_words": 2
+  },
+  "beats": [
+   "talk",
+   "hook"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [],
+  "about": "Tall condensed type, two words, karaoke fill."
+ },
+ {
+  "id": "cap-cbum",
+  "kind": "caption",
+  "name": "Small uppercase, below centre",
+  "template": "plain_captions",
+  "params": {
+   "words": [
+    {
+     "word": "this",
+     "start": 0.2,
+     "end": 0.48
+    },
+    {
+     "word": "is",
+     "start": 0.52,
+     "end": 0.8
+    },
+    {
+     "word": "how",
+     "start": 0.8400000000000001,
+     "end": 1.12
+    },
+    {
+     "word": "you",
+     "start": 1.16,
+     "end": 1.44
+    },
+    {
+     "word": "add",
+     "start": 1.48,
+     "end": 1.76
+    },
+    {
+     "word": "sixty",
+     "start": 1.8,
+     "end": 2.08
+    },
+    {
+     "word": "pounds",
+     "start": 2.12,
+     "end": 2.4
+    },
+    {
+     "word": "to",
+     "start": 2.4400000000000004,
+     "end": 2.72
+    },
+    {
+     "word": "your",
+     "start": 2.7600000000000002,
+     "end": 3.04
+    },
+    {
+     "word": "squat",
+     "start": 3.08,
+     "end": 3.36
+    }
+   ],
+   "max_words": 3,
+   "size": 64,
+   "y": 0.58
+  },
+  "beats": [
+   "talk"
+  ],
+  "energy": 1,
+  "creators": [
+   "cbum"
+  ],
+  "sfx": [],
+  "about": "CBum's look: 1 to 3 words, white bold capitals, small, just below the middle, no box."
+ }
+]

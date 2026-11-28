@@ -1,0 +1,427 @@
+[
+ {
+  "id": "tr-flash",
+  "kind": "transition",
+  "name": "White flash",
+  "template": "wipe",
+  "params": {
+   "kind": "flash",
+   "duration": 0.3
+  },
+  "beats": [
+   "turn",
+   "payoff",
+   "beat"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "hit",
+    "at": 0.15
+   }
+  ],
+  "cut_at": 0.5,
+  "about": "A white pop over the cut. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-flash-long",
+  "kind": "transition",
+  "name": "Soft flash",
+  "template": "wipe",
+  "params": {
+   "kind": "flash",
+   "duration": 0.7
+  },
+  "beats": [
+   "emotion",
+   "chapter"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "cut_at": 0.5,
+  "about": "A slower bloom of white. Time passing. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-dip",
+  "kind": "transition",
+  "name": "Dip to black",
+  "template": "wipe",
+  "params": {
+   "kind": "dip",
+   "duration": 0.8
+  },
+  "beats": [
+   "chapter",
+   "emotion"
+  ],
+  "energy": 1,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "riser",
+    "at": -0.4
+   }
+  ],
+  "cut_at": 0.5,
+  "about": "Fade down to black and back up. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-swipe",
+  "kind": "transition",
+  "name": "Swipe band",
+  "template": "wipe",
+  "params": {
+   "kind": "swipe",
+   "duration": 0.45,
+   "color": "#ffffff"
+  },
+  "beats": [
+   "list",
+   "beat"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "whoosh",
+    "at": 0.0
+   }
+  ],
+  "cut_at": 0.5,
+  "about": "A solid band slides across, covering the cut. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-swipe-yellow-up",
+  "kind": "transition",
+  "name": "Yellow swipe up",
+  "template": "wipe",
+  "params": {
+   "kind": "swipe",
+   "duration": 0.45,
+   "color": "#ffe14a",
+   "direction": "up"
+  },
+  "beats": [
+   "list"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "whoosh",
+    "at": 0.0
+   }
+  ],
+  "cut_at": 0.5,
+  "about": "A yellow panel wipes up through the frame. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-swipe-double",
+  "kind": "transition",
+  "name": "Double swipe",
+  "template": "wipe",
+  "params": {
+   "kind": "swipe_double",
+   "duration": 0.55,
+   "color": "#ffe14a",
+   "color2": "#111111"
+  },
+  "beats": [
+   "list",
+   "hook"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "whoosh",
+    "at": 0.0
+   }
+  ],
+  "cut_at": 0.5,
+  "about": "Two colours chase each other across. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-iris",
+  "kind": "transition",
+  "name": "Iris close and open",
+  "template": "wipe",
+  "params": {
+   "kind": "iris",
+   "duration": 0.8
+  },
+  "beats": [
+   "joke",
+   "chapter"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "cut_at": 0.5,
+  "about": "The picture closes to a dot and opens on the next shot. Cartoon ending feel. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-iris-out",
+  "kind": "transition",
+  "name": "Circle burst",
+  "template": "wipe",
+  "params": {
+   "kind": "iris_out",
+   "duration": 0.5,
+   "color": "#ffe14a"
+  },
+  "beats": [
+   "payoff",
+   "beat"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "pop",
+    "at": 0.1
+   }
+  ],
+  "cut_at": 0.5,
+  "about": "A circle of colour bursts out to fill the frame. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-shutter",
+  "kind": "transition",
+  "name": "Shutter",
+  "template": "wipe",
+  "params": {
+   "kind": "shutter",
+   "duration": 0.45
+  },
+  "beats": [
+   "beat",
+   "list"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "click",
+    "at": 0.2
+   }
+  ],
+  "cut_at": 0.5,
+  "about": "Top and bottom close like a camera shutter. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-split",
+  "kind": "transition",
+  "name": "Doors",
+  "template": "wipe",
+  "params": {
+   "kind": "split",
+   "duration": 0.5
+  },
+  "beats": [
+   "turn",
+   "chapter"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "thud",
+    "at": 0.25
+   }
+  ],
+  "cut_at": 0.5,
+  "about": "Left and right panels close and open like doors. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-blinds",
+  "kind": "transition",
+  "name": "Blinds",
+  "template": "wipe",
+  "params": {
+   "kind": "blinds",
+   "duration": 0.6
+  },
+  "beats": [
+   "list"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "cut_at": 0.5,
+  "about": "Horizontal stripes close then open. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-bars",
+  "kind": "transition",
+  "name": "Rising bars",
+  "template": "wipe",
+  "params": {
+   "kind": "bars",
+   "duration": 0.6,
+   "color2": "#ffe14a"
+  },
+  "beats": [
+   "list",
+   "beat"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [],
+  "cut_at": 0.5,
+  "about": "Vertical bars rise one after another. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-pixels",
+  "kind": "transition",
+  "name": "Pixel blocks",
+  "template": "wipe",
+  "params": {
+   "kind": "pixels",
+   "duration": 0.6
+  },
+  "beats": [
+   "turn",
+   "game"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "cut_at": 0.5,
+  "about": "The frame fills with blocks and clears. Game feel. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-diagonal",
+  "kind": "transition",
+  "name": "Diagonal sweep",
+  "template": "wipe",
+  "params": {
+   "kind": "diagonal",
+   "duration": 0.5
+  },
+  "beats": [
+   "beat"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "whoosh",
+    "at": 0.0
+   }
+  ],
+  "cut_at": 0.5,
+  "about": "A tilted panel sweeps through. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-glitch",
+  "kind": "transition",
+  "name": "Glitch",
+  "template": "wipe",
+  "params": {
+   "kind": "glitch",
+   "duration": 0.4
+  },
+  "beats": [
+   "turn",
+   "hook"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "glitch",
+    "at": 0.1
+   }
+  ],
+  "cut_at": 0.5,
+  "about": "RGB bars tear across the cut. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-light-leak",
+  "kind": "transition",
+  "name": "Light leak",
+  "template": "wipe",
+  "params": {
+   "kind": "light_leak",
+   "duration": 1.0
+  },
+  "beats": [
+   "emotion",
+   "vibe"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "cut_at": 0.5,
+  "about": "A warm leak of light drifts over the cut. Vlog and cinematic. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-burn",
+  "kind": "transition",
+  "name": "Film burn",
+  "template": "wipe",
+  "params": {
+   "kind": "burn",
+   "duration": 0.8
+  },
+  "beats": [
+   "chapter",
+   "emotion"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "cut_at": 0.5,
+  "about": "Hot orange flare blooms over the cut. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-radial",
+  "kind": "transition",
+  "name": "Clock wipe",
+  "template": "wipe",
+  "params": {
+   "kind": "radial",
+   "duration": 0.8
+  },
+  "beats": [
+   "chapter",
+   "time"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "cut_at": 0.5,
+  "about": "The next shot sweeps in like a clock hand. Time passing. Its middle lands on the cut."
+ },
+ {
+  "id": "tr-word",
+  "kind": "transition",
+  "name": "Word slam",
+  "template": "wipe",
+  "params": {
+   "kind": "word",
+   "duration": 0.7,
+   "text": "LATER",
+   "color": "#ffffff",
+   "color2": "#111111"
+  },
+  "beats": [
+   "chapter",
+   "joke",
+   "time"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "thud",
+    "at": 0.32
+   }
+  ],
+  "cut_at": 0.5,
+  "about": "A big word fills the frame at the cut. Its middle lands on the cut."
+ }
+]

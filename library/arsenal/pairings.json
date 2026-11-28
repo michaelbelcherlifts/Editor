@@ -1,0 +1,213 @@
+[
+ {
+  "id": "pair-whoosh-swipe",
+  "kind": "pairing",
+  "name": "Whoosh + swipe",
+  "how": [
+   "Place tr-swipe so its middle is on the cut; sfx-place whoosh at the start of the swipe."
+  ],
+  "beats": [
+   "beat",
+   "list"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "whoosh",
+    "at": 0.0
+   }
+  ],
+  "about": "Sound and band move together."
+ },
+ {
+  "id": "pair-hit-flash",
+  "kind": "pairing",
+  "name": "Hit + flash",
+  "how": [
+   "tr-flash centred on the beat; sfx-place hit on the cut frame."
+  ],
+  "beats": [
+   "payoff",
+   "beat"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "hit",
+    "at": 0.15
+   }
+  ],
+  "about": "The classic impact. The flash peaks on the hit."
+ },
+ {
+  "id": "pair-riser-zoom",
+  "kind": "pairing",
+  "name": "Riser into zoom-through",
+  "how": [
+   "sfx-place riser to end on the reveal; hook-zoom-through starts 0.1 s before it ends."
+  ],
+  "beats": [
+   "turn",
+   "payoff"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "riser",
+    "at": -1.0
+   },
+   {
+    "tag": "hit",
+    "at": 0.3
+   }
+  ],
+  "about": "Tension building, then a release."
+ },
+ {
+  "id": "pair-thud-slam",
+  "kind": "pairing",
+  "name": "Thud + slam text",
+  "how": [
+   "hook-slam with a thud on each word (one per word, cap 4)."
+  ],
+  "beats": [
+   "hook"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "thud",
+    "at": 0.1
+   }
+  ],
+  "about": "Each word lands with a low hit."
+ },
+ {
+  "id": "pair-click-type",
+  "kind": "pairing",
+  "name": "Clicks + typewriter",
+  "how": [
+   "typewriter-disclaimer with a click every 2 to 3 letters."
+  ],
+  "beats": [
+   "setup",
+   "stakes"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "click",
+    "at": 0.1
+   }
+  ],
+  "about": "Keyboard clicks sell the typing."
+ },
+ {
+  "id": "pair-pop-captions",
+  "kind": "pairing",
+  "name": "Pops on caption pops",
+  "how": [
+   "stylebrain sfx-auto caps pops to a few per minute; add only on key words."
+  ],
+  "beats": [
+   "talk"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "pop",
+    "at": 0.0
+   }
+  ],
+  "about": "Soft pops on the most important words, not every word."
+ },
+ {
+  "id": "pair-silence-drop",
+  "kind": "pairing",
+  "name": "Silence before the drop",
+  "how": [
+   "Cut the music for 0.3 to 0.5 s before the payoff, then bring it back on the hit."
+  ],
+  "beats": [
+   "payoff",
+   "turn"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "hit",
+    "at": 0.0
+   }
+  ],
+  "about": "The gap makes the hit feel bigger."
+ },
+ {
+  "id": "pair-scratch-freeze",
+  "kind": "pairing",
+  "name": "Record scratch + freeze",
+  "how": [
+   "Freeze frame plus a text_fx label (\"yep, that's me\"); a scratch sound on the freeze."
+  ],
+  "beats": [
+   "joke",
+   "hook"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "scratch",
+    "at": 0.0
+   }
+  ],
+  "about": "The meme freeze-frame intro."
+ },
+ {
+  "id": "pair-glitch-glitch",
+  "kind": "pairing",
+  "name": "Glitch sound + glitch wipe",
+  "how": [
+   "tr-glitch on the cut with a glitch sound at its start."
+  ],
+  "beats": [
+   "turn"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "glitch",
+    "at": 0.0
+   }
+  ],
+  "about": "Digital crunch sells the tear."
+ },
+ {
+  "id": "pair-plate-thud",
+  "kind": "pairing",
+  "name": "Plate drop on the lockout",
+  "how": [
+   "sfx-place thud (or his recorded plate drop) on the lockout frame; hold 0.3 s."
+  ],
+  "beats": [
+   "lift",
+   "payoff"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "thud",
+    "at": 0.0
+   }
+  ],
+  "about": "Real gym sound as the payoff beat."
+ }
+]
