@@ -25,6 +25,8 @@ NEW = {
     "tempo_counter": {"tempo": "3-1-X-0", "reps": 2},
     "compare_chart": {"bars": [{"label": "Me", "value": 516}, {"label": "Avg", "value": 300}], "highlight": 0},
     "hud_card": {"text": "Squat 500", "kind": "mission"},
+    "checklist": {"items": ["Feet flat", {"text": "Pause", "pass": False}], "title": "Bench checklist"},
+    "meet_lights": {"lights": ["white", "red", "white"], "label": "GOOD LIFT"},
 }
 
 
@@ -38,7 +40,9 @@ def test_new_templates_build(name):
     ("kinetic_type", {}), ("title_bar", {"text": " ", "duration": 1}), ("end_card", {"items": []}),
     ("counter", {}), ("clipper", {"headline": "x", "duration": 1, "width": 1920, "height": 1080}),  # no bands
     ("lift_diagram", {"lift": "curl"}), ("form_cue", {}), ("form_cue", {"arrows": [{"from": [2, 0], "to": [0, 0]}]}),
-    ("hud_card", {"text": "x", "kind": "boss"}), ("hud_card", {"text": " "}),
+    ("hud_card", {"text": "x", "kind": "boss"}),
+    ("checklist", {"items": []}), ("checklist", {"items": ["a", "b"], "ticks": [2, 1]}),
+    ("meet_lights", {"lights": ["white", "white"]}), ("meet_lights", {"lights": ["white", "blue", "red"]}), ("hud_card", {"text": " "}),
     ("tempo_counter", {"tempo": "3-1-1"}), ("compare_chart", {"bars": [{"label": "a", "value": 0}]}),
 ])
 def test_new_templates_reject_bad_input(name, params):
@@ -152,3 +156,9 @@ def test_hud_card_kinds(kind):
     html, d = build("hud_card", {"text": "Don't let a <runner> see this", "kind": kind, "sub": "+RESPECT", "duration": 2})
     assert d == 2 and "&lt;runner&gt;" in html and "+RESPECT" in html
     assert ("class='dim'" in html) == (kind == "failed")
+
+
+def test_checklist_marks_pass_and_fail_at_their_ticks():
+    html, d = build("checklist", {"items": ["Feet <flat>", {"text": "Pause", "pass": False}], "ticks": [1.0, 2.5]})
+    assert html.count("&#10003;") == 1 and html.count("&#10007;") == 1 and "Feet &lt;flat&gt;" in html
+    assert "animation-delay:2.500s" in html and d == 4.1

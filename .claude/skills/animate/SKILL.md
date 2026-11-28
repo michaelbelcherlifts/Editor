@@ -26,6 +26,8 @@ Run `uv run stylebrain templates` for the list. Today:
 | `end_card` | Numbers or macros counting up on a card | `items` = [{label, value, unit}], `title` |
 | `counter` | Rep counter ticking on each rep, or a day counter | `ticks` (rep times) or `value`, `label`, `total` |
 | `hud_card` | Game-style stake and payoff cards: `mission` (the goal), `passed`, `failed` (frame darkens), `warning` (hazard bar for "Do NOT let a ... see this" hooks). Our own look, never a game's logo or font | `text`, `kind`, `sub` (e.g. "+RESPECT"), `duration`, `y` |
+| `checklist` | A numbered checklist ("pass all five...") ticking or crossing item by item, timed to the voice-over | `items` (text, or {text, pass: false}), `ticks`, `title` |
+| `meet_lights` | The three referee lights of a meet, white or red, lighting in turn | `lights` = ["white","white","red"], `label` (e.g. "GOOD LIFT") |
 | `clipper` | Vertical frame: bands round a fitted landscape clip, headline on top | `headline`, `sub`, `duration`, `accent_words` |
 | `lift_diagram` | Muscle diagram preset for a lift | `lift` (bench, squat, deadlift, sumo_deadlift, rdl, overhead_press, row, pull_up, dip, hip_thrust, lunge, close_grip_bench, low_bar_squat), `only` |
 | `letterbox` | Cinematic black bars that slide in top and bottom over a pose | `ratio` (2.39 cinema), `duration`, `slide` (0 cuts them in) |
