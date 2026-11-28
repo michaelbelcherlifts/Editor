@@ -181,13 +181,13 @@ def snap_cuts(edit: EditList, beats: list[float], max_trim: float = 0.3, words: 
     return edit, lines
 
 
-# How the bed is lowered under the voice. The voice is first brought up to one level, so a quiet line and
-# a shouted one lower the music by the same amount: about 5 dB. The slow release holds it down across the
-# short gaps between lines and lets it back up over about a second and a half once he stops.
-# The first version (ratio 8, release 0.4s, no levelling) dropped the music by 10 to 20 dB under each line
-# and let it jump back about 5 dB in every gap; Michael heard that as inconsistent music.
+# How the bed is lowered under the voice: by about 2 dB (never more than 3), held across the short gaps between lines.
+# The voice is first brought up to one level, so a quiet line and a shouted one lower the music by the
+# same amount. Michael wants the music consistent: the level is set by the bed's own gain (-21 by default),
+# and this is only a small dip. Earlier versions dropped it 10 to 20 dB (ratio 8), then about 5 dB (ratio 2);
+# on a real reel 5 dB was still heard as the music swinging.
 DUCK_KEY = "volume=24dB,alimiter=limit=0.5:level=false"
-DUCK = "threshold=0.1:ratio=2:attack=80:release=1500"
+DUCK = "threshold=0.1:ratio=1.25:attack=80:release=1500"
 
 
 def bed(edit: EditList, out: str | Path, voice: str | Path | None = None, fade: float = 1.0) -> Path:

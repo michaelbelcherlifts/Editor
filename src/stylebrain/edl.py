@@ -102,7 +102,7 @@ class Music:
 
     source: str
     start: float = 0.0      # seconds into the song where the edit begins
-    gain_db: float = -18.0
+    gain_db: float = -21.0
     duck: bool = True       # lower it while someone is speaking
 
     def __post_init__(self) -> None:

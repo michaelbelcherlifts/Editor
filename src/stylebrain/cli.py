@@ -1940,7 +1940,7 @@ def main(argv: list[str] | None = None) -> None:
         A("--json", action="store_true"))
     add("music-add", cmd_music_add, "put a music track under the edit", A("file"),
         A("--start", type=float, default=0.0, help="seconds into the song where the edit begins"),
-        A("--gain", type=float, default=-18.0, help="level in dB"),
+        A("--gain", type=float, default=-21.0, help="level in dB (default -21: clearly under his voice)"),
         A("--no-duck", action="store_true", help="do not lower it under speech"))
     add("music-remove", cmd_music_remove, "take the music off")
     add("music-beats", cmd_music_beats, "show the tempo, the beats and how far each cut is from one")

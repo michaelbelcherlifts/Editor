@@ -101,7 +101,7 @@ def test_music_is_part_of_the_edit_and_the_export(song, tmp_path):
                          "-af", "volumedetect", "-f", "null", "-"], text=True).stderr
         return float(err.split("mean_volume:")[1].split()[0])
     drop = level(ducked, 4.0, 5.0) - level(ducked, 0.3, 1.8)
-    assert 3 < drop < 9                                                   # lower while he speaks, but gently
+    assert 1 < drop <= 3.0                                                # lower while he speaks, but only a little
     assert level(ducked, 5.6, 6.0) < level(ducked, 3.0, 4.5) - 3          # and faded at the end
 
     out = export.render(edit, tmp_path / "out.mp4", 180, 320)
@@ -158,4 +158,4 @@ def test_the_bed_stays_level_across_the_gaps_between_lines(song, tmp_path):
             return float(err.split("mean_volume:")[1].split()[0])
         return level(plain) - level(ducked)
     speaking, gap, after = drop(2.2, 2.7), drop(2.85, 3.1), drop(6.5, 7.5)
-    assert 3 < speaking < 9 and abs(gap - speaking) < 1.5 and after < 1
+    assert 1 < speaking <= 3.0 and abs(gap - speaking) < 1 and after < 1
