@@ -22,7 +22,7 @@ def _clip(path, colour, seconds, size="108x192"):
 def reel(tmp_path_factory):
     """A 6 s reel: 2 s red, then 4 s blue (one hard cut at 2 s)."""
     d = tmp_path_factory.mktemp("reel")
-    a, b = _clip(d / "a.mp4", "red", 2), _clip(d / "b.mp4", "blue", 4)
+    a, b = _clip(d / "a.mp4", "red", 2), _clip(d / "b.mp4", "blue", 4)  # longest shot 4 s
     out = d / "reel.mp4"
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(a), "-i", str(b), "-filter_complex",
                     "[0:v][0:a][1:v][1:a]concat=n=2:v=1:a=1[v][a]", "-map", "[v]", "-map", "[a]",

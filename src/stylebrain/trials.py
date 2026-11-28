@@ -172,7 +172,7 @@ def suggest(video: str | Path, reel: str, hooks: list[str] | None = None, goal: 
     shots = list(zip([0.0] + cuts, cuts + [secs]))
     longest = max(shots, key=lambda s: s[1] - s[0]) if shots else (0.0, secs)
     span = longest[1] - longest[0]
-    if span >= 4.0:
+    if span >= 3.0:
         a, b = longest[0] + span * 0.3, longest[0] + span * 0.65
         vs.append({"kind": "length", "cut": [[round(a, 2), round(b, 2)]],
                    "hypothesis": f"cutting {b - a:.1f}s from the longest shot ({longest[0]:.1f}-{longest[1]:.1f}s) "
