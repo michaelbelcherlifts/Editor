@@ -4,6 +4,8 @@
 - form_cue: arrows, lines and measured joint angles drawn over a freeze frame.
 - tempo_counter: a rep tempo such as 3-1-1-0 counted down phase by phase.
 - compare_chart: labelled bars that grow and count, for comparisons.
+- checklist: a numbered checklist whose items tick (pass) or cross (fail) one by one.
+- meet_lights: the three referee lights of a powerlifting meet, white or red.
 
 The muscles in each lift preset are a coaching summary, not a study. They are
 Michael's call: show him the preset before it goes in a final cut.
@@ -270,3 +272,81 @@ def compare_chart(bars: list[dict], title: str = "", unit: str = "", duration: f
            "@keyframes out{to{opacity:0}}@keyframes fd{from{opacity:0}to{opacity:1}}")
     ttl = f"<div class='ttl'>{escape(title)}</div>" if title else ""
     return _page(f"<div class='card'>{ttl}{''.join(rows)}</div>", css, width, height, _COUNT_JS), float(duration)
+
+
+def checklist(items: list, ticks: list[float] | None = None, title: str = "", duration: float | None = None,
+              start: float = 0.4, each: float = 1.2, accent: str = "#3ddc84", fail: str = "#ff4d4d",
+              keep_clear: list[float] | None = CAPTION_BAND, width: int = 1080, height: int = 1920):
+    """A numbered checklist ("pass all five...") whose items appear and tick one by one.
+
+    items: strings, or {"text", "pass"?: true/false}; a failed item gets a red cross.
+    ticks: seconds when each item ticks (say it on the voice-over); default every `each` seconds.
+    """
+    rows = [{"text": i} if isinstance(i, str) else dict(i) for i in (items or [])]
+    if not rows or any(not str(r.get("text", "")).strip() for r in rows):
+        raise EditError("checklist needs items, such as [\"Feet flat\", {\"text\": \"Pause\", \"pass\": false}]")
+    if ticks is None:
+        ticks = [start + i * each for i in range(len(rows))]
+    ticks = [float(t) for t in ticks]
+    if len(ticks) != len(rows) or ticks != sorted(ticks) or ticks[0] < 0:
+        raise EditError("checklist ticks must be one rising time per item")
+    duration = float(duration or ticks[-1] + 1.6)
+    sw, sh, _ = _stage(width, height)
+    want = 140 + 120 * len(rows) + (90 if title else 0)
+    top, h = keep_clear_box(sh, want, keep_clear)
+    out = max(duration - 0.4, ticks[-1] + 0.2)
+    li = []
+    for n, (r, t) in enumerate(zip(rows, ticks), 1):
+        ok = r.get("pass", True) is not False
+        mark = "&#10003;" if ok else "&#10007;"
+        li.append(f"<div class='it' style='animation-delay:{max(t - 0.25, 0):.3f}s'>"
+                  f"<span class='n'>{n}</span><span class='tx'>{escape(str(r['text']))}</span>"
+                  f"<span class='mk {'ok' if ok else 'no'}' style='animation-delay:{t:.3f}s'>{mark}</span></div>")
+    ttl = f"<div class='ttl'>{escape(title)}</div>" if title else ""
+    css = (f".card{{position:absolute;left:50%;top:{top:.0f}px;max-height:{h:.0f}px;width:{min(sw * 0.86, 1400):.0f}px;"
+           "transform:translateX(-50%);box-sizing:border-box;padding:40px 46px;border-radius:34px;"
+           "background:rgba(14,15,18,.9);color:#fff;box-shadow:0 30px 80px rgba(0,0,0,.45);overflow:hidden;"
+           f"animation:in .4s cubic-bezier(.2,1.1,.3,1) both,out .4s ease-in {out:.3f}s forwards}}"
+           ".ttl{font-size:54px;font-weight:900;margin-bottom:18px;letter-spacing:-0.01em}"
+           ".it{display:flex;align-items:center;gap:26px;font-size:50px;font-weight:800;margin:18px 0;"
+           "opacity:0;animation:up .3s ease-out both}"
+           ".n{flex:none;width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,.12);"
+           "display:flex;align-items:center;justify-content:center;font-size:38px}"
+           ".tx{flex:1}"
+           ".mk{flex:none;font-size:70px;font-weight:900;opacity:0;animation:pop .35s cubic-bezier(.2,1.6,.3,1) both}"
+           f".ok{{color:{accent}}}.no{{color:{fail}}}"
+           "@keyframes in{from{opacity:0;transform:translate(-50%,40px)}to{opacity:1;transform:translate(-50%,0)}}"
+           "@keyframes out{to{opacity:0}}"
+           "@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}"
+           "@keyframes pop{from{opacity:0;transform:scale(2.2)}to{opacity:1;transform:none}}")
+    return _page(f"<div class='card'>{ttl}{''.join(li)}</div>", css, width, height), duration
+
+
+_LIGHT = {"white": "#ffffff", "red": "#ff2d2d"}
+
+
+def meet_lights(lights: list[str] | None = None, at: float = 0.3, stagger: float = 0.25, duration: float = 3.0,
+                label: str = "", y: float = 0.14, size: int = 120, width: int = 1080, height: int = 1920):
+    """The three referee lights of a powerlifting meet: white (good lift) or red (no lift), lighting in turn.
+
+    Two or three whites is a good lift; the label under them (e.g. "GOOD LIFT") is optional.
+    """
+    lights = [str(x).lower() for x in (lights or ["white", "white", "white"])]
+    if len(lights) != 3 or any(x not in _LIGHT for x in lights):
+        raise EditError("meet_lights needs three lights, each white or red")
+    out = max(float(duration) - 0.35, at + 3 * stagger)
+    dots = "".join(f"<span class='l' style='--c:{_LIGHT[c]};animation-delay:{at + i * stagger:.3f}s'></span>"
+                   for i, c in enumerate(lights))
+    lab = f"<div class='lb' style='animation-delay:{at + 3 * stagger:.3f}s'>{escape(label)}</div>" if label else ""
+    css = (f".w{{position:absolute;left:0;right:0;top:{y * 100:.1f}%;text-align:center;"
+           f"animation:fo .3s ease-in {out:.3f}s forwards}}"
+           f".row{{display:inline-flex;gap:{size * 0.4:.0f}px;padding:{size * 0.22:.0f}px {size * 0.35:.0f}px;"
+           "border-radius:999px;background:rgba(10,10,12,.85);box-shadow:0 20px 50px rgba(0,0,0,.5)}"
+           f".l{{width:{size}px;height:{size}px;border-radius:50%;background:#2a2a2e;"
+           "animation:on .25s ease-out both}"
+           f".lb{{margin-top:22px;font-size:{size * 0.5:.0f}px;font-weight:900;color:#fff;letter-spacing:.08em;"
+           "text-shadow:0 6px 20px rgba(0,0,0,.6);opacity:0;animation:up .3s ease-out both}"
+           "@keyframes on{to{background:var(--c);box-shadow:0 0 40px var(--c),0 0 90px var(--c)}}"
+           "@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}"
+           "@keyframes fo{to{opacity:0}}")
+    return _page(f"<div class='w'><div class='row'>{dots}</div>{lab}</div>", css, width, height), float(duration)
