@@ -28,34 +28,40 @@ W, H = 1080, 1920
 
 
 def wide_filter(x: float = 0.5, share: float = 0.62, fill: str = "blur", width: int = W, height: int = H,
-                fps: float | None = None) -> str:
-    """The ffmpeg filter for `wide_clip`. `share` is how much of the source width stays in the picture."""
-    if not 0.2 <= share <= 1 or not 0 <= x <= 1:
-        raise EditError("share is between 0.2 and 1 of the source width, x between 0 and 1")
+                fps: float | None = None, top: float = 0.0, bottom: float = 1.0) -> str:
+    """The ffmpeg filter for `wide_clip`. The kept box is `share` of the source width centred at `x`, from
+    `top` to `bottom` of its height. Set it to the box around the whole lifter and the whole bar, so both are
+    in and as big as they fit (Michael: the whole weights and the whole person, a happy medium between a
+    tight crop and the full frame shrunk down)."""
+    if not 0.2 <= share <= 1 or not 0 <= x <= 1 or not 0 <= top < bottom <= 1 or bottom - top < 0.2:
+        raise EditError("share is between 0.2 and 1 of the source width, x between 0 and 1, "
+                        "and top < bottom between 0 and 1, at least 0.2 apart")
     crop_x = f"max(0\\,min(iw-iw*{share}\\,iw*{x}-iw*{share}/2))"
+    box = f"crop=iw*{share}:ih*{bottom - top:.4f}:{crop_x}:ih*{top},"
+    fit = f"scale={width}:{round(height * 0.9)}:force_original_aspect_ratio=decrease,"
     rate = f"fps={fps:g}," if fps else ""
     if fill == "blur":
         return (f"[0:v]{rate}split[a][b];"
                 f"[a]scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},"
                 "boxblur=24:2,eq=brightness=-0.22:saturation=0.8[bg];"
-                f"[b]crop=iw*{share}:ih:{crop_x}:0,scale={width}:-2[fg];"
-                "[bg][fg]overlay=0:(H-h)/2-60,setsar=1[v]")
+                f"[b]{box}{fit}setsar=1[fg];"
+                "[bg][fg]overlay=(W-w)/2:(H-h)/2-60,setsar=1[v]")
     if fill == "film":
-        # The full height of the shot is always kept: a lift's plates sit at the bottom of the frame, and a
+        # The full height of the box is always kept: a lift's plates sit at the bottom of the frame, and a
         # 2:1 strip that cropped top and bottom cut them off (Michael, round 4: "weights were cut out").
-        return (f"[0:v]{rate}crop=iw*{share}:ih:{crop_x}:0,scale={width}:-2,"
+        return (f"[0:v]{rate}{box}{fit}"
                 "eq=contrast=1.18:saturation=0.78:brightness=-0.035:gamma=0.95,"
-                f"pad={width}:{height}:0:(oh-ih)/2-80:black,setsar=1[v]")
+                f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2-80:black,setsar=1[v]")
     raise EditError("fill is 'blur' (the shot blurred above and below) or 'film' (black bars, a graded strip)")
 
 
 def wide_clip(src: str, start: float, end: float, out: str, x: float = 0.5, share: float = 0.62,
-              fill: str = "blur", fps: float | None = None) -> Path:
+              fill: str = "blur", fps: float | None = None, top: float = 0.0, bottom: float = 1.0) -> Path:
     """Render a vertical clip of src[start:end] that keeps the bar and plates in view."""
     if end <= start:
         raise EditError("end must come after start")
     run(["ffmpeg", "-v", "error", "-y", "-ss", f"{start}", "-to", f"{end}", "-i", src, "-an",
-         "-filter_complex", wide_filter(x, share, fill, fps=fps), "-map", "[v]",
+         "-filter_complex", wide_filter(x, share, fill, fps=fps, top=top, bottom=bottom), "-map", "[v]",
          "-c:v", "libx264", "-crf", "15", "-preset", "veryfast", "-pix_fmt", "yuv420p", out])
     return Path(out)
 
