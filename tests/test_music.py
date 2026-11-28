@@ -100,7 +100,8 @@ def test_music_is_part_of_the_edit_and_the_export(song, tmp_path):
         err = media.run(["ffmpeg", "-v", "info", "-nostats", "-ss", str(a), "-t", str(b - a), "-i", str(path),
                          "-af", "volumedetect", "-f", "null", "-"], text=True).stderr
         return float(err.split("mean_volume:")[1].split()[0])
-    assert level(ducked, 0.3, 1.8) < level(ducked, 3.0, 4.5) - 4          # lower while he speaks
+    drop = level(ducked, 4.0, 5.0) - level(ducked, 0.3, 1.8)
+    assert 3 < drop < 9                                                   # lower while he speaks, but gently
     assert level(ducked, 5.6, 6.0) < level(ducked, 3.0, 4.5) - 3          # and faded at the end
 
     out = export.render(edit, tmp_path / "out.mp4", 180, 320)
@@ -138,3 +139,23 @@ def test_music_commands_and_build(song, tmp_path, monkeypatch, capsys):
     assert Store("p").load().music is None
     with pytest.raises(SystemExit):
         main(["music-beats"])
+
+
+def test_the_bed_stays_level_across_the_gaps_between_lines(song, tmp_path):
+    # Lines of 0.7s with 0.35s gaps for four seconds, then nothing: the music must not jump up in each gap.
+    clip = tmp_path / "lines.mp4"
+    media.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=c=red:s=180x320:r=30:d=8", "-f", "lavfi", "-i",
+               "sine=frequency=300:duration=8", "-af", "volume='if(lt(t,4)*lt(mod(t,1.05),0.7),0.2,0)':eval=frame",
+               "-pix_fmt", "yuv420p", "-shortest", str(clip)])
+    edit = EditList.from_clip(str(clip), 240, 30.0).set_music(Music(song, start=2.0, gain_db=-12.0))
+    ducked = music.bed(edit, tmp_path / "bed.wav", voice=export.voice(edit, tmp_path / "voice.wav"), fade=0.2)
+    plain = music.bed(edit, tmp_path / "plain.wav", fade=0.2)
+
+    def drop(a, b):
+        def level(path):
+            err = media.run(["ffmpeg", "-v", "info", "-nostats", "-ss", str(a), "-t", str(b - a), "-i", str(path),
+                             "-af", "volumedetect", "-f", "null", "-"], text=True).stderr
+            return float(err.split("mean_volume:")[1].split()[0])
+        return level(plain) - level(ducked)
+    speaking, gap, after = drop(2.2, 2.7), drop(2.85, 3.1), drop(6.5, 7.5)
+    assert 3 < speaking < 9 and abs(gap - speaking) < 1.5 and after < 1
