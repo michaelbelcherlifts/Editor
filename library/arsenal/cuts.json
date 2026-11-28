@@ -1,0 +1,325 @@
+[
+ {
+  "id": "cut-jump",
+  "kind": "cut",
+  "name": "Jump cut",
+  "how": [
+   "stylebrain tighten --transcript T.json"
+  ],
+  "beats": [
+   "talk"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [],
+  "about": "Cut out the pauses and breaths inside one shot, so the person jumps between lines. Keeps talking heads moving."
+ },
+ {
+  "id": "cut-j",
+  "kind": "cut",
+  "name": "J-cut",
+  "how": [
+   "stylebrain jcut {at}"
+  ],
+  "beats": [
+   "setup",
+   "turn"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "The next shot's sound starts before its picture. Pulls the viewer forward into the next scene."
+ },
+ {
+  "id": "cut-l",
+  "kind": "cut",
+  "name": "L-cut",
+  "how": [
+   "stylebrain lcut {at}"
+  ],
+  "beats": [
+   "emotion",
+   "payoff"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "The current sound carries over the next picture. Lets a line land over a reaction or B-roll."
+ },
+ {
+  "id": "cut-smash",
+  "kind": "cut",
+  "name": "Smash cut",
+  "how": [
+   "stylebrain sfx-place hit --at {at}"
+  ],
+  "beats": [
+   "joke",
+   "turn"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "hit",
+    "at": 0.0
+   }
+  ],
+  "about": "Cut hard from calm to loud (or the reverse) at the peak of a line, with a hit. The joke is the cut."
+ },
+ {
+  "id": "cut-match",
+  "kind": "cut",
+  "name": "Match cut",
+  "how": [
+   "Pick two shots with the same shape, motion or framing (bar on the back, plate to plate); cut on the matching frame with `stylebrain cut`/`move`."
+  ],
+  "beats": [
+   "turn",
+   "time"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "Two shots that rhyme in shape or motion, so the cut feels seamless. Shows time passing or a transformation."
+ },
+ {
+  "id": "cut-on-action",
+  "kind": "cut",
+  "name": "Cut on action",
+  "how": [
+   "Cut in the middle of the movement (the unrack, the drive off the chest), not before or after it."
+  ],
+  "beats": [
+   "lift",
+   "beat"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "The movement hides the cut. Every lift edit should cut this way."
+ },
+ {
+  "id": "cut-on-beat",
+  "kind": "cut",
+  "name": "Cut on the beat",
+  "how": [
+   "stylebrain music-snap"
+  ],
+  "beats": [
+   "beat",
+   "montage"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [],
+  "about": "Cuts are moved onto the music's beats. Montages and training clips."
+ },
+ {
+  "id": "cut-punch-in",
+  "kind": "cut",
+  "name": "Punch-in",
+  "how": [
+   "stylebrain reframe --from {at} --to {end} --zoom 1.2"
+  ],
+  "beats": [
+   "hook",
+   "joke",
+   "value"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "whoosh",
+    "at": -0.1
+   }
+  ],
+  "about": "Jump closer on the same shot to stress a line. A cheap second camera."
+ },
+ {
+  "id": "cut-speed-ramp",
+  "kind": "cut",
+  "name": "Speed ramp",
+  "how": [
+   "stylebrain speed --from {at} --to {end} --speed 0.4 --ramp 0.2 --smooth"
+  ],
+  "beats": [
+   "payoff",
+   "lift"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "riser",
+    "at": -0.6
+   },
+   {
+    "tag": "hit",
+    "at": 0.0
+   }
+  ],
+  "about": "Slows into the key moment (lockout, catch) and speeds out."
+ },
+ {
+  "id": "cut-slowmo-payoff",
+  "kind": "cut",
+  "name": "Slow-motion payoff",
+  "how": [
+   "stylebrain speed --from {at} --to {end} --speed 0.5 --smooth"
+  ],
+  "beats": [
+   "payoff",
+   "emotion"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "The rep that matters, in slow motion."
+ },
+ {
+  "id": "cut-freeze-explain",
+  "kind": "cut",
+  "name": "Freeze and explain",
+  "how": [
+   "Freeze the frame, then `effect-place` a form_cue or callout over it."
+  ],
+  "beats": [
+   "value"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "click",
+    "at": 0.0
+   }
+  ],
+  "about": "Stop the picture on the key position and draw on it."
+ },
+ {
+  "id": "cut-whip",
+  "kind": "cut",
+  "name": "Whip pan",
+  "how": [
+   "stylebrain transition --at {at} --kind whip"
+  ],
+  "beats": [
+   "beat",
+   "time"
+  ],
+  "energy": 4,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "whoosh",
+    "at": -0.1
+   }
+  ],
+  "about": "A sideways blur smears one shot into the next."
+ },
+ {
+  "id": "cut-zoom-blur",
+  "kind": "cut",
+  "name": "Zoom blur",
+  "how": [
+   "stylebrain transition --at {at} --kind zoom"
+  ],
+  "beats": [
+   "hook",
+   "beat"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [
+   {
+    "tag": "whoosh",
+    "at": -0.1
+   },
+   {
+    "tag": "hit",
+    "at": 0.0
+   }
+  ],
+  "about": "A radial blur rushing into the next shot."
+ },
+ {
+  "id": "cut-broll-insert",
+  "kind": "cut",
+  "name": "B-roll insert",
+  "how": [
+   "stylebrain broll SOURCE --at {at} --duration 2"
+  ],
+  "beats": [
+   "value",
+   "setup"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "Cover a line with a shot of what's being described."
+ },
+ {
+  "id": "cut-hold-laugh",
+  "kind": "cut",
+  "name": "Hold for the laugh",
+  "how": [
+   "Leave 0.3 to 0.6 s after the punchline before the next cut."
+  ],
+  "beats": [
+   "joke"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "Don't cut right on the punchline. Let it land."
+ },
+ {
+  "id": "cut-cold-open",
+  "kind": "cut",
+  "name": "Cold open (flash-forward)",
+  "how": [
+   "stylebrain move: put the payoff's best 1 to 2 s first, then cut back to the start."
+  ],
+  "beats": [
+   "hook"
+  ],
+  "energy": 5,
+  "creators": [],
+  "sfx": [],
+  "about": "Open on the most dramatic moment, then rewind to how it got there."
+ },
+ {
+  "id": "cut-loop",
+  "kind": "cut",
+  "name": "Seamless loop",
+  "how": [
+   "stylebrain loop-trim --transcript T.json"
+  ],
+  "beats": [
+   "cta",
+   "loop"
+  ],
+  "energy": 3,
+  "creators": [],
+  "sfx": [],
+  "about": "The last line runs into the first, so the reel loops and rewatches count."
+ },
+ {
+  "id": "cut-letterbox",
+  "kind": "cut",
+  "name": "Cinematic bars",
+  "how": [
+   "stylebrain effect-place with template letterbox"
+  ],
+  "beats": [
+   "emotion",
+   "chapter"
+  ],
+  "energy": 2,
+  "creators": [],
+  "sfx": [],
+  "about": "Black bars slide in to make a moment feel like film."
+ }
+]

@@ -35,6 +35,9 @@ def save(name: str, template: str, params: dict, about: str = "", reference: str
 def load(name: str, library: Path = LIBRARY) -> dict:
     path = library / f"{name}.json"
     if not path.exists():
+        from . import arsenal
+        if library == LIBRARY and any(e["id"] == name for e in arsenal.load()):
+            return arsenal.as_recipe(arsenal.get(name))   # an arsenal entry places like a saved effect
         have = ", ".join(e["name"] for e in list_effects(library)) or "none yet"
         raise EditError(f"no saved effect named {name!r} (saved: {have})")
     return json.loads(path.read_text())

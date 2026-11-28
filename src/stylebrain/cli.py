@@ -257,6 +257,34 @@ def cmd_render(args) -> None:
     print(f"rendered {r.path}: {r.frames} frames at {r.fps:g} fps, {r.width}x{r.height}")
 
 
+def cmd_arsenal(args) -> None:
+    from . import arsenal
+    found = arsenal.search(args.kind, args.beat, args.energy, args.creator, args.find)
+    if args.json:
+        print(json.dumps(found, indent=1))
+        return
+    for e in found:
+        who = f" [{', '.join(e['creators'])}]" if e.get("creators") else ""
+        print(f"{e['id']:<26} {e['kind']:<10} e{e['energy']} {','.join(e['beats']):<24} {e['name']}{who}")
+    print(f"{len(found)} of {len(arsenal.load())} entries")
+
+
+def cmd_arsenal_show(args) -> None:
+    from . import arsenal
+    e = arsenal.get(args.id)
+    print(arsenal.describe(e))
+    if args.at is not None:
+        for line in arsenal.sound_steps(e, _secs(args.at)):
+            print(f"  sound: {line}")
+
+
+def cmd_arsenal_sheet(args) -> None:
+    from . import arsenal
+    found = arsenal.search(args.kind, args.beat, args.energy, args.creator, args.find)
+    out = arsenal.sheet(found, args.out, args.width, args.height, args.columns)
+    print(f"{out}: {sum('template' in e for e in found)} graphics")
+
+
 def cmd_effect_save(args) -> None:
     from .effects import save
     path = save(args.name, args.template, _params(args.params), args.about or "", args.reference or "")
@@ -1918,6 +1946,15 @@ def main(argv: list[str] | None = None) -> None:
             A("--height", type=int, help="default: as for --width, else 1920")]
     sets = A("--set", action="append", metavar="KEY=VALUE", help="change one setting (repeatable)")
     add("templates", cmd_templates, "list animation templates")
+    pick = [A("--kind", choices=["text", "caption", "transition", "cut", "pairing"]), A("--beat"),
+            A("--energy", help="1 to 5, or a range such as 3-5"), A("--creator"), A("--find", help="any word")]
+    add("arsenal", cmd_arsenal, "browse the effects arsenal by kind, story beat, energy and creator",
+        *pick, A("--json", action="store_true"))
+    add("arsenal-show", cmd_arsenal_show, "one arsenal entry: what it is, its sounds, how to place it",
+        A("id"), A("--at", help="where it would go, to print the matching sfx-place commands"))
+    add("arsenal-sheet", cmd_arsenal_sheet, "a preview sheet of arsenal graphics", *pick,
+        A("--out", required=True), A("--width", type=int, default=540), A("--height", type=int, default=960),
+        A("--columns", type=int, default=5))
     add("render", cmd_render, "render a template to a transparent .mov", A("template"),
         A("--params", help="JSON object, or @file.json"), sets, A("--out"),
         A("--fps", type=float, default=30.0), *size)

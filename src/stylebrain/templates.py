@@ -245,6 +245,11 @@ TEMPLATES.update({
 })
 
 
+from .textfx import caption_style, text_fx, wipe  # noqa: E402
+
+TEMPLATES.update({"text_fx": text_fx, "caption_style": caption_style, "wipe": wipe})
+
+
 def build(name: str, params: dict) -> tuple[str, float]:
     if name not in TEMPLATES:
         raise EditError(f"no template named {name!r}; there are: {', '.join(sorted(TEMPLATES))}")

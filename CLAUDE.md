@@ -45,6 +45,7 @@ sound, music, reframing, export, house rules, the content calendar, social posts
 - `src/stylebrain/looks.py`: the house look templates (house captions, frame-1 hook, big title for behind the person, floating notification banner), fonts in `src/stylebrain/fonts/` (OFL)
 - `src/stylebrain/people.py`: wide lift shots in a vertical frame (`wide-clip`), text behind the person (`behind`, MediaPipe), a source's sound muted between spoken lines (`speech-only`)
 - `src/stylebrain/effects.py`: the saved effect library (`library/effects/`)
+- `src/stylebrain/arsenal.py`, `textfx.py`: the effects arsenal (`library/arsenal/*.json`, `stylebrain arsenal`): every text entrance, caption style, transition, cut recipe and sound pairing, indexed by story beat, energy and creator; `text_fx`, `caption_style` and `wipe` are its templates. Pick from it before building anything by hand
 - `src/stylebrain/reference.py`: studying a reference video (frame sheets, motion timing, colours, side-by-side check)
 - `src/stylebrain/style.py`: measuring a video's style (cuts, opening, speech pace, picture, sound) into `library/styles/`
 - `src/stylebrain/look.py`: colour looks: a LUT made from a reference or a measured style, saved in `library/looks/`

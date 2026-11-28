@@ -8,6 +8,16 @@ description: Use when Michael asks for an animation, title, caption, callout or 
 Animations are HTML pages rendered frame by frame to a transparent ProRes 4444
 clip, then placed above the footage as an overlay.
 
+## The arsenal first
+
+Before building anything, look in the arsenal: `uv run stylebrain arsenal --beat hook`
+(or `--kind text|caption|transition|cut|pairing`, `--energy 3-5`, `--creator togi`,
+`--find word`). `arsenal-show ID --at TIME` explains one entry and prints the sounds
+that go with it; `effect-place ID --at TIME --set text=...` places a graphic entry.
+`arsenal-sheet --kind text --out sheet.jpg` previews a set. Transitions go with their
+middle on the cut. When you build something new that works, add it to
+`library/arsenal/` so it is there next time.
+
 ## Ready-made templates
 
 Run `uv run stylebrain templates` for the list. Today:
