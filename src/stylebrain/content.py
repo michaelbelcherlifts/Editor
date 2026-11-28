@@ -436,6 +436,23 @@ class Plan:
                 continue
             pool = [i for i in self.ideas if i["format"] == fmt and i["id"] not in taken and not i.get("hold")
                     and i["status"] in ("idea", "planned", "recorded", "edited", "approved")]
+            busy = {dt.date.fromisoformat(p["date"]).weekday() for p in have}
+            # Series with a fixed weekday get their next episode on that day first.
+            for key, wd in (self.series_days(monday) if fmt == "reel" else {}).items():
+                if n <= 0 or wd in busy:
+                    continue
+                eps = sorted((i for i in pool if i.get("series") == key), key=lambda i: i["episode"] or 0)
+                if not eps:
+                    shortfalls.append(f"series {key}: no episode ready for {days[wd]:%a %d %b}")
+                    continue
+                made.append(self.schedule(eps[0]["id"], days[wd], status="proposed"))
+                taken.add(eps[0]["id"]); pool.remove(eps[0]); busy.add(wd); n -= 1
+            # The rest of a weekday series waits for its day in later weeks.
+            dayed = set(self.series_days(monday)) | {k for k, v in self.data["series"].items() if v.get("day")}
+            pool = [i for i in pool if i.get("series") not in dayed] if fmt == "reel" else pool
+            if n <= 0:
+                continue
+            free = [d for d in range(7) if d not in busy] if fmt == "reel" else list(range(7))
             pool.sort(key=lambda i: (READINESS[i["status"]], i.get("series") or "~", i["episode"] or 0,
                                      -(i["score"] or 0), int(i["id"][1:])))
             want = quotas(n, self.settings["pillars"])
@@ -454,11 +471,27 @@ class Plan:
             if len(order) < n:
                 shortfalls.append(f"{fmt}: {n - len(order)} slot(s) empty this week")
             for idx, idea in enumerate(order):
-                day = days[(math.floor(idx * 7 / max(len(order), 1)) + offset * 3) % 7]
+                if fmt == "reel" and free:
+                    day = days[free[math.floor(idx * len(free) / max(len(order), 1)) % len(free)]]
+                else:
+                    day = days[(math.floor(idx * 7 / max(len(order), 1)) + offset * 3) % 7]
                 made.append(self.schedule(idea["id"], day, status="proposed"))
                 taken.add(idea["id"])
         self._assign_ctas([p for p in self.posts if p["date"] in week and p["status"] in ("proposed",)], week)
         return {"week": monday.isoformat(), "posts": made, "shortfalls": shortfalls}
+
+    def series_days(self, monday: dt.date) -> dict[str, int]:
+        """Series that own a weekday ("Mon", or "Sat (every other week)"), as weekday numbers."""
+        names = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+        out = {}
+        for key, s in self.data["series"].items():
+            day = (s.get("day") or "").strip().lower()
+            if s.get("merged_into") or day[:3] not in names:
+                continue
+            if "every other" in day and (monday.toordinal() // 7) % 2:
+                continue
+            out[key] = names.index(day[:3])
+        return out
 
     def _assign_ctas(self, proposed: list[dict], week: set[str]) -> None:
         """Calls to action on purpose: coaching on a few teaching posts, follow on series, many with none."""
