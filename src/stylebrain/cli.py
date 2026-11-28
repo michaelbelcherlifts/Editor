@@ -253,8 +253,8 @@ def cmd_templates(args) -> None:
 def cmd_render(args) -> None:
     from .effects import render_template
     r = render_template(args.template, {**_params(args.params), **_values(args.set)}, args.out,
-                        args.fps, args.width, args.height)
-    print(f"rendered {r.path}: {r.frames} frames at {r.fps:g} fps")
+                        args.fps, *_anim_size(args))
+    print(f"rendered {r.path}: {r.frames} frames at {r.fps:g} fps, {r.width}x{r.height}")
 
 
 def cmd_effect_save(args) -> None:
@@ -274,7 +274,7 @@ def cmd_effect_list(args) -> None:
 
 def cmd_effect_render(args) -> None:
     from .effects import render_effect
-    r = render_effect(args.name, _values(args.set), args.out, args.fps, args.width, args.height)
+    r = render_effect(args.name, _values(args.set), args.out, args.fps, *_anim_size(args))
     print(f"rendered {r.path}: {r.frames} frames at {r.fps:g} fps")
 
 
@@ -282,7 +282,7 @@ def cmd_effect_place(args) -> None:
     from .effects import render_effect
     store = _store(args); edit = store.load()
     at = parse_time(args.at, edit.fps)
-    r = render_effect(args.name, _values(args.set), None, edit.fps, args.width, args.height)
+    r = render_effect(args.name, _values(args.set), None, edit.fps, *_anim_size(args))
     label = args.label or f"{args.name}@{args.at}"
     o = Overlay(label, str(Path(r.path).resolve()), at, r.frames, args.track)
     _save(store, edit, edit.add_overlay(o), f"place effect {args.name!r} at {args.at}")
@@ -392,6 +392,22 @@ def _wh(size: str | None, edit: EditList | None = None) -> tuple[int, int]:
     """The asked size, else the edit's format, else the house rule for frame, else 1080x1920."""
     from .formats import size_for
     return size_for(edit, size)
+
+
+def _anim_size(args) -> tuple[int, int]:
+    """The frame an animation is rendered at: what was asked, else the current edit's format, else the
+    house rule for frame, else 1080x1920. On the first real run a caption came out 1920x1080 for a reel."""
+    if args.width and args.height:
+        return args.width, args.height
+    edit = None
+    name = getattr(args, "project", None) or current_project()
+    if name:
+        try:
+            edit = Store(name).load()
+        except (EditError, OSError):
+            edit = None
+    w, h = _wh(None, edit)
+    return args.width or w, args.height or h
 
 
 def _resolve_timeline(store, edit):
@@ -1898,7 +1914,8 @@ def main(argv: list[str] | None = None) -> None:
         *clip, A("--at", required=True), A("--duration"), A("--track", type=int, default=2), A("--name"))
     add("sources", cmd_sources, "list the clips this edit uses")
     add("overlay-remove", cmd_overlay_remove, "remove an overlay", A("name"))
-    size = [A("--width", type=int, default=1920), A("--height", type=int, default=1080)]
+    size = [A("--width", type=int, help="default: the edit's format, else the house rule for frame, else 1080"),
+            A("--height", type=int, help="default: as for --width, else 1920")]
     sets = A("--set", action="append", metavar="KEY=VALUE", help="change one setting (repeatable)")
     add("templates", cmd_templates, "list animation templates")
     add("render", cmd_render, "render a template to a transparent .mov", A("template"),
