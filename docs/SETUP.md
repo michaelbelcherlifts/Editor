@@ -45,3 +45,17 @@ test that cannot run there. Two things to know:
   you own (for example `.uv-python` beside the repository) and run it again.
 - Install the tools with winget: `yt-dlp`, `ffmpeg`, `deno` (yt-dlp needs it for
   full-quality YouTube formats) and `uv`. Open a new terminal afterwards.
+
+## Mac notes (from the first real run, 2026-11-28)
+
+On a MacBook Pro M4 Max with macOS 26.2 and Resolve Studio 21.2: File > Setup AI
+Assistants gave Claude Code a connection called "DaVinci Resolve", all tests
+passed, and `build` reached Resolve. Things learned:
+
+- Homebrew is not needed. uv installs with its own installer into `~/.local/bin`,
+  and a ready-made Apple Silicon ffmpeg and ffprobe can sit beside it.
+- A project's frame rate is fixed once it has a timeline. The first build put a
+  30 fps edit into a 24 fps project and the clips came out short with a gap.
+  `build` now sets an empty project to the edit's frame rate itself, and refuses
+  a project that already has timelines at another rate without building anything.
+  If you see that refusal, open a new project and run `build` again.

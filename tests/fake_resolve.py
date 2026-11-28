@@ -140,6 +140,7 @@ class MediaPool:
 class Project:
     def __init__(self, fps="24", end_inclusive=True, missing=()):
         self.fps, self.timelines, self.current = fps, [], None
+        self.set, self.locked = {}, False
         self.pool = MediaPool(self, end_inclusive, missing)
 
     def GetMediaPool(self):
@@ -147,7 +148,17 @@ class Project:
 
     def GetSetting(self, key):
         return {"timelineFrameRate": self.fps, "timelineResolutionWidth": "1080",
-                "timelineResolutionHeight": "1920"}[key]
+                "timelineResolutionHeight": "1920", **self.set}[key]
+
+    def SetSetting(self, key, value):
+        # Like Resolve: the frame rate is fixed once the project has a timeline.
+        if key == "timelineFrameRate":
+            if self.timelines or self.locked:
+                return False
+            self.fps = value
+            return True
+        self.set[key] = value
+        return True
 
     def SetCurrentTimeline(self, t):
         self.current = t
