@@ -122,3 +122,18 @@ def test_loop_check_on_a_file_with_no_sound(tmp_path, capsys):
                     "-pix_fmt", "yuv420p", str(clip)], check=True)
     main(["loop-check", "--video", str(clip)])
     assert "no sound track" in capsys.readouterr().out
+
+
+def test_animations_render_at_the_edits_frame_unless_told(tmp_path, monkeypatch):
+    from argparse import Namespace
+
+    from stylebrain import cli
+    monkeypatch.chdir(tmp_path)
+    blank = Namespace(width=None, height=None, project=None)
+    assert cli._anim_size(blank) == (1080, 1920)                       # no edit yet: vertical
+    main(["new", "talk", "--source", "a.mov", "--fps", "30", "--frames", "300"])
+    main(["format", "longform"])
+    assert cli._anim_size(blank) == (1920, 1080)                       # follows the edit's format
+    main(["format", "reel"])
+    assert cli._anim_size(blank) == (1080, 1920)
+    assert cli._anim_size(Namespace(width=720, height=1280, project=None)) == (720, 1280)
